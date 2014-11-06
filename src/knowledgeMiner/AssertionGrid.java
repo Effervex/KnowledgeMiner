@@ -13,6 +13,7 @@ package knowledgeMiner;
 import graph.core.CommonConcepts;
 import graph.inference.CommonQuery;
 import io.ontology.OntologySocket;
+import io.resources.WMISocket;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,13 +23,17 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.PriorityQueue;
 import java.util.Set;
-import java.util.SortedSet;
 
+import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mining.AssertionQueue;
+import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.MinedAssertion;
+import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.mining.WeightedStanding;
 import util.Pair;
-import cyc.OntologyConcept;
 import cyc.CycConstants;
+import cyc.MappableConcept;
+import cyc.OntologyConcept;
 
 /**
  * An inner class for encapsulating the assertion grid and the various metrics
@@ -49,14 +54,26 @@ public class AssertionGrid {
 
 	private OntologyConcept concept_;
 
+	private Collection<OntologyConcept> conceptGenlTruths_;
+
+	/** Temporary members for non-assertion-removal code. */
+	private Collection<OntologyConcept> conceptIsaTruths_;
+
+	/** The concept for which this assertion grid is built around. */
+	private MappableConcept coreConcept_;
+
+	private DisjointCase[] disjointCases_;
+
 	/** The proportions of every assertion queue, based on hierarchy. */
 	private Double[] proportionVector_;
 
 	/** The current row to seed. */
 	private int row_;
-
 	/** A stack of starting seeds, from highest weighted to least. */
 	private Pair<Integer, Integer>[] seedStack_;
+
+	/** The standing of the concept. */
+	private WeightedStanding standing_;
 
 	/** The starting seed assertions that have been used. */
 	private boolean[][] usedSeeds_;
@@ -64,38 +81,41 @@ public class AssertionGrid {
 	/** The weights of the assertions in a grid format for quick access. */
 	private double[][] weightGrid_;
 
-	/** Temporary members for non-assertion-removal code. */
-	private Collection<OntologyConcept> conceptIsaTruths_;
-	private Collection<OntologyConcept> conceptGenlTruths_;
-
-	private DisjointCase[] disjointCases_;
-
 	/**
 	 * Constructor for a new AssertionGrid extending an existing one.
 	 * 
 	 * @param existingGrid
 	 *            The existing grid to add to.
+	 * @param concept
+	 *            The concept being disambiguated.
+	 * @param standing
+	 *            The learned or known standing of the concept.
 	 * @param existingAssertions
 	 *            The assertions to add to the grid.
+	 * @param assertionRemoval
+	 *            If assertions can be removed from the concept during this
+	 *            process.
 	 */
 	public AssertionGrid(AssertionGrid existingGrid, OntologyConcept concept,
-			Collection<MinedAssertion> existingAssertions,
+			WeightedStanding standing,
+			Collection<DefiniteAssertion> existingAssertions,
 			boolean assertionRemoval) {
+		// Common stuff first
+		seedStack_ = existingGrid.seedStack_;
+		concept_ = concept;
+		coreConcept_ = existingGrid.coreConcept_;
+		standing_ = standing;
+
+		int oldLength = existingGrid.assertionGrid_.length;
 		if (assertionRemoval) {
-			int oldLength = existingGrid.assertionGrid_.length;
 			int newLength = oldLength + existingAssertions.size();
-			assertionGrid_ = Arrays.copyOf(existingGrid.assertionGrid_,
-					newLength);
-			proportionVector_ = Arrays.copyOf(existingGrid.proportionVector_,
-					newLength);
-			usedSeeds_ = new boolean[newLength][];
-			for (int x = 0; x < oldLength; x++)
-				usedSeeds_[x] = new boolean[existingGrid.usedSeeds_[x].length];
-			weightGrid_ = Arrays.copyOf(existingGrid.weightGrid_, newLength);
+			instantiateAssertionGrid(existingGrid, newLength, coreConcept_,
+					concept_);
+
 			double proportion = 1.0 / existingAssertions.size();
-			Iterator<MinedAssertion> iter = existingAssertions.iterator();
+			Iterator<DefiniteAssertion> iter = existingAssertions.iterator();
 			for (int i = oldLength; i < newLength; i++) {
-				assertionGrid_[i] = new MinedAssertion[] { iter.next() };
+				assertionGrid_[i] = new DefiniteAssertion[] { iter.next() };
 				proportionVector_[i] = proportion;
 				usedSeeds_[i] = new boolean[] { true };
 				weightGrid_[i] = new double[] { 1 };
@@ -104,15 +124,12 @@ public class AssertionGrid {
 			conceptGenlTruths_ = null;
 		} else {
 			// Non-assertion-removal
-			assertionGrid_ = existingGrid.assertionGrid_;
-			proportionVector_ = existingGrid.proportionVector_;
-			usedSeeds_ = new boolean[existingGrid.usedSeeds_.length][];
-			for (int x = 0; x < usedSeeds_.length; x++)
-				usedSeeds_[x] = new boolean[existingGrid.usedSeeds_[x].length];
-			weightGrid_ = existingGrid.weightGrid_;
+			instantiateAssertionGrid(existingGrid, oldLength, coreConcept_,
+					concept_);
+
 			conceptIsaTruths_ = new ArrayList<>();
 			conceptGenlTruths_ = new ArrayList<>();
-			for (MinedAssertion ma : existingAssertions) {
+			for (DefiniteAssertion ma : existingAssertions) {
 				if (ma.getRelation().equals(CycConstants.ISA.getConcept()))
 					conceptIsaTruths_.add(ma.getArgs()[1]);
 				else if (ma.getRelation().equals(
@@ -120,15 +137,27 @@ public class AssertionGrid {
 					conceptGenlTruths_.add(ma.getArgs()[1]);
 			}
 		}
-
-		seedStack_ = existingGrid.seedStack_;
-		concept_ = concept;
 		resetMetrics();
 	}
 
-	public AssertionGrid(SortedSet<AssertionQueue> assertions) {
-		buildAssertionGrid(assertions);
-		concept_ = OntologyConcept.PLACEHOLDER;
+	/**
+	 * Constructor for a new AssertionGrid that builds itself from partial
+	 * assertions.
+	 * 
+	 * @param assertions
+	 *            The assertions with which to build the grid.
+	 * @param coreConcept
+	 *            The core concept contained in every assertion.
+	 * @param ontology
+	 *            The ontology access.
+	 * @param wmi
+	 *            The WMI access.
+	 */
+	public AssertionGrid(Collection<PartialAssertion> assertions,
+			MappableConcept coreConcept, OntologySocket ontology, WMISocket wmi) {
+		coreConcept_ = coreConcept;
+		concept_ = null;
+		buildAssertionGrid(assertions, ontology, wmi);
 		resetMetrics();
 	}
 
@@ -138,17 +167,36 @@ public class AssertionGrid {
 	 * 
 	 * @param assertions
 	 *            The assertions to build into a 2D array.
+	 * @param ontology
+	 *            The ontology access.
+	 * @param wmi
+	 *            The WMI access.
 	 */
 	@SuppressWarnings("unchecked")
-	private void buildAssertionGrid(SortedSet<AssertionQueue> assertions) {
+	private void buildAssertionGrid(Collection<PartialAssertion> assertions,
+			OntologySocket ontology, WMISocket wmi) {
 		ArrayList<MinedAssertion[]> assertionGrid = new ArrayList<>();
 		ArrayList<double[]> weightGrid = new ArrayList<>();
 		ArrayList<Double> proportion = new ArrayList<>();
 		ArrayList<Pair<Integer, Integer>> coords = new ArrayList<>();
+
+		// Build the Assertion Queues
+		Collection<AssertionQueue> aqs = new ArrayList<>();
+		for (PartialAssertion pa : assertions) {
+			AssertionQueue aq = expandPartial(pa, ontology, wmi);
+			if (aq != null && !aq.isEmpty()) {
+				aq = (AssertionQueue) aq.cleanEmptyParents();
+				aqs.add(aq);
+			}
+		}
+
+		if (aqs.isEmpty())
+			return;
+
 		// Iterate through
-		for (AssertionQueue aq : assertions)
+		for (AssertionQueue aq : aqs)
 			recurseBuild(aq, 0, assertionGrid, weightGrid, proportion,
-					1f / assertions.size(), coords);
+					1f / aqs.size(), coords);
 
 		assertionGrid_ = assertionGrid.toArray(new MinedAssertion[assertionGrid
 				.size()][]);
@@ -184,6 +232,27 @@ public class AssertionGrid {
 		});
 	}
 
+	/**
+	 * Expands a partial assertion into an AssertionQueue for use in building
+	 * the assertion grid.
+	 * 
+	 * @param pa
+	 *            The partial assertion to expand.
+	 * @param ontology
+	 *            The ontology access.
+	 * @param wmi
+	 *            The WMI access.
+	 */
+	private AssertionQueue expandPartial(PartialAssertion pa,
+			OntologySocket ontology, WMISocket wmi) {
+		// Expand the partial assertion
+		Collection<MappableConcept> excluded = new HashSet<>();
+		if (coreConcept_ != null)
+			excluded.add(coreConcept_);
+		CycMapper mapper = KnowledgeMiner.getInstance().getMapper();
+		return pa.expand(excluded, mapper, ontology, wmi);
+	}
+
 	private double findAvailableSeed() {
 		int i = 0;
 		while (usedSeeds_[seedStack_[i].objA_][seedStack_[i].objB_]) {
@@ -196,13 +265,13 @@ public class AssertionGrid {
 		return weightGrid_[column_][row_];
 	}
 
-	private MinedAssertion getAssertion(int x, int y) {
+	private DefiniteAssertion getAssertion(int x, int y) {
 		// Check for ArrayIndexException
 		if (x >= assertionGrid_.length)
 			return null;
 		if (y >= assertionGrid_[x].length)
 			return null;
-		return assertionGrid_[x][y];
+		return (DefiniteAssertion) assertionGrid_[x][y];
 	}
 
 	private double getWeight(int x, int y) {
@@ -211,6 +280,55 @@ public class AssertionGrid {
 		if (y >= weightGrid_[x].length)
 			return 0;
 		return weightGrid_[x][y];
+	}
+
+	/**
+	 * Instantiates all the partial assertions of the grid with definite
+	 * assertions.
+	 * 
+	 * @param existingGrid
+	 *            The existing grid to instantiate
+	 * @param sizeIncrease
+	 *            Any size increases needed.
+	 * @param mappedConcept
+	 *            The mapped concpet to replace.
+	 * @param replacementConcept
+	 *            The replacement concept.
+	 * @return
+	 */
+	private void instantiateAssertionGrid(AssertionGrid existingGrid,
+			int newSize, MappableConcept mappedConcept,
+			OntologyConcept replacementConcept) {
+		MinedAssertion[][] assertionGrid = existingGrid.assertionGrid_;
+		assertionGrid_ = new MinedAssertion[assertionGrid.length][];
+		// Instantiate every assertion.
+		for (int x = 0; x < assertionGrid_.length; x++) {
+			assertionGrid_[x] = new MinedAssertion[assertionGrid[x].length];
+			for (int y = 0; y < assertionGrid_[x].length; y++) {
+				MinedAssertion assertion = assertionGrid[x][y];
+				if (assertion != null) {
+					if (assertion instanceof PartialAssertion) {
+						assertionGrid_[x][y] = ((PartialAssertion) assertion)
+								.instantiate(mappedConcept, replacementConcept);
+					} else if (assertion instanceof DefiniteAssertion)
+						assertionGrid_[x][y] = assertion;
+				}
+			}
+		}
+
+		// Other members
+		if (newSize == assertionGrid.length) {
+			proportionVector_ = existingGrid.proportionVector_;
+			usedSeeds_ = new boolean[existingGrid.usedSeeds_.length][];
+			weightGrid_ = existingGrid.weightGrid_;
+		} else {
+			proportionVector_ = Arrays.copyOf(existingGrid.proportionVector_,
+					newSize);
+			usedSeeds_ = new boolean[newSize][];
+			weightGrid_ = Arrays.copyOf(existingGrid.weightGrid_, newSize);
+		}
+		for (int x = 0; x < existingGrid.usedSeeds_.length; x++)
+			usedSeeds_[x] = new boolean[existingGrid.usedSeeds_[x].length];
 	}
 
 	private boolean isDisjoint(OntologyConcept testCollection,
@@ -229,7 +347,8 @@ public class AssertionGrid {
 	 * Recursively build the grid
 	 * 
 	 * @param aq
-	 *            The assertion queue to recurse through (lower queues).
+	 *            The partial assertion to instantiate, build, and recurse
+	 *            through.
 	 * @param offset
 	 *            The offset (for lower queues)
 	 * @param assertionGrid
@@ -272,30 +391,39 @@ public class AssertionGrid {
 					proportion, fraction / subAssertionQueues.size(), coords);
 	}
 
-	private DisjointCase requestDisjointCase(boolean isaCollection,
-			OntologySocket ontology) {
-		// Identify weight of next row/column case
-		double seedWeight = findAvailableSeed();
-		if (seedWeight == -1) {
-			if (cases_.isEmpty())
+	private DisjointCase requestDisjointCase(OntologySocket ontology) {
+		double bestStanding = Math.max(
+				standing_.getLaplaceNormalisedWeight(TermStanding.COLLECTION),
+				standing_.getLaplaceNormalisedWeight(TermStanding.INDIVIDUAL));
+		do {
+			// Seed a new case
+			double seedWeight = findAvailableSeed() * bestStanding;
+			if (seedWeight == -1)
 				return null;
-			else
-				return cases_.remove();
-		}
 
-		// If greater than top priority case, use that
-		DisjointCase resultDC = null;
-		if (cases_.isEmpty() || seedWeight > cases_.peek().getPotentialWeight()) {
-			resultDC = new DisjointCase(row_, column_, isaCollection, ontology);
-			usedSeeds_[column_][row_] = true;
-			if (resultDC.getPotentialWeight() < 0)
-				resultDC = requestDisjointCase(isaCollection, ontology);
-		}
+			// Add a case for both individual and collection (if there is
+			// ambiguity), with standing weights
+			if (cases_.isEmpty()
+					|| seedWeight > cases_.peek().getPotentialWeight()) {
+				double collWeight = standing_
+						.getLaplaceNormalisedWeight(TermStanding.COLLECTION);
+				double indvWeight = standing_
+						.getLaplaceNormalisedWeight(TermStanding.INDIVIDUAL) + 0.01;
+				// System.out.println(concept_ + ":" + collWeight + " " +
+				// indvWeight);
+				DisjointCase dc = new DisjointCase(row_, column_, true,
+						collWeight, ontology);
+				if (dc.getPotentialWeight() > 0)
+					cases_.add(dc);
 
-		if (resultDC == null && !cases_.isEmpty())
-			return cases_.remove();
-
-		return resultDC;
+				dc = new DisjointCase(row_, column_, false, indvWeight,
+						ontology);
+				if (dc.getPotentialWeight() > 0)
+					cases_.add(dc);
+				usedSeeds_[column_][row_] = true;
+			}
+		} while (cases_.isEmpty());
+		return cases_.remove();
 	}
 
 	private void resetMetrics() {
@@ -305,29 +433,28 @@ public class AssertionGrid {
 		disjointCases_ = null;
 	}
 
-	public Collection<MinedAssertion> findMaximalConjoint(
-			boolean isaCollection, OntologySocket ontology) {
-		findNConjoint(1, isaCollection, ontology);
+	public Collection<DefiniteAssertion> findMaximalConjoint(
+			OntologySocket ontology) {
+		findNConjoint(1, ontology);
 		DisjointnessDisambiguator.logger_.debug(
-				"Disambiguated {} with weight {}", concept_,
+				"Disambiguated {} with weight {}", concept_.getConceptName(),
 				Math.min(1.0, disjointCases_[0].getPotentialWeight()));
 		return disjointCases_[0].getAssertions();
 	}
 
-	public void findNConjoint(int numDisambiguated, boolean isaCollection,
-			OntologySocket ontology) {
+	public void findNConjoint(int numDisambiguated, OntologySocket ontology) {
 		// Iterate through the assertions in a priority queue until completed
 		resetMetrics();
 		disjointCases_ = new DisjointCase[numDisambiguated];
 		int caseNum = 0;
 		do {
-			DisjointCase dc = requestDisjointCase(isaCollection, ontology);
+			DisjointCase dc = requestDisjointCase(ontology);
 			// No assertions left!
 			if (dc == null)
 				return;
 			// DC not yet completed.
 			if (!dc.isCompleted()) {
-				dc.processRow(isaCollection, ontology);
+				dc.processRow(ontology);
 				if (dc.isCompleted())
 					disjointCases_[caseNum++] = dc;
 				else
@@ -336,14 +463,49 @@ public class AssertionGrid {
 		} while (caseNum < numDisambiguated);
 	}
 
+	public Collection<DefiniteAssertion> getAssertions(int caseNum) {
+		return disjointCases_[caseNum].getAssertions();
+	}
+
+	public boolean isCollection(int caseNum) {
+		return disjointCases_[caseNum].isaCollection_;
+	}
+
+	public double getCaseWeight(int caseNum) {
+		return Math.min(disjointCases_[caseNum].getPotentialWeight(), 1);
+	}
+
+	@Override
+	public String toString() {
+		// Print out the assertion grid
+		StringBuilder builder = new StringBuilder();
+		for (int x = 0; x < assertionGrid_.length; x++) {
+			for (int y = 0; y < assertionGrid_[x].length; y++) {
+				if (assertionGrid_[x][y] == null)
+					builder.append("[   ]");
+				else {
+					String assertion = assertionGrid_[x][y].toString();
+					if (usedSeeds_[x][y])
+						assertion = assertion.toUpperCase();
+					builder.append("[" + assertion + ":" + weightGrid_[x][y]
+							+ "]");
+				}
+			}
+			builder.append("\n");
+		}
+		return builder.toString();
+	}
+
 	private class DisjointCase implements Comparable<DisjointCase> {
-		private ArrayList<MinedAssertion> allAssertions_;
+		private ArrayList<DefiniteAssertion> allAssertions_;
 		private ArrayList<Double> assertionWeights_;
 		private int caseRow_;
 		private boolean[] completed_;
 		private double completedWeight_;
 		private Collection<OntologyConcept> genlsTruth_;
+		private boolean isaCollection_;
 		private Collection<OntologyConcept> isaTruth_;
+		private double standingWeight_;
 
 		/**
 		 * Constructor for a new DisjointCase which progressively identifies
@@ -353,8 +515,6 @@ public class AssertionGrid {
 		 *            The row to start with.
 		 * @param column
 		 *            The column to start with.
-		 * @param isaCollection
-		 *            If the concept is a collection.
 		 * @param ontology
 		 *            The ontology access.
 		 * @param isaTruth
@@ -363,7 +523,12 @@ public class AssertionGrid {
 		 *            The genls truths.
 		 */
 		public DisjointCase(int row, int column, boolean isaCollection,
-				OntologySocket ontology) {
+				double standingWeight, OntologySocket ontology) {
+			if (standingWeight <= 0) {
+				completedWeight_ = -1;
+				return;
+			}
+			standingWeight_ = standingWeight;
 			completed_ = new boolean[assertionGrid_.length];
 			Arrays.fill(completed_, false);
 			caseRow_ = 0;
@@ -376,8 +541,14 @@ public class AssertionGrid {
 			allAssertions_ = new ArrayList<>();
 			assertionWeights_ = new ArrayList<>();
 			completedWeight_ = 0;
-			checkDisjointness(getAssertion(column, row), column, row,
-					isaCollection, ontology);
+			isaCollection_ = isaCollection;
+			if (isaCollection
+					&& isDisjoint(CycConstants.COLLECTION.getConcept(),
+							isaTruth_, ontology)) {
+				completedWeight_ = -1;
+				return;
+			}
+			checkDisjointness(getAssertion(column, row), column, row, ontology);
 			// If seed assertion is invalid
 			if (completedWeight_ == 0)
 				completedWeight_ = -1;
@@ -403,53 +574,48 @@ public class AssertionGrid {
 		 *            The ontology access.
 		 * @return True if the constraints can be satisfied.
 		 */
-		private boolean checkArgConstraints(MinedAssertion assertion,
+		private boolean checkArgConstraints(DefiniteAssertion assertion,
 				OntologySocket ontology) {
-			// Check disjointness of constraints vs truth
-			int placeholderIndex = assertion.getPlaceholderArgIndex() + 1;
+			// Find index of concept
+			int conceptIndex = assertion.getArgIndex(concept_) + 1;
+			if (conceptIndex == 0)
+				return false;
+
+			// Check arg constraints
 			Collection<OntologyConcept> isaConstraints = ontology.quickQuery(
 					CommonQuery.MINARGNISA, assertion.getRelation()
-							.getIdentifier() + " '" + placeholderIndex);
+							.getIdentifier() + " '" + conceptIndex);
 			for (OntologyConcept constraint : isaConstraints)
 				if (isDisjoint(constraint, isaTruth_, ontology))
 					return false;
 
 			Collection<OntologyConcept> genlsConstraints = ontology.quickQuery(
 					CommonQuery.MINARGNGENL, assertion.getRelation()
-							.getIdentifier() + " '" + placeholderIndex);
+							.getIdentifier() + " '" + conceptIndex);
 			for (OntologyConcept constraint : genlsConstraints)
 				if (isDisjoint(constraint, genlsTruth_, ontology))
 					return false;
 
 			// Add as truth & assertions
-			try {
-				isaTruth_.addAll(isaConstraints);
-				for (OntologyConcept constraint : isaConstraints)
-					if (!constraint.getConceptName().equals("Thing")) {
-						MinedAssertion ma = new MinedAssertion(
-								CycConstants.ISA.getConcept(), concept_,
-								constraint,
-								CycConstants.DATA_MICROTHEORY.getConceptName(),
-								null);
-						if (!allAssertions_.contains(ma))
-							allAssertions_.add(ma);
-					}
+			isaTruth_.addAll(isaConstraints);
+			for (OntologyConcept constraint : isaConstraints)
+				if (!constraint.getConceptName().equals("Thing")) {
+					DefiniteAssertion ma = new DefiniteAssertion(
+							CycConstants.ISA.getConcept(), null, concept_,
+							constraint);
+					if (!allAssertions_.contains(ma))
+						allAssertions_.add(ma);
+				}
 
-				genlsTruth_.addAll(genlsConstraints);
-				for (OntologyConcept constraint : genlsConstraints)
-					if (!constraint.getConceptName().equals("Thing")) {
-						MinedAssertion ma = new MinedAssertion(
-								CycConstants.GENLS.getConcept(), concept_,
-								constraint,
-								CycConstants.DATA_MICROTHEORY.getConceptName(),
-								null);
-						if (!allAssertions_.contains(ma))
-							allAssertions_.add(ma);
-					}
-			} catch (IllegalAccessException e) {
-				e.printStackTrace();
-				return false;
-			}
+			genlsTruth_.addAll(genlsConstraints);
+			for (OntologyConcept constraint : genlsConstraints)
+				if (!constraint.getConceptName().equals("Thing")) {
+					DefiniteAssertion ma = new DefiniteAssertion(
+							CycConstants.GENLS.getConcept(), null, concept_,
+							constraint);
+					if (!allAssertions_.contains(ma))
+						allAssertions_.add(ma);
+				}
 			return true;
 		}
 
@@ -463,23 +629,23 @@ public class AssertionGrid {
 		 *            The x pos of the assertion in the grid.
 		 * @param y
 		 *            The y pos of the assertion in the grid.
-		 * @param isaCollection
-		 *            If the concept is a collection.
 		 * @param ontology
 		 *            The ontology access.
 		 */
-		private void checkDisjointness(MinedAssertion assertion, int x, int y,
-				boolean isaCollection, OntologySocket ontology) {
+		private void checkDisjointness(DefiniteAssertion assertion, int x,
+				int y, OntologySocket ontology) {
 			assertion = assertion.clone();
 			if (assertion.isHierarchical()) {
 				// Check collection first
 				boolean asserted = false;
-				if (isaCollection
+				// TODO Figure out how to disallow genls for individual
+				if (isaCollection_
 						&& !isDisjoint(assertion.getArgs()[1], genlsTruth_,
 								ontology)) {
 					assertion.makeParentageAssertion(TermStanding.COLLECTION);
+					isaTruth_.add(CycConstants.COLLECTION.getConcept());
 					genlsTruth_.add(assertion.getArgs()[1]);
-					recordAssertion(assertion, x, y, isaCollection, ontology);
+					recordAssertion(assertion, x, y, ontology);
 					asserted = true;
 				}
 
@@ -489,10 +655,10 @@ public class AssertionGrid {
 								ontology)) {
 					assertion.makeParentageAssertion(TermStanding.INDIVIDUAL);
 					isaTruth_.add(assertion.getArgs()[1]);
-					recordAssertion(assertion, x, y, isaCollection, ontology);
+					recordAssertion(assertion, x, y, ontology);
 				}
 			} else if (checkArgConstraints(assertion, ontology)) {
-				recordAssertion(assertion, x, y, isaCollection, ontology);
+				recordAssertion(assertion, x, y, ontology);
 			}
 		}
 
@@ -548,14 +714,11 @@ public class AssertionGrid {
 		 *            The x pos of the assertion in the grid.
 		 * @param y
 		 *            The y pos of the assertion in the grid.
-		 * @param isaCollection
-		 *            If the concept is a collection.
 		 * @param ontology
 		 *            The ontology access.
 		 */
-		private void recordAssertion(MinedAssertion assertion, int x, int y,
-				boolean isaCollection, OntologySocket ontology) {
-			assertion.replacePlaceholder(concept_, ontology);
+		private void recordAssertion(DefiniteAssertion assertion, int x, int y,
+				OntologySocket ontology) {
 			noteCompleted(x, y);
 			if (!allAssertions_.contains(assertion)) {
 				allAssertions_.add(assertion);
@@ -564,8 +727,7 @@ public class AssertionGrid {
 
 			// Recurse down
 			if (getWeight(x, y + 1) == getWeight(x, y))
-				checkDisjointness(getAssertion(x, y + 1), x, y + 1,
-						isaCollection, ontology);
+				checkDisjointness(getAssertion(x, y + 1), x, y + 1, ontology);
 		}
 
 		@Override
@@ -610,6 +772,8 @@ public class AssertionGrid {
 			if (getClass() != obj.getClass())
 				return false;
 			DisjointCase other = (DisjointCase) obj;
+			if (isaCollection_ != other.isaCollection_)
+				return false;
 			if (caseRow_ != other.caseRow_)
 				return false;
 			if (!Arrays.equals(completed_, other.completed_))
@@ -617,7 +781,7 @@ public class AssertionGrid {
 			return true;
 		}
 
-		public ArrayList<MinedAssertion> getAssertions() {
+		public ArrayList<DefiniteAssertion> getAssertions() {
 			return allAssertions_;
 		}
 
@@ -627,11 +791,13 @@ public class AssertionGrid {
 		 * @return The weight of the case.
 		 */
 		public double getPotentialWeight() {
+			if (completedWeight_ == -1)
+				return -1;
 			double value = completedWeight_ + calculatePotentialWeight();
 			// Adjust the concept weight to ignore the existing assertions.
 			if (conceptIsaTruths_ == null && conceptGenlTruths_ == null)
 				value -= 1;
-			return value;
+			return value * standingWeight_;
 		}
 
 		@Override
@@ -640,6 +806,8 @@ public class AssertionGrid {
 			int result = 1;
 			result = prime * result + caseRow_;
 			result = prime * result + Arrays.hashCode(completed_);
+			if (isaCollection_)
+				result = prime * result + 11;
 			return result;
 		}
 
@@ -658,37 +826,28 @@ public class AssertionGrid {
 		 * Process a row of the assertion grid, checking disjointness of the
 		 * assertions encountered in the row.
 		 * 
-		 * @param isaCollection
-		 *            If the concept is a collection.
 		 * @param ontology
 		 *            The ontology access.
 		 */
-		public void processRow(boolean isaCollection, OntologySocket ontology) {
+		public void processRow(OntologySocket ontology) {
 			// Run through the row, pairing with other assertions and checking
 			// conjointness
 			for (int x = 0; x < completed_.length; x++) {
 				if (completed_[x])
 					continue;
-				MinedAssertion assertion = getAssertion(x, caseRow_);
+				DefiniteAssertion assertion = getAssertion(x, caseRow_);
 				if (assertion == null)
 					continue;
-				checkDisjointness(assertion, x, caseRow_, isaCollection,
-						ontology);
+				checkDisjointness(assertion, x, caseRow_, ontology);
 			}
 			caseRow_++;
 		}
 
 		@Override
 		public String toString() {
+			if (completedWeight_ == -1)
+				return "Invalid Disjoint Case.";
 			return allAssertions_.toString();
 		}
-	}
-
-	public double getCaseWeight(int caseNum) {
-		return Math.min(disjointCases_[caseNum].getPotentialWeight(), 1);
-	}
-
-	public Collection<MinedAssertion> getAssertions(int caseNum) {
-		return disjointCases_[caseNum].getAssertions();
 	}
 }

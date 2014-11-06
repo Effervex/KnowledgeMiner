@@ -97,7 +97,7 @@ public class CycToWiki_VoteSynonyms extends
 
 		// Check the mappings for the most frequently occurring term.
 		LoggerFactory.getLogger(CycMapper.class).trace("C-WSynonym: {} {}",
-				cycTerm.toString(), mappings);
+				cycTerm.getID(), mappings);
 		return mappings;
 	}
 }

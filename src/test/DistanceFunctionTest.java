@@ -12,7 +12,7 @@ import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import knowledgeMiner.mining.MinedAssertion;
+import knowledgeMiner.mining.DefiniteAssertion;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -54,25 +54,29 @@ public abstract class DistanceFunctionTest {
 		// Same element
 		OntologyConcept collection = new OntologyConcept("Plant");
 		OntologySocket cyc = ResourceAccess.requestOntologySocket();
-		assertEquals(sut_.distance(new OntologyConcept("Plant"), collection, cyc),
+		assertEquals(
+				sut_.distance(new OntologyConcept("Plant"), collection, cyc),
 				0, 0);
 
 		// Non-collection
 		collection = new OntologyConcept("SamuelLJackson");
-		assertEquals(
-				sut_.distance(new OntologyConcept("UmaThurman"), collection, cyc),
-				-1, 0);
+		assertEquals(sut_.distance(new OntologyConcept("UmaThurman"),
+				collection, cyc), -1, 0);
 
 		// Simple case
 		collection = new OntologyConcept("Mammal");
-		float distA = sut_.distance(new OntologyConcept("Dog"), collection, cyc);
-		float distB = sut_.distance(new OntologyConcept("City"), collection, cyc);
+		float distA = sut_
+				.distance(new OntologyConcept("Dog"), collection, cyc);
+		float distB = sut_.distance(new OntologyConcept("City"), collection,
+				cyc);
 		assertTrue(distA + ", " + distB, distA < distB || distB == -1
 				&& distA != -1);
 
 		collection = new OntologyConcept("Plant");
-		distA = sut_.distance(new OntologyConcept("Kiwi-Bird"), collection, cyc);
-		distB = sut_.distance(new OntologyConcept("KiwifruitVine"), collection, cyc);
+		distA = sut_
+				.distance(new OntologyConcept("Kiwi-Bird"), collection, cyc);
+		distB = sut_.distance(new OntologyConcept("KiwifruitVine"), collection,
+				cyc);
 		assertTrue(distA + ", " + distB, distA > distB || distA == -1
 				&& distB != -1);
 
@@ -88,20 +92,21 @@ public abstract class DistanceFunctionTest {
 		SortedMap<Float, OntologyConcept> sortedMap = new TreeMap<>();
 		OntologyConcept capitalCity = new OntologyConcept("capitalCity");
 		OntologyConcept australia = new OntologyConcept("Australia");
-		OntologyConcept canberra = new OntologyConcept("CityOfCanberraAustralia");
-		MinedAssertion assertion = new MinedAssertion(capitalCity, australia,
-				canberra, null, null);
+		OntologyConcept canberra = new OntologyConcept(
+				"CityOfCanberraAustralia");
+		DefiniteAssertion assertion = new DefiniteAssertion(capitalCity, null,
+				australia, canberra);
 		float distance = sut_.assertionDistance(assertion);
 		sortedMap.put(distance, capitalCity);
 
 		OntologyConcept assets = new OntologyConcept("assets");
-		assertion = new MinedAssertion(assets, australia, canberra, null, null);
+		assertion = new DefiniteAssertion(assets, null, australia, canberra);
 		distance = sut_.assertionDistance(assertion);
 		sortedMap.put(distance, assets);
 
 		OntologyConcept capitalGain = new OntologyConcept("capitalGain");
-		assertion = new MinedAssertion(capitalGain, australia, canberra, null,
-				null);
+		assertion = new DefiniteAssertion(capitalGain, null, australia,
+				canberra);
 		distance = sut_.assertionDistance(assertion);
 		sortedMap.put(distance, capitalGain);
 		Iterator<Float> order = sortedMap.keySet().iterator();
@@ -113,20 +118,22 @@ public abstract class DistanceFunctionTest {
 		// Population
 		// Not an ideal test
 		sortedMap.clear();
-		OntologyConcept numInhabitants = new OntologyConcept("numberOfInhabitants");
+		OntologyConcept numInhabitants = new OntologyConcept(
+				"numberOfInhabitants");
 		OntologyConcept num = new PrimitiveConcept(5812600);
 		OntologyConcept nz = new OntologyConcept("NewZealand");
-		assertion = new MinedAssertion(numInhabitants, nz, num, null, null);
+		assertion = new DefiniteAssertion(numInhabitants, null, nz, num);
 		distance = sut_.assertionDistance(assertion);
 		sortedMap.put(distance, numInhabitants);
 
 		OntologyConcept popAtRisk = new OntologyConcept("populationAtRisk");
-		assertion = new MinedAssertion(popAtRisk, nz, num, null, null);
+		assertion = new DefiniteAssertion(popAtRisk, null, nz, num);
 		distance = sut_.assertionDistance(assertion);
 		sortedMap.put(distance, popAtRisk);
 
-		OntologyConcept popGrowthRate = new OntologyConcept("populationGrowthRate");
-		assertion = new MinedAssertion(popGrowthRate, nz, num, null, null);
+		OntologyConcept popGrowthRate = new OntologyConcept(
+				"populationGrowthRate");
+		assertion = new DefiniteAssertion(popGrowthRate, null, nz, num);
 		distance = sut_.assertionDistance(assertion);
 		sortedMap.put(distance, popGrowthRate);
 		order = sortedMap.keySet().iterator();

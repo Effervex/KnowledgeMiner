@@ -19,7 +19,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
-import knowledgeMiner.mining.MinedAssertion;
+import knowledgeMiner.mining.DefiniteAssertion;
 import cyc.OntologyConcept;
 
 public class RippleTask implements Callable<Collection<ConceptModule>> {
@@ -41,7 +41,7 @@ public class RippleTask implements Callable<Collection<ConceptModule>> {
 	@Override
 	public Collection<ConceptModule> call() throws Exception {
 		// Run the concept mapping
-		ConceptMiningTask cmt = new ConceptMiningTask(cm_);
+		ConceptMiningTask cmt = new ConceptMiningTask(cm_, true);
 		cmt.run();
 
 		// Add new ripples if this is not at the limit
@@ -102,13 +102,13 @@ public class RippleTask implements Callable<Collection<ConceptModule>> {
 	 */
 	private void addLinkedConcepts(ConceptModule cm,
 			Collection<ConceptModule> result) {
-		Collection<MinedAssertion> assertions = cm.getConcreteAssertions();
-		for (MinedAssertion ma : assertions) {
+		Collection<DefiniteAssertion> assertions = cm.getConcreteAssertions();
+		for (DefiniteAssertion ma : assertions) {
 			OntologyConcept[] args = ma.getArgs();
 
 			// Add the concept to the queue
 			for (OntologyConcept concept : args) {
-				if (concept.getID() != -1)
+				if (concept.getID() > 0)
 					result.add(new ConceptModule(concept));
 			}
 		}

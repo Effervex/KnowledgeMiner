@@ -45,7 +45,7 @@ public class CycToWikiPostProcessor extends MappingPostProcessor<Integer> {
 					continue;
 				int artID = pages[index];
 				double weight = collection.getWeight(artID);
-				if (pageType.equals("disambiguation")) {
+//				if (pageType.equals(WMISocket.TYPE_DISAMBIGUATION)) {
 					// For now, just remove disambiguation articles
 
 					// // Use every link from a disambiguation page (a little
@@ -55,7 +55,7 @@ public class CycToWikiPostProcessor extends MappingPostProcessor<Integer> {
 					// for (Integer outlink : outlinks) {
 					// newSet.add(outlink, weight);
 					// }
-				} else if (pageType.equals("redirect")) {
+				if (pageType.equals("redirect")) {
 					// Follow redirects
 					int redirect = followRedirect(artID, wmi);
 					if (redirect != -1)

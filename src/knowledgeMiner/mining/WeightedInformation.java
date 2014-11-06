@@ -3,14 +3,8 @@
  ******************************************************************************/
 package knowledgeMiner.mining;
 
-import io.resources.WMISocket;
-
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
-import util.Mergeable;
 import util.Weighted;
 
 /**
@@ -20,14 +14,14 @@ import util.Weighted;
  * @author Sam Sarjant
  */
 public abstract class WeightedInformation implements Weighted,
-		Mergeable<WeightedInformation>, Serializable {
+		Serializable {
 	private static final long serialVersionUID = -4325745875771472944L;
 
 	/** The post-assertion status of the asserted information. */
 	private int status_;
 
 	/** The source of this information. */
-	protected List<HeuristicProvenance> heuristics_ = new ArrayList<>();
+	protected HeuristicProvenance heuristic_;
 
 	/**
 	 * Gets the type of information this object represents.
@@ -37,39 +31,15 @@ public abstract class WeightedInformation implements Weighted,
 	protected abstract InformationType getInfoType();
 
 	public WeightedInformation(HeuristicProvenance provenance) {
-		if (provenance != null && !heuristics_.contains(provenance))
-			heuristics_.add(provenance);
+		heuristic_ = provenance;
 	}
 
-	public final Collection<HeuristicProvenance> getSources() {
-		return heuristics_;
+	public final HeuristicProvenance getProvenance() {
+		return heuristic_;
 	}
 
 	public int getStatus() {
 		return status_;
-	}
-
-	@Override
-	public double getWeight() {
-		double weight = 0;
-		for (HeuristicProvenance source : getSources())
-			weight += source.getHeuristic().getInfoTypeWeight(getInfoType());
-
-		return weight;
-	}
-
-	/**
-	 * Merges other information with this information.
-	 * 
-	 * @param otherInfo
-	 *            The other information being merged.
-	 * @return True if the information was merged.
-	 */
-	@Override
-	public boolean mergeInformation(WeightedInformation otherInfo) {
-		if (equals(otherInfo))
-			return heuristics_.addAll(((MinedAssertion) otherInfo).heuristics_);
-		return false;
 	}
 
 	public void setStatus(int status) {
@@ -77,27 +47,8 @@ public abstract class WeightedInformation implements Weighted,
 	}
 
 	@Override
-	public final void setWeight(double weight) {
-		// Do nothing
-	}
-
-	/**
-	 * Updates the heuristics that produced this assertion.
-	 * 
-	 * @param wmi
-	 *            The WMI access.
-	 */
-	public final void updateHeuristics(WMISocket wmi) {
-		if (needToUpdate()) {
-			for (HeuristicProvenance source : getSources()) {
-				Double weight = determineStatusWeight((MiningHeuristic) source
-						.getHeuristic());
-				if (weight == null)
-					weight = 0d;
-				source.getHeuristic().updateViaAssertion(this,
-						source.getDetails(), weight, getInfoType(), wmi);
-			}
-		}
+	public void setWeight(double weight) {
+		// Do nothing - default
 	}
 
 	protected abstract boolean needToUpdate();

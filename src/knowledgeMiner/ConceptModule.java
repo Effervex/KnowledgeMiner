@@ -4,23 +4,27 @@
 package knowledgeMiner;
 
 import graph.core.CommonConcepts;
-import graph.module.NLPToSyntaxModule;
 import io.KMSocket;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
+import io.resources.WMISocket;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.SortedSet;
+import java.util.HashMap;
+import java.util.Map;
 
-import knowledgeMiner.mining.AssertionQueue;
+import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
+import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
+import knowledgeMiner.mining.PartialAssertion;
 
 import org.slf4j.LoggerFactory;
 
 import cyc.CycConstants;
+import cyc.MappableConcept;
 import cyc.OntologyConcept;
 import cyc.PrimitiveConcept;
 import cyc.StringConcept;
@@ -39,6 +43,12 @@ public class ConceptModule extends MinedInformation implements
 
 	private static final double UNMINED_CONFIDENCE = 0.5;
 
+	/**
+	 * A set of assertions that take effect if the concept meets the parent
+	 * reqs.
+	 */
+	private Collection<MinedAssertion> autoAssertions_;
+
 	/** The concept for which this information is about. */
 	private OntologyConcept concept_;
 
@@ -48,13 +58,14 @@ public class ConceptModule extends MinedInformation implements
 	/** If mapping started with a Cyc term and maps to Wiki. */
 	private boolean cycToWiki_;
 
-	private boolean disambiguated_ = false;
+	private transient DisjointnessDisambiguator dd_;
+
+	private transient Collection<DefiniteAssertion> deletedAssertions_;
+
+	private transient boolean disambiguated_ = false;
 
 	/** The weight of the mapping between the concept and article [0-1] */
 	private double mappingWeight_ = -1;
-
-	/** The state of this Concept Module. */
-	private MiningState state_ = MiningState.UNMINED;
 
 	/**
 	 * A set of parents that, if this concept is a member of, will trigger the
@@ -62,63 +73,11 @@ public class ConceptModule extends MinedInformation implements
 	 */
 	private Collection<OntologyConcept> parents_;
 
-	/**
-	 * A set of assertions that take effect if the concept meets the parent
-	 * reqs.
-	 */
-	private Collection<MinedAssertion> autoAssertions_;
+	/** The state of this Concept Module. */
+	private MiningState state_ = MiningState.UNMINED;
 
-	private transient DisjointnessDisambiguator dd_;
-
-	private transient Collection<MinedAssertion> deletedAssertions_;
-
-	/**
-	 * Constructor for a new ConceptModule that maps and mines a single term.
-	 * 
-	 * @param term
-	 *            The term to map and mine.
-	 */
-	public ConceptModule(OntologyConcept term) {
-		super(-1);
-		concept_ = term;
-		if (term != null)
-			createdConcept_ = term.getID() == -1;
-		state_ = MiningState.UNMAPPED;
-		cycToWiki_ = true;
-		mappingWeight_ = 1.0;
-		deletedAssertions_ = new ArrayList<>();
-	}
-
-	/**
-	 * Constructor for a new ConceptModule
-	 * 
-	 * @param concept
-	 *            The concept this {@link ConceptModule} represents.
-	 * @param article
-	 *            The article the concept has been linked to.
-	 * @param weight
-	 *            The weight of the mapping.
-	 * @param cycToWiki
-	 *            The direction of the mapping.
-	 */
-	public ConceptModule(OntologyConcept concept, Integer article,
-			double weight, boolean cycToWiki) {
-		super(article);
-		concept_ = concept;
-		mappingWeight_ = weight;
-		cycToWiki_ = cycToWiki;
-		state_ = MiningState.MAPPED;
-		if (concept == null) {
-			cycToWiki_ = false;
-			state_ = MiningState.UNMAPPED;
-		} else
-			createdConcept_ = concept.getID() == -1;
-		if (article == -1) {
-			cycToWiki_ = true;
-			state_ = MiningState.UNMAPPED;
-		}
-		deletedAssertions_ = new ArrayList<>();
-	}
+	/** The type of concept this module represents. */
+	private OntologyConcept type_ = null;
 
 	/**
 	 * Constructor for a new ConceptModule using just an article ID.
@@ -156,38 +115,160 @@ public class ConceptModule extends MinedInformation implements
 	}
 
 	/**
+	 * Constructor for a new ConceptModule that maps and mines a single term.
+	 * 
+	 * @param term
+	 *            The term to map and mine.
+	 */
+	public ConceptModule(OntologyConcept term) {
+		super(-1);
+		concept_ = term;
+		if (term != null)
+			createdConcept_ = term.getID() == OntologySocket.NON_EXISTENT_ID;
+		state_ = MiningState.UNMAPPED;
+		cycToWiki_ = true;
+		mappingWeight_ = 1.0;
+		deletedAssertions_ = new ArrayList<>();
+	}
+
+	/**
+	 * Constructor for a new ConceptModule
+	 * 
+	 * @param concept
+	 *            The concept this {@link ConceptModule} represents.
+	 * @param article
+	 *            The article the concept has been linked to.
+	 * @param weight
+	 *            The weight of the mapping.
+	 * @param cycToWiki
+	 *            The direction of the mapping.
+	 */
+	public ConceptModule(OntologyConcept concept, Integer article,
+			double weight, boolean cycToWiki) {
+		super(article);
+		concept_ = concept;
+		mappingWeight_ = weight;
+		cycToWiki_ = cycToWiki;
+		state_ = MiningState.MAPPED;
+		if (concept == null) {
+			cycToWiki_ = false;
+			state_ = MiningState.UNMAPPED;
+		} else
+			createdConcept_ = concept.getID() == OntologySocket.NON_EXISTENT_ID;
+		if (article == -1) {
+			cycToWiki_ = true;
+			state_ = MiningState.UNMAPPED;
+		}
+		deletedAssertions_ = new ArrayList<>();
+	}
+
+	private void addDeletedAssertion(DefiniteAssertion assertion) {
+		if (deletedAssertions_ == null)
+			deletedAssertions_ = new ArrayList<DefiniteAssertion>();
+		deletedAssertions_.add(assertion);
+	}
+
+	private String articleToString() {
+		String article = null;
+		if (articleID_ != -1) {
+			try {
+				article = "'"
+						+ ResourceAccess.requestWMISocket().getPageTitle(
+								articleID_, true) + "'";
+
+				// Appending mining/disambiguation prefixes
+				if (isDisambiguated())
+					article += ":[CM]";
+				else if (isMined())
+					article += ":[M]";
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return article;
+	}
+
+	private String conceptToString() {
+		String concept = null;
+		if (concept_ != null) {
+			concept = concept_.toPrettyString();
+			if (createdConcept_)
+				concept += "[NEW]";
+		}
+		return concept;
+	}
+
+	private String createString(String article, String concept) {
+		// Only a concept
+		if (article == null)
+			return concept;
+
+		// Only an article
+		if (concept == null)
+			return article;
+
+		// Mapped
+		String output = null;
+		switch (state_) {
+		case MAPPED:
+			if (cycToWiki_)
+				output = concept + " => " + article;
+			else
+				output = article + " => " + concept;
+			break;
+		case REVERSE_MAPPED:
+		case CONSISTENT:
+		case ASSERTED:
+			output = concept + " <=> " + article;
+			break;
+		default:
+			break;
+		}
+		return output + " (w=" + getModuleWeight() + ")";
+	}
+
+	private boolean isChildOfParents(OntologySocket ontology) {
+		if (concept_.getID() < 0)
+			return true;
+		if (parents_ == null)
+			return true;
+		for (OntologyConcept parent : parents_) {
+			if (!ontology.isa(concept_.getID(), parent.getID())
+					&& !ontology.genls(concept_.getID(), parent.getID()))
+				return false;
+		}
+		return true;
+	}
+
+	/**
 	 * Make the standard assertions regarding the mapping contained by this
 	 * MinedInformation.
 	 * 
 	 * @param ontology
+	 * @param artID
 	 * 
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
 	private void makeWikiMappingAssertions(String articleTitle,
 			OntologySocket ontology) throws Exception {
-		String title = NLPToSyntaxModule.convertToAscii(articleTitle)
-				.replaceAll(" ", "_");
-		String strURL = "http://en.wikipedia.org/wiki/" + title;
-		// Unassert any old Wiki mappings (unless they are the same as this)
+		String strURL = WMISocket.getArticleURL(articleTitle);
 
-		new MinedAssertion(CycConstants.WIKIPEDIA_URL.getConcept(), concept_,
-				new StringConcept(strURL), null, null).makeAssertion(concept_,
-				null, ontology);
+		// TODO Unassert any old Wiki mappings (unless they are the same as
+		// this)
 
-		// Synonymous
-		int id = ontology.createConcept("(" + CycConstants.URLFN.getID()
-				+ " \"" + strURL + "\")");
-		if (id != -1) {
-			OntologyConcept url = new OntologyConcept(id);
-			StringConcept resource = new StringConcept(
-					KnowledgeMiner.wikiVersion_);
-			new MinedAssertion(
-					CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getConcept(),
-					CycConstants.DATA_MICROTHEORY.getConceptName(), null,
-					concept_, url, resource).makeAssertion(concept_, null,
-					ontology);
-		}
+		// Wiki URL
+		new DefiniteAssertion(CycConstants.WIKIPEDIA_URL.getConcept(),
+				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null,
+				concept_, new StringConcept(strURL)).makeAssertion(concept_,
+				ontology);
+
+		// Synonymous External Concept
+		new DefiniteAssertion(
+				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getConcept(),
+				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null,
+				concept_, CycConstants.WIKI_VERSION, new StringConcept(
+						articleID_ + "")).makeAssertion(concept_, ontology);
 	}
 
 	public void addParentDetails(Collection<OntologyConcept> parents,
@@ -196,6 +277,12 @@ public class ConceptModule extends MinedInformation implements
 			parents_ = parents;
 		if (autoAssertions != null && !autoAssertions.isEmpty())
 			autoAssertions_ = autoAssertions;
+	}
+
+	public void buildDisambiguationGrid(OntologySocket ontology, WMISocket wmi) {
+		Collection<PartialAssertion> assertions = getAssertions();
+		dd_ = new DisjointnessDisambiguator(assertions, getMappableSelfRef(),
+				ontology, wmi);
 	}
 
 	@Override
@@ -239,11 +326,6 @@ public class ConceptModule extends MinedInformation implements
 		return Double.compare(getArticle(), o.getArticle());
 	}
 
-	public void buildDisambiguationGrid(OntologySocket ontology) {
-		SortedSet<AssertionQueue> assertions = getAmbiguousAssertions();
-		dd_ = new DisjointnessDisambiguator(assertions, ontology);
-	}
-
 	/**
 	 * Disambiguates the mining assertions for this {@link ConceptModule} and
 	 * returns the new module weight (always <= the old one).
@@ -256,7 +338,7 @@ public class ConceptModule extends MinedInformation implements
 			throws Exception {
 		state_ = MiningState.CONSISTENT;
 		disambiguated_ = true;
-		SortedSet<AssertionQueue> assertions = getAmbiguousAssertions();
+		Collection<PartialAssertion> assertions = getAssertions();
 		if (assertions.isEmpty()) {
 			// Mining is only somewhat confident
 			// TODO Figure out an appropriate value here. Perhaps something to
@@ -268,71 +350,79 @@ public class ConceptModule extends MinedInformation implements
 		miningWeight_ = 1;
 
 		// Disambiguate the assertions.
-		dd_.findMaximalConjoint(this, standing_.getStanding(), ontology);
-		for (MinedAssertion assertion : dd_.getConsistentAssertions())
-			addConcreteAssertion(assertion);
-		for (MinedAssertion assertion : dd_.getRemovedAssertions())
+		dd_.findMaximalConjoint(this, ontology);
+		for (DefiniteAssertion assertion : dd_.getConsistentAssertions())
+			addAssertion(assertion);
+		for (DefiniteAssertion assertion : dd_.getRemovedAssertions())
 			addDeletedAssertion(assertion);
 		miningWeight_ = dd_.getConjointWeight();
+		if (createdConcept_) {
+			if (dd_.isCollection())
+				type_ = CycConstants.COLLECTION.getConcept();
+			else
+				type_ = CycConstants.INDIVIDUAL.getConcept();
+		} else {
+			type_ = determineType(ontology);
+		}
 
 		return miningWeight_;
 	}
 
-	private void addDeletedAssertion(MinedAssertion assertion) {
-		if (deletedAssertions_ == null)
-			deletedAssertions_ = new ArrayList<MinedAssertion>();
-		deletedAssertions_.add(assertion);
+	private OntologyConcept determineType(OntologySocket ontology) {
+		if (ontology.evaluate(null, CommonConcepts.ISA.getID(),
+				concept_.getID(), CommonConcepts.FUNCTION.getID()))
+			return CycConstants.FUNCTION.getConcept();
+		if (ontology.evaluate(null, CommonConcepts.ISA.getID(),
+				concept_.getID(), CommonConcepts.PREDICATE.getID()))
+			return CycConstants.PREDICATE.getConcept();
+		if (ontology.evaluate(null, CommonConcepts.ISA.getID(),
+				concept_.getID(), CommonConcepts.COLLECTION.getID()))
+			return CycConstants.COLLECTION.getConcept();
+		return CycConstants.INDIVIDUAL.getConcept();
+	}
+
+	public TermStanding getConceptStanding() {
+		if (type_ == CycConstants.COLLECTION.getConcept())
+			return TermStanding.COLLECTION;
+		if (type_ == CycConstants.INDIVIDUAL.getConcept())
+			return TermStanding.INDIVIDUAL;
+		return TermStanding.UNKNOWN;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ConceptModule other = (ConceptModule) obj;
+		if (concept_ == null) {
+			if (other.concept_ != null)
+				return false;
+		} else if (!concept_.equals(other.concept_))
+			return false;
+		if (cycToWiki_ != other.cycToWiki_)
+			return false;
+		if (state_ != other.state_)
+			return false;
+		return true;
 	}
 
 	public OntologyConcept findCreateConcept(OntologySocket ontology)
 			throws Exception {
 		if (!ontology.inOntology(concept_)) {
-			int id = ontology.createConcept(concept_.toString());
+			int id = ontology.createConcept(concept_.getConceptName());
 			concept_.setID(id);
 			LoggerFactory.getLogger(this.getClass()).info("NEW_CONSTANT:\t{}",
-					concept_);
-
-			// Assert the standing of the new term.
-			boolean priorEph = ontology.getEphemeral();
-			ontology.setEphemeral(false);
-			switch (standing_.getStanding()) {
-			case COLLECTION:
-				ontology.assertToOntology(
-						CycConstants.DATA_MICROTHEORY.getConceptName(),
-						CommonConcepts.ISA.getID(), concept_.toString(),
-						CommonConcepts.COLLECTION.getID() + "");
-				LoggerFactory.getLogger(
-						standing_.getPositiveSources().toString()).info(
-						"STANDING:\t(isa {} Collection)", concept_);
-				standing_.setActualStanding(TermStanding.COLLECTION);
-				break;
-			case INDIVIDUAL:
-				ontology.assertToOntology(
-						CycConstants.DATA_MICROTHEORY.getConceptName(),
-						CommonConcepts.ISA.getID(), concept_.toString(),
-						CommonConcepts.INDIVIDUAL.getID() + "");
-				LoggerFactory.getLogger(
-						standing_.getPositiveSources().toString()).info(
-						"STANDING:\t(isa {} Individual)", concept_);
-				standing_.setActualStanding(TermStanding.INDIVIDUAL);
-				break;
-			case UNKNOWN:
-				ontology.assertToOntology(
-						CycConstants.DATA_MICROTHEORY.getConceptName(),
-						"quotedIsa", concept_.toString(),
-						CycConstants.DEFAULTED_INDIVIDUAL);
-				LoggerFactory
-						.getLogger(standing_.getSources().toString())
-						.info("STANDING:\t(quotedIsa {} "
-								+ CycConstants.DEFAULTED_INDIVIDUAL.getConceptName()
-								+ ")", concept_);
-				standing_.setActualStanding(TermStanding.INDIVIDUAL);
-				break;
-			}
-			ontology.setEphemeral(priorEph);
-			standing_.setStatus(1);
+					concept_.getConceptName());
 		}
 		return concept_;
+	}
+
+	public Collection<MinedAssertion> getAutoAssertions() {
+		return autoAssertions_;
 	}
 
 	public OntologyConcept getConcept() {
@@ -354,6 +444,10 @@ public class ConceptModule extends MinedInformation implements
 			return mappingWeight_;
 		else
 			return mappingWeight_ * miningWeight_;
+	}
+
+	public Collection<OntologyConcept> getParents() {
+		return parents_;
 	}
 
 	public MiningState getState() {
@@ -380,25 +474,8 @@ public class ConceptModule extends MinedInformation implements
 		return result;
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (!super.equals(obj))
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		ConceptModule other = (ConceptModule) obj;
-		if (concept_ == null) {
-			if (other.concept_ != null)
-				return false;
-		} else if (!concept_.equals(other.concept_))
-			return false;
-		if (cycToWiki_ != other.cycToWiki_)
-			return false;
-		if (state_ != other.state_)
-			return false;
-		return true;
+	public boolean isCreatedConcept() {
+		return createdConcept_;
 	}
 
 	/**
@@ -428,27 +505,98 @@ public class ConceptModule extends MinedInformation implements
 	 */
 	public void makeAssertions(String articleTitle, OntologySocket ontology)
 			throws Exception {
-		// Create the child term if necessary.
-		TermStanding actualStanding = null;
-		// Determine the actual standing
-		if (ontology.isaCollection(concept_))
-			actualStanding = TermStanding.COLLECTION;
-		else
-			actualStanding = TermStanding.INDIVIDUAL;
+		// Assert type
+		if (createdConcept_)
+			new DefiniteAssertion(CycConstants.ISA.getConcept(),
+					CycConstants.BASE_MICROTHEORY.getConceptName(), null,
+					concept_, type_).makeAssertion(concept_, ontology);
 
-		// Check if it clashes.
-		if (standing_.getStanding() != TermStanding.UNKNOWN
-				&& standing_.getStanding() != actualStanding) {
-			standing_.setStatus(-1);
-			LoggerFactory.getLogger(getClass()).info(
-					"WRONG_STANDING:\t{} ({})", concept_, articleID_);
-		} else
-			standing_.setStatus(0);
+		if (!KnowledgeMiner.mappingRun_) {
+			// Perform the removals
+			performAssertionRemoval(ontology);
 
-		standing_.setActualStanding(actualStanding);
+			// Perform the assertions
+			performAssertionAdding(ontology);
 
-		// Perform the removals
-		for (MinedAssertion assertion : deletedAssertions_) {
+			// Perform auto-assertions
+			performAutoAssertions(ontology);
+		}
+
+		makeWikiMappingAssertions(articleTitle, ontology);
+		DefiniteAssertion weightAssertion = new DefiniteAssertion(
+				CycConstants.MAPPING_CONFIDENCE.getConcept(),
+				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null,
+				concept_, new PrimitiveConcept(getModuleWeight()));
+		weightAssertion.makeAssertion(concept_, ontology);
+	}
+
+	/**
+	 * Perform any auto-assertions defined by external factors.
+	 * 
+	 * @param ontology
+	 *            The ontology access.
+	 * @throws Exception
+	 *             Should something go awry...
+	 */
+	protected void performAutoAssertions(OntologySocket ontology)
+			throws Exception {
+		if (autoAssertions_ != null && parents_ != null
+				&& isChildOfParents(ontology)) {
+			Map<MappableConcept, OntologyConcept> substitutionMap = new HashMap<>();
+			substitutionMap.put(new WikipediaMappedConcept(articleID_),
+					concept_);
+			for (MinedAssertion assertion : autoAssertions_) {
+				if (assertion instanceof PartialAssertion)
+					assertion = ((PartialAssertion) assertion).instantiate(
+							getMappableSelfRef(), concept_);
+				((DefiniteAssertion) assertion).makeAssertion(concept_,
+						ontology);
+			}
+		}
+	}
+
+	/**
+	 * Perform assertion addition, being careful not to change the type of the
+	 * concept.
+	 * 
+	 * @param ontology
+	 *            The ontology access.
+	 * @throws Exception
+	 *             Should something go awry...
+	 */
+	protected void performAssertionAdding(OntologySocket ontology)
+			throws Exception {
+		Collection<Integer> assertionIDs = new ArrayList<>();
+		for (DefiniteAssertion assertion : getConcreteAssertions()) {
+			int id = assertion.makeAssertion(concept_, ontology);
+			if (id != -1)
+				assertionIDs.add(id);
+		}
+
+		// Check type has not changed. If so, start again, checking after every
+		// step
+		if (determineType(ontology) != type_) {
+			for (Integer id : assertionIDs)
+				ontology.unassert(null, id);
+
+			for (DefiniteAssertion assertion : getConcreteAssertions()) {
+				int id = assertion.makeAssertion(concept_, ontology);
+				if (id != -1) {
+					if (determineType(ontology) != type_)
+						ontology.unassert(null, id);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Perform assertion removal.
+	 * 
+	 * @param ontology
+	 *            The ontology access.
+	 */
+	protected void performAssertionRemoval(OntologySocket ontology) {
+		for (DefiniteAssertion assertion : deletedAssertions_) {
 			int assertionID = ontology.findEdgeIDByArgs((Object[]) assertion
 					.asArgs());
 			if (ontology.unassert(null, assertionID)) {
@@ -456,32 +604,6 @@ public class ConceptModule extends MinedInformation implements
 						assertion);
 			}
 		}
-
-		// Perform the assertions
-		for (MinedAssertion assertion : getConcreteAssertions())
-			assertion.makeAssertion(concept_, actualStanding, ontology);
-		if (autoAssertions_ != null && parents_ != null
-				&& isChildOfParents(ontology))
-			for (MinedAssertion assertion : autoAssertions_)
-				assertion.makeAssertion(concept_, actualStanding, ontology);
-
-		makeWikiMappingAssertions(articleTitle, ontology);
-		MinedAssertion weightAssertion = new MinedAssertion(
-				CycConstants.MAPPING_CONFIDENCE.getConcept(), concept_,
-				new PrimitiveConcept(getModuleWeight()),
-				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null);
-		weightAssertion.makeAssertion(concept_, actualStanding, ontology);
-	}
-
-	private boolean isChildOfParents(OntologySocket ontology) {
-		if (parents_ == null)
-			return true;
-		for (OntologyConcept parent : parents_) {
-			if (!ontology.isa(concept_.getID(), parent.getID())
-					&& !ontology.genls(concept_.getID(), parent.getID()))
-				return false;
-		}
-		return true;
 	}
 
 	@Override
@@ -542,6 +664,12 @@ public class ConceptModule extends MinedInformation implements
 			miningWeight_ = weight;
 	}
 
+	public String toPrettyString() {
+		String article = articleToString();
+		String concept = conceptToString();
+		return createString(article, concept);
+	}
+
 	/**
 	 * A simple few words about this module.
 	 * 
@@ -592,81 +720,15 @@ public class ConceptModule extends MinedInformation implements
 
 	@Override
 	public String toString() {
-		try {
-			// Creating strings of each
-			String article = articleToString();
-			String concept = conceptToString();
-
-			// Only a concept
-			if (article == null)
-				return concept;
-
-			// Only an article
-			if (concept == null)
-				return article;
-
-			// Mapped
-			String output = null;
-			switch (state_) {
-			case MAPPED:
-				if (cycToWiki_)
-					output = concept + " => " + article;
-				else
-					output = article + " => " + concept;
-				break;
-			case REVERSE_MAPPED:
-			case CONSISTENT:
-			case ASSERTED:
-				output = concept + " <=> " + article;
-				break;
-			default:
-				break;
-			}
-			return output + " (w=" + getModuleWeight() + ")";
-		} catch (Exception e) {
-		}
-		return "Error forming string.";
-	}
-
-	private String conceptToString() {
-		String concept = null;
-		if (concept_ != null) {
-			concept = concept_.toPrettyString();
-			if (createdConcept_)
-				concept += "[NEW]";
-		}
-		return concept;
-	}
-
-	private String articleToString() {
 		String article = null;
-		if (articleID_ != -1) {
-			try {
-				article = "'"
-						+ ResourceAccess.requestWMISocket().getPageTitle(
-								articleID_, true) + "'";
-
-				// Appending mining/disambiguation prefixes
-				if (isDisambiguated())
-					article += ":[CM]";
-				else if (isMined())
-					article += ":[M]";
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		return article;
-	}
-
-	public boolean isCreatedConcept() {
-		return createdConcept_;
-	}
-
-	public Collection<MinedAssertion> getAutoAssertions() {
-		return autoAssertions_;
-	}
-
-	public Collection<OntologyConcept> getParents() {
-		return parents_;
+		if (articleID_ != -1)
+			article = articleID_ + "A";
+		String concept = null;
+		if (concept_ != null)
+			if (concept_.getID() > 0)
+				concept = concept_.getID() + "C";
+			else
+				concept = concept_.toString();
+		return createString(article, concept);
 	}
 }

@@ -33,7 +33,7 @@ public class MiningHeuristicTest {
 	public static void setUpBeforeClass() throws Exception {
 		OntologySocket cyc = ResourceAccess.requestOntologySocket();
 		wmi_ = ResourceAccess.requestWMISocket();
-		CycMapper mapper = new CycMapper(null);
+		CycMapper mapper = new CycMapper();
 		mapper.initialise();
 		CycMiner miner = new CycMiner(null, mapper);
 		miner_ = new TitleMiner(mapper, miner);

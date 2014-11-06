@@ -5,19 +5,15 @@ package knowledgeMiner.mining.meta;
 
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
-
-import java.util.regex.Pattern;
-
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mining.CycMiner;
+import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.InformationType;
-import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
-import knowledgeMiner.mining.WeightedStanding;
-import cyc.OntologyConcept;
 import cyc.CycConstants;
+import cyc.OntologyConcept;
 
 /**
  * This meta miner uses the assertions produced by other miners to infer the
@@ -46,20 +42,17 @@ public class ImpliedStandingMiner extends MetaMiningHeuristic {
 		MinedInformation info = new MinedInformation(cm.getArticle());
 
 		// Vote for every assertion
-		WeightedStanding standing = new WeightedStanding();
-		for (MinedAssertion assertion : cm.getConcreteAssertions()) {
-			if (assertion.getRelation().equals(CycConstants.ISA_GENLS)
+		for (DefiniteAssertion assertion : cm.getConcreteAssertions()) {
+			if (assertion.getRelation().equals(CycConstants.ISA_GENLS.getConcept())
 					|| assertion.getMicrotheory().equals("BaseKB"))
 				continue;
 			TermStanding relStanding = voteStanding(assertion, cm.getConcept(),
 					cyc);
 			if (relStanding != TermStanding.UNKNOWN) {
-				standing.addStanding(basicProvenance_, relStanding);
+				info.addStandingInformation(relStanding, getWeight(),
+						basicProvenance_);
 			}
 		}
-
-		// Determine standing by majority vote
-		info.setStanding(standing);
 		return info;
 	}
 
@@ -75,14 +68,10 @@ public class ImpliedStandingMiner extends MetaMiningHeuristic {
 	 *            The ontology access.
 	 * @return The implied TermStanding.
 	 */
-	private TermStanding voteStanding(MinedAssertion assertion,
+	private TermStanding voteStanding(DefiniteAssertion assertion,
 			OntologyConcept cycTerm, OntologySocket ontology) {
+		// TODO Incomplete. Needs a rework
 		// Isa individual
-		String genericAssertion = assertion.asPredicate();
-		genericAssertion = genericAssertion.replaceAll(
-				"(" + Pattern.quote(cycTerm.toString()) + "|"
-						+ Pattern.quote(OntologyConcept.PLACEHOLDER.toString())
-						+ ")", "?X");
 		String isaInd = "(#$isa ?X #$Individual)";
 		boolean ind = false;
 		// TODO Sort out this implied standing miner.

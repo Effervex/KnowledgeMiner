@@ -10,9 +10,9 @@ import io.ontology.OntologySocket;
 
 import java.util.Collection;
 
-import knowledgeMiner.mining.MinedAssertion;
-import cyc.OntologyConcept;
+import knowledgeMiner.mining.DefiniteAssertion;
 import cyc.CycConstants;
+import cyc.OntologyConcept;
 import cyc.StringConcept;
 
 /**
@@ -44,10 +44,10 @@ public class UglyString implements Preprocessor {
 				buffer.append(" ");
 			buffer.append(split[i].toLowerCase());
 			if (!synonyms.contains(buffer.toString())) {
-				MinedAssertion assertion = new MinedAssertion(
-						CycConstants.UGLY_PRED.getConcept(), term,
-						new StringConcept(buffer.toString()), null, null);
-				assertion.makeAssertion(null, null, cyc);
+				DefiniteAssertion assertion = new DefiniteAssertion(
+						CycConstants.UGLY_PRED.getConcept(), null, term,
+						new StringConcept(buffer.toString()));
+				assertion.makeAssertion(null, cyc);
 			}
 		}
 	}

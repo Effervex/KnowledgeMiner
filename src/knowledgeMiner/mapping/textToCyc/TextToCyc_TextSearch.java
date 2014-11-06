@@ -8,7 +8,6 @@ import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
 import java.util.Collection;
-import java.util.regex.Matcher;
 
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.MappingHeuristic;
@@ -40,7 +39,7 @@ public class TextToCyc_TextSearch extends MappingHeuristic<String, OntologyConce
 			WMISocket wmi, OntologySocket cyc) throws Exception {
 		LoggerFactory.getLogger(getClass()).trace(source);
 		// Strip off any anchors
-		Matcher m = null;
+//		Matcher m = null;
 		// TODO Fix this up.
 		source = WikiParser.cleanAllMarkup(source);
 		// if ((m = WikiParser.ANCHOR_PARSER.matcher(source)).find())

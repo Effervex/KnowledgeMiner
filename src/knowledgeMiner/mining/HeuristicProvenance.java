@@ -10,14 +10,15 @@
  ******************************************************************************/
 package knowledgeMiner.mining;
 
+import graph.module.NLPToSyntaxModule;
+
 import java.io.Serializable;
+import java.util.Collection;
 
 import de.ruedigermoeller.serialization.annotations.Compress;
 
-import knowledgeMiner.KnowledgeMiner;
-
 /**
- * Heuristic provenance keeps track of where an assertion came from, and passes
+ * Heuristic provenance keeps track of where information came from, and passes
  * this onto the assertion itself.
  * 
  * @author Sam Sarjant
@@ -33,8 +34,16 @@ public class HeuristicProvenance implements Serializable {
 	private String details_;
 
 	public HeuristicProvenance(MiningHeuristic heuristic, String details) {
-		heuristicStr_ = heuristic.getHeuristicName();
-		details_ = details;
+		if (heuristic == null)
+			heuristicStr_ = "<null>";
+		else
+			heuristicStr_ = heuristic.getHeuristicName();
+		details_ = NLPToSyntaxModule.convertToAscii(details);
+	}
+
+	public HeuristicProvenance(String heuristic, String details) {
+		heuristicStr_ = heuristic;
+		details_ = NLPToSyntaxModule.convertToAscii(details);
 	}
 
 	@Override
@@ -83,12 +92,25 @@ public class HeuristicProvenance implements Serializable {
 		return buffer.toString();
 	}
 
-	public MiningHeuristic getHeuristic() {
-		return (MiningHeuristic) KnowledgeMiner.getInstance()
-				.getHeuristicByString(heuristicStr_);
-	}
-
 	public String getDetails() {
 		return details_;
+	}
+
+	public static HeuristicProvenance joinProvenance(
+			Collection<HeuristicProvenance> collection) {
+		StringBuilder heuristicStr = new StringBuilder();
+		StringBuilder details = new StringBuilder();
+		boolean first = false;
+		for (HeuristicProvenance prov : collection) {
+			if (!first) {
+				heuristicStr.append(", ");
+				details.append("\n");
+			}
+			heuristicStr.append(prov.heuristicStr_);
+			details.append(prov.details_);
+			first = true;
+		}
+		return new HeuristicProvenance(heuristicStr.toString(),
+				details.toString());
 	}
 }

@@ -46,15 +46,17 @@ public class AssertionQueue extends HierarchicalWeightedSet<MinedAssertion>
 	@Override
 	public WeightedSet<MinedAssertion> cleanEmptyParents() {
 		// Remove duplicate children
-		Set<WeightedSet<MinedAssertion>> newLower = new HashSet<>();
-		for (WeightedSet<MinedAssertion> lower : lowerQueues_
-				.toArray(new WeightedSet[lowerQueues_.size()])) {
-			if (lower instanceof AssertionQueue)
-				lower.removeAll(this);
-			if (!lower.isEmpty())
-				newLower.add(lower);
+		if (lowerQueues_ != null) {
+			Set<WeightedSet<MinedAssertion>> newLower = new HashSet<>();
+			for (WeightedSet<MinedAssertion> lower : lowerQueues_
+					.toArray(new WeightedSet[lowerQueues_.size()])) {
+				if (lower instanceof AssertionQueue)
+					lower.removeAll(this);
+				if (!lower.isEmpty())
+					newLower.add(lower);
+			}
+			lowerQueues_ = newLower;
 		}
-		lowerQueues_ = newLower;
 		return super.cleanEmptyParents();
 	}
 
@@ -79,7 +81,7 @@ public class AssertionQueue extends HierarchicalWeightedSet<MinedAssertion>
 		}
 		return subAQs;
 	}
-	
+
 	public HeuristicProvenance getProvenance() {
 		return source_;
 	}

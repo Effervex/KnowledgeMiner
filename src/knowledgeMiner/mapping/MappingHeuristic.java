@@ -10,8 +10,6 @@ import java.io.IOException;
 
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.WeightedHeuristic;
-import knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor;
-import util.UniqueID;
 import util.collection.CacheMap;
 import util.collection.WeightedSet;
 
@@ -30,7 +28,7 @@ public abstract class MappingHeuristic<Source, Target> extends
 	 * @param mapper
 	 */
 	public MappingHeuristic(CycMapper mapper) {
-		super(mapper);
+		super(false, mapper);
 		localCache_ = new CacheMap<>(false);
 	}
 
@@ -63,31 +61,15 @@ public abstract class MappingHeuristic<Source, Target> extends
 	 * @return A {@link WeightedSet} of Targets with weights normalised to sum
 	 *         to one.
 	 */
-	@SuppressWarnings("unchecked")
 	public final WeightedSet<Target> mapSourceToTarget(Source s, WMISocket wmi,
 			OntologySocket ontology) {
-		// Find the ID of the source.
-		int id = -1;
-		if (s instanceof Integer)
-			id = (Integer) s;
-		else if (s instanceof UniqueID)
-			id = ((UniqueID) s).getID();
-
-		// Load preprocessed or normal if no preprocessed
-		WeightedSet<Target> mappedTarget = (WeightedSet<Target>) KnowledgeMiner
-				.getInstance().getHeuristicResult(id, getHeuristicName());
-		if (mappedTarget != null)
-			return mappedTarget;
-
 		try {
-			mappedTarget = mapSourceInternal(s, wmi, ontology);
+			WeightedSet<Target> mappedTarget = mapSourceInternal(s, wmi, ontology);
 			if (!mappedTarget.isEmpty()
 					&& mappedTarget
 							.getWeight(mappedTarget.getOrdered().first()) > 1)
 				mappedTarget
 						.normaliseWeightTo1(KnowledgeMiner.CUTOFF_THRESHOLD);
-			KnowledgeMinerPreprocessor.getInstance().recordData(
-					getHeuristicName(), id, mappedTarget);
 			return mappedTarget;
 		} catch (Exception e) {
 			e.printStackTrace();

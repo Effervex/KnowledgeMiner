@@ -98,7 +98,8 @@ public class PrecomputationTask implements Runnable {
 			Collection<? extends WeightedHeuristic> heuristics) {
 		// Perform a mining task for the article
 		for (WeightedHeuristic heuristic : heuristics) {
-			if (kmp_.isProcessed(heuristic.toString(), cm.getConcept().getID()))
+			if (kmp_.isProcessed(heuristic.toString(), cm.getConcept().getID())
+					|| !heuristic.isPrecomputed())
 				continue;
 
 			@SuppressWarnings("unchecked")
@@ -121,7 +122,8 @@ public class PrecomputationTask implements Runnable {
 			Collection<? extends WeightedHeuristic> heuristics) {
 		// Perform a mining task for the article
 		for (WeightedHeuristic heuristic : heuristics) {
-			if (kmp_.isProcessed(heuristic.toString(), cm.getArticle()))
+			if (kmp_.isProcessed(heuristic.toString(), cm.getArticle())
+					|| !heuristic.isPrecomputed())
 				continue;
 
 			@SuppressWarnings("unchecked")
@@ -144,7 +146,8 @@ public class PrecomputationTask implements Runnable {
 			Collection<? extends WeightedHeuristic> heuristics) {
 		// Perform a mining task for the article
 		for (WeightedHeuristic heuristic : heuristics) {
-			if (kmp_.isProcessed(heuristic.toString(), cm.getArticle()))
+			if (kmp_.isProcessed(heuristic.toString(), cm.getArticle())
+					|| !heuristic.isPrecomputed())
 				continue;
 
 			WikipediaArticleMiningHeuristic wamh = (WikipediaArticleMiningHeuristic) heuristic;

@@ -30,6 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import knowledgeMiner.mapping.CycMapper;
+import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import opennlp.tools.parser.Parse;
 
 import org.apache.commons.lang3.StringUtils;
@@ -38,13 +39,12 @@ import org.slf4j.LoggerFactory;
 
 import util.OpenNLP;
 import util.Tree;
-import util.collection.HierarchicalWeightedSet;
-import util.collection.WeightedSet;
 import util.wikipedia.WikiParser;
-import cyc.OntologyConcept;
 import cyc.CycConstants;
+import cyc.MappableConcept;
+import cyc.OntologyConcept;
 
-public class SentenceParserHeuristic {
+public class SentenceParserHeuristic extends MiningHeuristic {
 	private static final String[] COPULAS = { "is", "are", "was", "were", "be",
 			"am", "being", "been" };
 	private static final Collection<ExtractionPattern> EXTRACTION_PATTERNS;
@@ -53,11 +53,10 @@ public class SentenceParserHeuristic {
 	private static final Pattern[] SENTENCE_SIMPLIFIER = {
 			Pattern.compile("^In [^,.]+, "),
 			Pattern.compile("(?<=[^,.]+), [^,.]+,(?= (is|was|are|were))") };
-	private CycMapper mapper_;
 
-	public SentenceParserHeuristic(CycMapper mapper) {
+	public SentenceParserHeuristic(CycMapper mapper, CycMiner miner) {
+		super(false, mapper, miner);
 		OpenNLP.getParser();
-		mapper_ = mapper;
 	}
 
 	/**
@@ -230,42 +229,56 @@ public class SentenceParserHeuristic {
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	private Collection<AssertionQueue> createAssertions(
-			WeightedSet<OntologyConcept> predicateSet, Parse parse,
+	private PartialAssertion createAssertions(OntologyConcept predicate,
+			MappableConcept focusConcept, Parse parse,
 			SortedMap<String, String> anchors, WMISocket wmi,
 			OntologySocket ontology, HeuristicProvenance provenance)
 			throws Exception {
-		Collection<AssertionQueue> aqs = new ArrayList<>();
-		if (predicateSet.isEmpty())
-			return aqs;
-		logger_.trace("createAssertions: " + predicateSet.toString());
+		if (predicate == null)
+			return null;
 		// Return the possible noun strings
 		Tree<String> nounStrs = composeAdjNouns(parse, anchors);
-		// System.out.println(nounStrs);
-		logger_.trace("createAssertions: "
+		logger_.trace("createAssertions: " + predicate.toString() + " "
 				+ nounStrs.toString().replaceAll("\\\\\n", " "));
 
-		// Iterate through and build the hierarchy of concepts
-		HierarchicalWeightedSet<OntologyConcept> arguments = recurseNounStrs(
-				nounStrs, wmi, ontology);
+		// Recurse through the tree and build the partial assertions
+		return recurseStringTree(predicate, focusConcept, nounStrs, provenance);
+	}
 
-		// Clean up and create assertions
-		arguments = (HierarchicalWeightedSet<OntologyConcept>) arguments
-				.cleanEmptyParents();
-		AssertionQueue aq = MinedAssertion.createAllAssertions(predicateSet,
-				arguments, provenance, ontology);
-		aq = (AssertionQueue) aq.cleanEmptyParents();
-		if (aq.size() == 0)
-			aqs.addAll(aq.getSubAssertionQueues());
+	/**
+	 * Recurse down text fragments and attempt to find mapped concepts for each
+	 * fragment, maintaining the same hierarchy.
+	 * 
+	 * @param parentCols
+	 *            The noun strings to recurse through.
+	 * @param wmi
+	 *            The WMI access.
+	 * @param ontology
+	 *            The ontology access.
+	 * @return The results set to add to.
+	 */
+	private PartialAssertion recurseStringTree(OntologyConcept predicate,
+			MappableConcept focusConcept, Tree<String> nounStrs,
+			HeuristicProvenance provenance) {
+		// Build the assertion
+		PartialAssertion pa = null;
+		if (nounStrs.element_ == null)
+			pa = new PartialAssertion();
 		else
-			aqs.add(aq);
-		return aqs;
+			pa = new PartialAssertion(predicate, provenance, focusConcept,
+					new TextMappedConcept(nounStrs.element_, false, false));
+
+		// Recurse lower and add as sub-assertions
+		for (Tree<String> subTree : nounStrs.getSubTrees())
+			pa.addSubAssertion(recurseStringTree(predicate, focusConcept,
+					subTree, provenance));
+		return pa;
 	}
 
 	private String disambiguateTree(Parse parse, String[] predicateStrs,
-			SortedMap<String, String> anchors, WMISocket wmi,
-			OntologySocket cyc, MiningHeuristic heuristic,
-			Collection<AssertionQueue> results) throws Exception {
+			MappableConcept focusConcept, SortedMap<String, String> anchors,
+			WMISocket wmi, OntologySocket cyc, MiningHeuristic heuristic,
+			Collection<PartialAssertion> results) throws Exception {
 		if (predicateStrs == null) {
 			predicateStrs = new String[1];
 			predicateStrs[0] = "";
@@ -282,8 +295,8 @@ public class SentenceParserHeuristic {
 		// Recurse to 'left'
 		int childIndex = 0;
 		String left = disambiguateTree(children[childIndex++],
-				Arrays.copyOf(predicateStrs, predicateStrs.length), anchors,
-				wmi, cyc, heuristic, results);
+				Arrays.copyOf(predicateStrs, predicateStrs.length),
+				focusConcept, anchors, wmi, cyc, heuristic, results);
 
 		// If VP or PP, add to predicate
 		boolean canCreate = true;
@@ -306,7 +319,7 @@ public class SentenceParserHeuristic {
 			Parse childParse = children[childIndex];
 			String result = disambiguateTree(childParse,
 					Arrays.copyOf(predicateStrs, predicateStrs.length),
-					anchors, wmi, cyc, heuristic, results);
+					focusConcept, anchors, wmi, cyc, heuristic, results);
 			if (result == null) {
 				canCreate = false;
 			}
@@ -317,39 +330,28 @@ public class SentenceParserHeuristic {
 
 		// Can create and we have a target and predicate(s)
 		if (canCreate && type.equals("NP") && !predicateStrs[0].isEmpty()) {
-			Collection<AssertionQueue> assertions = null;
 			for (String predStr : predicateStrs) {
-				WeightedSet<OntologyConcept> predicateSet = null;
+				OntologyConcept predicate = null;
 				if (isCopula(predStr)) {
-					predicateSet = new WeightedSet<>(1);
-					predicateSet.add(CycConstants.ISA_GENLS.getConcept());
+					predicate = CycConstants.ISA_GENLS.getConcept();
 				} else {
 					// TODO Figure out a safe way to parse predicates. Probably
 					// need to look at the parse code again.
-//					predStr = reAnchorString(predStr, anchors);
-//					predicateSet = mapper_.mapRelationToPredicate(predStr, wmi,
-//							cyc);
+					// predStr = reAnchorString(predStr, anchors);
+					// predicateSet = mapper_.mapRelationToPredicate(predStr,
+					// wmi,
+					// cyc);
 				}
 
-				if (predicateSet == null || predicateSet.isEmpty())
+				if (predicate == null)
 					continue;
-				Collection<AssertionQueue> currAssertions = createAssertions(
-						predicateSet,
-						parse,
-						anchors,
-						wmi,
-						cyc,
-						new HeuristicProvenance(heuristic, predStr + "+" + text));
-				if (!currAssertions.isEmpty()) {
-					if (assertions == null)
-						assertions = currAssertions;
-					else
-						// TODO Would really like to add lower instead...
-						assertions.addAll(currAssertions);
-				}
+				HeuristicProvenance provenance = new HeuristicProvenance(
+						heuristic, predStr + "+" + text);
+				PartialAssertion currAssertions = createAssertions(predicate,
+						focusConcept, parse, anchors, wmi, cyc, provenance);
+				if (currAssertions != null && !results.contains(currAssertions))
+					results.add(currAssertions);
 			}
-			if (assertions != null)
-				results.addAll(assertions);
 		}
 
 		if (!canCreate)
@@ -451,54 +453,25 @@ public class SentenceParserHeuristic {
 	}
 
 	/**
-	 * Recurse down text fragments and attempt to find mapped concepts for each
-	 * fragment, maintaining the same hierarchy.
-	 * 
-	 * @param parentCols
-	 *            The noun strings to recurse through.
-	 * @param wmi
-	 *            The WMI access.
-	 * @param ontology
-	 *            The ontology access.
-	 * @return The results set to add to.
-	 */
-	private HierarchicalWeightedSet<OntologyConcept> recurseNounStrs(
-			Tree<String> stringTree, WMISocket wmi, OntologySocket ontology) {
-		HierarchicalWeightedSet<OntologyConcept> results = new HierarchicalWeightedSet<>();
-		String str = stringTree.getValue();
-		if (str != null && !str.trim().isEmpty()) {
-			// TODO This should only produce a single level of results
-			results.addAll(mapper_.mapTextToCyc(str.trim(), false, false,
-					false, wmi, ontology));
-		}
-
-		// Recurse down to sub trees.
-		Collection<Tree<String>> subTrees = stringTree.getSubTrees();
-		for (Tree<String> subTree : subTrees) {
-			HierarchicalWeightedSet<OntologyConcept> subResults = recurseNounStrs(
-					subTree, wmi, ontology);
-			if (!subResults.isEmpty())
-				results.addLower(subResults);
-		}
-		return results;
-	}
-
-	/**
 	 * Extracts a set of assertions from a sentence using parsing techniques to
 	 * identify plain-text assertions.
 	 * 
 	 * @param sentence
 	 *            The sentence to extract assertions from.
+	 * @param focusConcept
+	 *            The concept the sentence is being mined for.
 	 * @param wmi
 	 *            The WMI access.
 	 * @param cyc
 	 *            The Cyc access.
+	 * @param heuristic
+	 *            The heuristic to which assertions are assigned to.
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	public Collection<AssertionQueue> extractAssertions(String sentence,
-			WMISocket wmi, OntologySocket cyc, MiningHeuristic heuristic)
-			throws Exception {
+	public Collection<PartialAssertion> extractAssertions(String sentence,
+			MappableConcept focusConcept, WMISocket wmi, OntologySocket cyc,
+			MiningHeuristic heuristic) throws Exception {
 		logger_.trace("mineSentence: " + sentence);
 		SortedMap<String, String> anchors = locateAnchors(sentence);
 		sentence = sentence.replaceAll("'{3,}.+?'{3,}", "THING");
@@ -507,9 +480,10 @@ public class SentenceParserHeuristic {
 
 		Parse parse = parseLine(cleanSentence);
 		// parse.show();
-		Collection<AssertionQueue> results = new ArrayList<>();
+		Collection<PartialAssertion> results = new ArrayList<>();
 		logger_.trace("disambiguateTree: " + sentence);
-		disambiguateTree(parse, null, anchors, wmi, cyc, heuristic, results);
+		disambiguateTree(parse, null, focusConcept, anchors, wmi, cyc,
+				heuristic, results);
 		return results;
 	}
 
@@ -520,20 +494,28 @@ public class SentenceParserHeuristic {
 
 	public static void main(String[] args) throws Exception {
 		ResourceAccess.newInstance();
-		CycMapper mapper = new CycMapper(null);
-		SentenceParserHeuristic sph = new SentenceParserHeuristic(mapper);
+		CycMapper mapper = new CycMapper();
+		CycMiner miner = new CycMiner(null, mapper);
+		SentenceParserHeuristic sph = new SentenceParserHeuristic(mapper, miner);
 		WMISocket wmi = ResourceAccess.requestWMISocket();
 		OntologySocket cyc = ResourceAccess.requestOntologySocket();
 
 		String input = "";
+		MappableConcept mappable = new TextMappedConcept("PLACEHOLDER", false, false);
 		while (!input.equalsIgnoreCase("exit")) {
 			System.out.println("Enter sentence to parse:");
 			BufferedReader in = new BufferedReader(new InputStreamReader(
 					System.in));
 			input = in.readLine();
-			Collection<AssertionQueue> assertions = sph.extractAssertions(
-					input, wmi, cyc, null);
+			Collection<PartialAssertion> assertions = sph.extractAssertions(
+					input, mappable, wmi, cyc, null);
 			System.out.println(assertions);
 		}
+	}
+
+	@Override
+	protected void setInformationTypes(boolean[] infoTypes) {
+		infoTypes[InformationType.RELATIONS.ordinal()] = true;
+		infoTypes[InformationType.PARENTAGE.ordinal()] = true;
 	}
 }

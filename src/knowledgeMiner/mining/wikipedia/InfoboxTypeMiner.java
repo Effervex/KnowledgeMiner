@@ -11,13 +11,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import knowledgeMiner.ConceptModule;
 import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mining.CycMiner;
-import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
-import knowledgeMiner.mining.WeightedStanding;
 import util.wikipedia.InfoboxData;
 
 /**
@@ -38,7 +37,7 @@ public class InfoboxTypeMiner extends InfoboxMiner {
 	 * @param miner
 	 */
 	public InfoboxTypeMiner(CycMapper mapper, CycMiner miner) {
-		super(mapper, miner, "infoboxTypeMining", INFOBOX_TYPE_FILE);
+		super(false, mapper, miner, "infoboxTypeMining", INFOBOX_TYPE_FILE);
 	}
 
 	@Override
@@ -55,22 +54,17 @@ public class InfoboxTypeMiner extends InfoboxMiner {
 			if (infoboxData.isEmpty())
 				return;
 
-			WeightedStanding standing = null;
 			List<String> infoboxTypes = new ArrayList<>();
 			for (InfoboxData infobox : infoboxData) {
 				infoboxTypes.add(infobox.getInfoboxType());
-				TermStanding ts = voteStanding(infobox.getInfoboxType());
-				if (standing == null)
-					standing = new WeightedStanding(ts,
-							new HeuristicProvenance(this,
-									infobox.getInfoboxType()));
-				else
-					standing.addStanding(
-							new HeuristicProvenance(this, infobox
-									.getInfoboxType()), ts);
+				try {
+					info.addStandingInformation(getStanding(infobox
+							.getInfoboxType()));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 			info.setInfoboxTypes(infoboxTypes);
-			info.setStanding(standing);
 			return;
 		}
 	}
@@ -99,7 +93,8 @@ public class InfoboxTypeMiner extends InfoboxMiner {
 
 		// Note the infobox type against the standing
 		List<String> infoTypes = info.getInfoboxTypes();
-		TermStanding actualStanding = info.getStanding();
+		ConceptModule cm = (ConceptModule) info;
+		TermStanding actualStanding = cm.getConceptStanding();
 		if (infoTypes != null)
 			for (String infoboxType : infoTypes)
 				recordStanding(infoboxType, actualStanding);

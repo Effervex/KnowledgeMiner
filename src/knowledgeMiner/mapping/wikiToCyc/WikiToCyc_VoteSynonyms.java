@@ -36,7 +36,7 @@ public class WikiToCyc_VoteSynonyms extends
 
 		// If the id represents a non-article
 		// TODO Too restrictive
-		// if (!wmi.getPageType(articleID).equals("article"))
+//		 if (!wmi.getPageType(articleID).equals(WMISocket.TYPE_ARTICLE))
 		// return possibleTerms;
 
 		// Find the anchor synonyms

@@ -40,7 +40,7 @@ public class TableMinerTest {
 	public static void setUpBeforeClass() throws Exception {
 		OntologySocket cyc = ResourceAccess.requestOntologySocket();
 		wmi_ = ResourceAccess.requestWMISocket();
-		CycMapper mapper = new CycMapper(null);
+		CycMapper mapper = new CycMapper();
 		mapper.initialise();
 		CycConstants.initialiseAssertions(cyc);
 	}

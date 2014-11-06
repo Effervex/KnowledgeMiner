@@ -19,18 +19,17 @@ import java.util.regex.Pattern;
 
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.textToCyc.TextToCyc_TextSearch;
-import knowledgeMiner.mining.AssertionQueue;
 import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.InformationType;
-import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
+import knowledgeMiner.mining.PartialAssertion;
 
 import org.apache.commons.lang3.StringUtils;
 
 import util.collection.WeightedSet;
-import cyc.OntologyConcept;
 import cyc.CycConstants;
+import cyc.OntologyConcept;
 
 /**
  * Mines the names of the categories this article is a member by treating them
@@ -43,9 +42,10 @@ public class CategoryMembershipMiner extends WikipediaArticleMiningHeuristic {
 			.compile("(\\d{1,4})s? births?");
 	private static final Pattern DEATH_PATTERN = Pattern
 			.compile("(\\d{1,4})s? deaths?");
+	public static boolean wikifyText_ = true;
 
 	public CategoryMembershipMiner(CycMapper mapper, CycMiner miner) {
-		super(mapper, miner);
+		super(true, mapper, miner);
 	}
 
 	@Override
@@ -73,7 +73,10 @@ public class CategoryMembershipMiner extends WikipediaArticleMiningHeuristic {
 				continue;
 
 			// Treat the category as a chunk of text to be parsed
-			miner_.mineSentence("ART is a " + categoryTitle + ".", info, this,
+			String sentence = "ART is a " + categoryTitle + ".";
+			if (wikifyText_)
+				sentence = wmi.annotate(sentence);
+			miner_.mineSentence(sentence, info, this,
 					ontology, wmi);
 		}
 	}
@@ -98,39 +101,38 @@ public class CategoryMembershipMiner extends WikipediaArticleMiningHeuristic {
 			OntologySocket ontology, WMISocket wmi)
 			throws IllegalAccessException {
 		// Births
-		AssertionQueue aq = createDatedAssertion(categoryTitle, BIRTH_PATTERN,
-				CycConstants.BIRTH_DATE.getConcept(), ontology, wmi);
-		if (aq != null) {
-			info.addAssertion(aq);
+		PartialAssertion assertion = createDatedAssertion(categoryTitle, info,
+				BIRTH_PATTERN, CycConstants.BIRTH_DATE.getConcept(), ontology,
+				wmi);
+		if (assertion != null) {
+			info.addAssertion(assertion);
 			return true;
 		}
 		// Deaths
-		aq = createDatedAssertion(categoryTitle, DEATH_PATTERN,
+		assertion = createDatedAssertion(categoryTitle, info, DEATH_PATTERN,
 				CycConstants.DEATH_DATE.getConcept(), ontology, wmi);
-		if (aq != null) {
-			info.addAssertion(aq);
+		if (assertion != null) {
+			info.addAssertion(assertion);
 			return true;
 		}
 		return false;
 	}
 
 	@SuppressWarnings("unchecked")
-	private AssertionQueue createDatedAssertion(String categoryTitle,
-			Pattern titlePattern, OntologyConcept predicate,
-			OntologySocket ontology, WMISocket wmi)
+	private PartialAssertion createDatedAssertion(String categoryTitle,
+			MinedInformation info, Pattern titlePattern,
+			OntologyConcept predicate, OntologySocket ontology, WMISocket wmi)
 			throws IllegalAccessException {
 		Matcher m = titlePattern.matcher(categoryTitle);
 		if (m.matches()) {
 			HeuristicProvenance provenance = new HeuristicProvenance(this,
 					categoryTitle);
-			AssertionQueue aq = new AssertionQueue(provenance);
 			WeightedSet<OntologyConcept> results = mapper_.mapViaHeuristic(
 					m.group(1), TextToCyc_TextSearch.class, wmi, ontology);
-			for (OntologyConcept date : results)
-				aq.add(new MinedAssertion(predicate, OntologyConcept.PLACEHOLDER,
-						date, CycConstants.DATA_MICROTHEORY.toString(),
-						provenance));
-			return aq;
+			// Should only return 0-1 result
+			if (!results.isEmpty())
+				return new PartialAssertion(predicate, provenance,
+						info.getMappableSelfRef(), results.iterator().next());
 		}
 		return null;
 	}

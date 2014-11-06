@@ -15,10 +15,11 @@ import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.MiningHeuristic;
-import knowledgeMiner.mining.WeightedStanding;
+import knowledgeMiner.mining.PartialAssertion;
 import util.collection.CacheMap;
 import util.collection.MultiMap;
 import util.collection.WeightedSet;
+import cyc.CycConstants;
 import cyc.OntologyConcept;
 
 /**
@@ -41,7 +42,7 @@ public class InfoboxClusterer extends MiningHeuristic {
 	 * @param miner
 	 */
 	public InfoboxClusterer(CycMapper mapper, CycMiner miner) {
-		super(mapper, miner);
+		super(false, mapper, miner);
 		counter_ = new CacheMap<>(false);
 	}
 
@@ -83,8 +84,9 @@ public class InfoboxClusterer extends MiningHeuristic {
 				// Create all terms with the same majority infobox
 				if (majorityInfobox.equals(info.getInfoboxTypes())) {
 					// Force assert parent
-					info.addConcreteAssertion(createParentAssertion(parentTerm,
-							info.getArticle()));
+					info.addAssertion(new PartialAssertion(
+							CycConstants.ISA_GENLS.getConcept(), basicProvenance_, info.getMappableSelfRef(),
+							parentTerm));
 					foundChildren.add(info);
 				}
 			}
@@ -146,6 +148,7 @@ public class InfoboxClusterer extends MiningHeuristic {
 	}
 
 	private class InfoboxCounter {
+		private static final double VOTING_CONFIDENCE = 0.95;
 		private WeightedSet<String> counts_ = new WeightedSet<>();
 		private MultiMap<String, ConceptModule> negativeExamples_ = MultiMap
 				.createListMultiMap();
@@ -162,7 +165,7 @@ public class InfoboxClusterer extends MiningHeuristic {
 			if (sumWeight >= MIN_CLUSTER_COUNT) {
 				SortedSet<String> ordered = counts_.getOrdered();
 				if (counts_.getWeight(ordered.first()) >= sumWeight
-						* WeightedStanding.VOTING_CONFIDENCE)
+						* VOTING_CONFIDENCE)
 					return ordered.first();
 			}
 			return null;

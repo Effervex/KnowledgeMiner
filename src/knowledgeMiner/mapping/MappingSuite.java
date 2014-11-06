@@ -140,10 +140,11 @@ public class MappingSuite<Source, Target> {
 					sources.getWeight(src));
 
 		// Add lower
-		for (WeightedSet<Source> lower : sources.getSubSets())
+		for (WeightedSet<Source> lower : sources.getSubSets()) {
 			mapping.addLower(mapSourcesToTargets(
 					(HierarchicalWeightedSet<Source>) lower, wmi, ontology,
 					disabledHeuristics));
+		}
 		mapping.cleanEmptyParents();
 		return mapping;
 	}
@@ -223,12 +224,19 @@ public class MappingSuite<Source, Target> {
 		}
 
 		// Apply any post processors
+		mappings = postProcess(mappings, wmi, ontology);
+
+		mappings.normaliseWeightTo1(KnowledgeMiner.CUTOFF_THRESHOLD);
+		return mappings;
+	}
+
+	public HierarchicalWeightedSet<Target> postProcess(
+			HierarchicalWeightedSet<Target> mappings, WMISocket wmi,
+			OntologySocket ontology) {
 		for (MappingPostProcessor<Target> pp : postProcessors_) {
 			mappings = new HierarchicalWeightedSet<Target>(pp.process(mappings,
 					wmi, ontology));
 		}
-
-		mappings.normaliseWeightTo1(KnowledgeMiner.CUTOFF_THRESHOLD);
 		return mappings;
 	}
 

@@ -43,6 +43,7 @@ public class TextToCyc_TimeContextParse extends
 		super(mapper);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public WeightedSet<OntologyConcept> mapSourceInternal(String value,
 			WMISocket wmi, OntologySocket ontology) throws Exception {
@@ -50,14 +51,15 @@ public class TextToCyc_TimeContextParse extends
 		value = NLPToSyntaxModule.convertToAscii(value);
 		Matcher m = CONTEXT_PATTERN.matcher(value);
 		if (m.matches()) {
-			// Match left side
+			// Match item
 			WeightedSet<OntologyConcept> arguments = mapper_.mapTextToCyc(
-					m.group(1), false, false, false, wmi, ontology);
+					m.group(1), false, false, false, false, wmi, ontology);
 			if (arguments.isEmpty())
 				return new WeightedSet<>();
 
-			WeightedSet<OntologyConcept> context = mapper_.mapTextToCyc(m.group(2),
-					false, false, false, wmi, ontology);
+			// Match context
+			WeightedSet<OntologyConcept> context = mapper_.mapViaHeuristic(
+						m.group(2), TextToCyc_DateParse.class, wmi, ontology);
 			if (context.isEmpty())
 				return new WeightedSet<>();
 

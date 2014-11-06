@@ -10,6 +10,7 @@ import java.util.regex.Matcher;
 
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.MappingHeuristic;
+import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +25,7 @@ import cyc.OntologyConcept;
 public class TextToCyc_AnchorMap extends
 		MappingHeuristic<String, OntologyConcept> {
 	/**
-	 * Constructor for a new LabelValueMiner
+	 * Constructor for a new AnchorMap mapper
 	 * 
 	 * @param mapper
 	 */
@@ -44,10 +45,13 @@ public class TextToCyc_AnchorMap extends
 		if (m.matches()) {
 			String anchorText = m.group(1);
 			// Replace newlines
-			anchorText = anchorText.replace(" ?\\n ?", " ");
-			WeightedSet<OntologyConcept> terms = mapper_.getVerifiedMappings(
-					wmi.getArticleByTitle(anchorText), null, wmi, cyc);
-			results.addAll(terms);
+			anchorText = anchorText.replaceAll(" ?\\n ?", " ");
+			int articleID = wmi.getArticleByTitle(anchorText);
+			if (articleID != -1) {
+				WikipediaMappedConcept wikiMapped = new WikipediaMappedConcept(
+						articleID);
+				results.addAll(wikiMapped.mapThing(mapper_, wmi, cyc));
+			}
 		}
 		return results;
 	}

@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.CycMapper;
@@ -37,6 +38,8 @@ public abstract class InfoboxMiner extends WikipediaArticleMiningHeuristic {
 	/** The mapping between infobox Strings and TermStanding. */
 	private Map<String, WeightedStanding> standingMap_;
 
+	private ReentrantLock mapLock_;
+
 	/**
 	 * Constructor for a new InfoboxMiner.
 	 * 
@@ -45,14 +48,15 @@ public abstract class InfoboxMiner extends WikipediaArticleMiningHeuristic {
 	 * @param heuristicName
 	 *            The name of the subclass infobox miner.
 	 */
-	public InfoboxMiner(CycMapper mapper, CycMiner miner, String heuristicName,
+	public InfoboxMiner(boolean usePrecomputed, CycMapper mapper, CycMiner miner, String heuristicName,
 			File mappingsFilename) {
-		super(mapper, miner);
+		super(usePrecomputed, mapper, miner);
 		try {
 			mappingsFile_ = mappingsFilename;
 			if (!mappingsFilename.exists())
 				mappingsFilename.createNewFile();
 			standingMap_ = initialiseInfoboxMappings(mappingsFilename);
+			mapLock_ = new ReentrantLock();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -78,17 +82,24 @@ public abstract class InfoboxMiner extends WikipediaArticleMiningHeuristic {
 		String input = null;
 		// Read the mappings file, line by line
 		while ((input = in.readLine()) != null) {
+			// Skip the headings
+			if (input.startsWith("RELATION"))
+				continue;
+			TermStanding[] ts = TermStanding.values();
 			input.replaceAll(" ", "");
 			String[] split = input.split(MAPPING_DELIMITER);
-			if (split.length < 2) {
+			if (split.length < ts.length + 1) {
 				in.close();
-				throw new InputMismatchException(
-						"Expected at least two elements! Was '" + input
-								+ "' instead.");
+				throw new InputMismatchException("Expected at least "
+						+ (ts.length + 1) + " elements! Was '" + input
+						+ "' instead.");
 			}
 
-			mappings.put(split[0].trim(),
-					new WeightedStanding(TermStanding.valueOf(split[1].trim())));
+			WeightedStanding standing = new WeightedStanding();
+			for (int i = 0; i < ts.length; i++)
+				standing.addStanding(null, ts[i],
+						Double.parseDouble(split[i + 1]));
+			mappings.put(split[0].trim(), standing);
 
 			if (split.length > 2)
 				readAdditionalInput(split);
@@ -117,14 +128,18 @@ public abstract class InfoboxMiner extends WikipediaArticleMiningHeuristic {
 	 *            The standing being recorded.
 	 */
 	protected final void recordStanding(String key, TermStanding actualStanding) {
-		WeightedStanding standing = standingMap_.get(key);
-		if (standing == null) {
-			standing = new WeightedStanding(actualStanding,
-					new HeuristicProvenance(this, key));
-			standingMap_.put(key, standing);
-		} else
+		try {
+			mapLock_.lock();
+			WeightedStanding standing = standingMap_.get(key);
+			if (standing == null) {
+				standing = new WeightedStanding();
+				standingMap_.put(key, standing);
+			}
 			standing.addStanding(new HeuristicProvenance(this, key),
-					actualStanding);
+					actualStanding, getWeight());
+		} finally {
+			mapLock_.unlock();
+		}
 	}
 
 	@Override
@@ -147,11 +162,23 @@ public abstract class InfoboxMiner extends WikipediaArticleMiningHeuristic {
 		mappingsFile_.createNewFile();
 		BufferedWriter out = new BufferedWriter(new FileWriter(mappingsFile_));
 
-		List<String> ordered = new ArrayList<>(standingMap_.keySet());
+		List<String> ordered = null;
+		try {
+			mapLock_.lock();
+			ordered = new ArrayList<>(standingMap_.keySet());
+		} finally {
+			mapLock_.unlock();
+		}
 		Collections.sort(ordered);
+		out.write("RELATION\t" + TermStanding.values()[0] + "\t"
+				+ TermStanding.values()[1] + "\t" + TermStanding.values()[2]
+				+ "\n");
 		for (String mapping : ordered) {
-			out.write(mapping + "\t"
-					+ standingMap_.get(mapping).toParsableString());
+			out.write(mapping);
+			TermStanding[] ts = TermStanding.values();
+			for (int i = 0; i < ts.length; i++)
+				out.write("\t"
+						+ standingMap_.get(mapping).getActualWeight(ts[i]));
 			String[] additional = writeAdditionalOutput(mapping);
 			for (String add : additional)
 				out.write("\t" + add);
@@ -167,10 +194,10 @@ public abstract class InfoboxMiner extends WikipediaArticleMiningHeuristic {
 	 *            The input for determining standing.
 	 * @return A standing determined by the input.
 	 */
-	public final TermStanding voteStanding(String input) {
+	public final WeightedStanding getStanding(String input) {
 		WeightedStanding standing = standingMap_.get(input);
 		if (standing != null)
-			return standing.getStanding();
-		return TermStanding.UNKNOWN;
+			return standing;
+		return new WeightedStanding();
 	}
 }

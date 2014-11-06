@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  */
 public class FirstSentenceParserMiner extends WikipediaArticleMiningHeuristic {
 	/** If the text should be wikified first. */
-	public static boolean wikifyText_ = false;
+	public static boolean wikifyText_ = true;
 
 	/**
 	 * Constructor for a new FirstSentenceParserMiner
@@ -30,7 +30,7 @@ public class FirstSentenceParserMiner extends WikipediaArticleMiningHeuristic {
 	 *            The Cyc mapping access.
 	 */
 	public FirstSentenceParserMiner(CycMapper mapper, CycMiner miner) {
-		super(mapper, miner);
+		super(true, mapper, miner);
 	}
 
 	@Override

@@ -12,22 +12,23 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import knowledgeMiner.ConceptMiningTask;
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
+import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.meta.ImpliedStandingMiner;
 import knowledgeMiner.mining.meta.MetaMiningHeuristic;
-import knowledgeMiner.mining.wikipedia.CategoryMembershipMiner;
 import knowledgeMiner.mining.wikipedia.FirstSentenceMiner;
 import knowledgeMiner.mining.wikipedia.FirstSentenceParserMiner;
 import knowledgeMiner.mining.wikipedia.InfoboxClusterer;
 import knowledgeMiner.mining.wikipedia.InfoboxRelationMiner;
 import knowledgeMiner.mining.wikipedia.InfoboxTypeMiner;
-import knowledgeMiner.mining.wikipedia.ListMiner;
 import knowledgeMiner.mining.wikipedia.TitleMiner;
 
+import org.apache.commons.collections4.map.HashedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,13 +57,11 @@ public class CycMiner {
 	/** The sentence parser. */
 	private SentenceParserHeuristic sentenceParser_;
 
-	protected UnresolvedAssertions unresolved_;
-
 	/**
 	 * An initialisation constructor for the mining aspect of KnowledgeMiner.
 	 */
 	public CycMiner(KnowledgeMiner knowledgeMiner, CycMapper mapper) {
-		sentenceParser_ = new SentenceParserHeuristic(mapper);
+		sentenceParser_ = new SentenceParserHeuristic(mapper, this);
 
 		miningHeuristics_ = new ArrayList<>();
 		miningHeuristics_.add(new TitleMiner(mapper, this));
@@ -71,9 +70,9 @@ public class CycMiner {
 		miningHeuristics_.add(new InfoboxTypeMiner(mapper, this));
 		miningHeuristics_.add(new InfoboxRelationMiner(mapper, this));
 		// miningHeuristics_.add(new CategoryChildMiner(mapper, this));
-		miningHeuristics_.add(new ListMiner(mapper, this));
+		// miningHeuristics_.add(new ListMiner(mapper, this));
 		// miningHeuristics_.add(new SubCategoryMiner(mapper, this));
-		miningHeuristics_.add(new CategoryMembershipMiner(mapper, this));
+//		miningHeuristics_.add(new CategoryMembershipMiner(mapper, this));
 		if (knowledgeMiner != null)
 			for (MiningHeuristic heuristic : miningHeuristics_)
 				knowledgeMiner.registerHeuristic(heuristic);
@@ -88,8 +87,6 @@ public class CycMiner {
 		if (knowledgeMiner != null)
 			knowledgeMiner.registerHeuristic(infoboxClusterer_);
 
-		unresolved_ = new UnresolvedAssertions();
-
 		try {
 			CycConstants.initialiseAssertions(ResourceAccess
 					.requestOntologySocket());
@@ -102,9 +99,7 @@ public class CycMiner {
 		return miningHeuristics_;
 	}
 
-	public UnresolvedAssertions getUnresolved() {
-		return unresolved_;
-	}
+	public Map<MiningHeuristic, Long> heuristicTime = new HashedMap<>();
 
 	/**
 	 * The base method for mining information from an Article as well as using
@@ -148,12 +143,13 @@ public class CycMiner {
 			MiningHeuristic heuristic, OntologySocket cyc, WMISocket wmi) {
 		logger_.trace("mineSentence: " + info.getArticle());
 		try {
-			Collection<AssertionQueue> results = sentenceParser_
-					.extractAssertions(sentence, wmi, cyc, heuristic);
-			for (AssertionQueue assertion : results) {
-				if (!assertion.isEmpty())
-					info.addAssertion(assertion);
-			}
+			WikipediaMappedConcept focusConcept = new WikipediaMappedConcept(
+					info.getArticle());
+			Collection<PartialAssertion> results = sentenceParser_
+					.extractAssertions(sentence, focusConcept, wmi, cyc,
+							heuristic);
+			for (PartialAssertion assertion : results)
+				info.addAssertion(assertion);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -235,7 +231,7 @@ public class CycMiner {
 							MinedInformation.ALL_TYPES, wmi, ontology));
 
 				System.out.println("Mined information (undisambiguated):");
-				for (AssertionQueue aq : conceptModule.getAmbiguousAssertions())
+				for (MinedAssertion aq : conceptModule.getAssertions())
 					System.out.println(aq);
 
 				conceptModule.disambiguateAssertions(ontology);

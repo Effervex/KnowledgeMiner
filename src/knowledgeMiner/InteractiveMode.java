@@ -19,21 +19,18 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.commons.lang3.StringUtils;
-
-import cyc.OntologyConcept;
-import cyc.CycConstants;
-
-import util.collection.WeightedSet;
-
-import knowledgeMiner.mining.AssertionQueue;
+import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.MiningHeuristic;
+import knowledgeMiner.mining.PartialAssertion;
+
+import org.apache.commons.lang3.StringUtils;
+
+import cyc.CycConstants;
 
 public class InteractiveMode {
 	public static final int NUM_DISAMBIGUATED = 3;
@@ -64,30 +61,25 @@ public class InteractiveMode {
 
 		try {
 			String title = wmi.getPageTitle(mined.getArticle(), true);
-			TermStanding standing = mined.getStanding();
-			if (standing != TermStanding.UNKNOWN)
-				out.println("'" + title + "' standing: " + standing + " ["
-						+ heuristic + "]");
-			SortedSet<AssertionQueue> assertionQueues = mined
-					.getAmbiguousAssertions();
+			out.println("'" + title + "' standing: " + mined.getStanding()
+					+ " [" + heuristic + "]");
+			Collection<PartialAssertion> assertions = mined.getAssertions();
 
 			// For every assertion queue
-			for (AssertionQueue aq : assertionQueues) {
-				HeuristicProvenance provenance = aq.getProvenance();
+			for (PartialAssertion pa : assertions) {
+				HeuristicProvenance provenance = pa.getProvenance();
 				out.println("From source: " + provenance + ":");
 
 				// Display the assertions and prompt user to select.
-				WeightedSet<MinedAssertion> assertions = aq.flattenHierarchy();
+				Collection<PartialAssertion> flattened = PartialAssertion
+						.flattenHierarchy(pa);
 				String input = "";
 				do {
 					int i = 1;
-					for (MinedAssertion assertion : assertions) {
-						String assertionStr = assertion.toString();
-						assertionStr = assertionStr.replaceAll(
-								OntologyConcept.PLACEHOLDER.toString(), "'" + title
-										+ "'");
+					for (PartialAssertion assertion : flattened) {
+						String assertionStr = assertion.toPrettyString();
 						out.println(i++ + ":\t" + assertionStr + ":"
-								+ assertions.getWeight(assertion));
+								+ assertion.getWeight());
 					}
 					if (i == 2)
 						out.print("Select correct assertion (1, (S)kip): ");
@@ -102,7 +94,7 @@ public class InteractiveMode {
 						MinedAssertion selected = assertions
 								.toArray(new MinedAssertion[assertions.size()])[index];
 						assertions.remove(selected);
-						mined.addConcreteAssertion(selected);
+						mined.addAssertion(selected);
 					} else if (input.startsWith("s")) {
 						if (skip(mined.getArticle(), SKIP_MINE))
 							return;
@@ -159,13 +151,13 @@ public class InteractiveMode {
 			// Create interactive selection of disjoint cases
 			int i = 0;
 			for (i = 0; i < NUM_DISAMBIGUATED; i++) {
-				Collection<MinedAssertion> assertions = assertionGrid
+				Collection<DefiniteAssertion> assertions = assertionGrid
 						.getAssertions(i);
 				if (assertions == null)
 					break;
-				Collection<MinedAssertion> isas = new ArrayList<>();
-				Collection<MinedAssertion> genls = new ArrayList<>();
-				for (MinedAssertion assertion : assertions) {
+				Collection<DefiniteAssertion> isas = new ArrayList<>();
+				Collection<DefiniteAssertion> genls = new ArrayList<>();
+				for (DefiniteAssertion assertion : assertions) {
 					if (assertion.getRelation().equals(
 							CycConstants.ISA.getConcept()))
 						isas.add(assertion);

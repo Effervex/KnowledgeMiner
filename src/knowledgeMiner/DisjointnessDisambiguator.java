@@ -12,19 +12,22 @@ package knowledgeMiner;
 
 import graph.inference.CommonQuery;
 import io.ontology.OntologySocket;
+import io.resources.WMISocket;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.SortedSet;
+
+import knowledgeMiner.mining.DefiniteAssertion;
+import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.mining.WeightedStanding;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import knowledgeMiner.mining.AssertionQueue;
-import knowledgeMiner.mining.MinedAssertion;
-import cyc.OntologyConcept;
 import cyc.CycConstants;
+import cyc.MappableConcept;
+import cyc.OntologyConcept;
 
 /**
  * A class explicitly for disambiguating groups of assertions such that a
@@ -39,7 +42,7 @@ public class DisjointnessDisambiguator {
 
 	private static final boolean ASSERTION_REMOVAL = false;
 
-	private Collection<MinedAssertion> consistentAssertions_;
+	private Collection<DefiniteAssertion> consistentAssertions_;
 
 	/** The assertion grid composed of the extracted assertions. */
 	private AssertionGrid coreAssertionGrid_;
@@ -50,18 +53,20 @@ public class DisjointnessDisambiguator {
 	 */
 	private AssertionGrid currentAssertionGrid_;
 
-	private Collection<MinedAssertion> removedAssertions_;
+	private Collection<DefiniteAssertion> removedAssertions_;
 
 	private int caseNumber_ = 0;
 
-	public DisjointnessDisambiguator(SortedSet<AssertionQueue> assertions,
-			OntologySocket ontology) {
-		coreAssertionGrid_ = new AssertionGrid(assertions);
+	public DisjointnessDisambiguator(Collection<PartialAssertion> assertions,
+			MappableConcept coreConcept, OntologySocket ontology, WMISocket wmi) {
+		coreAssertionGrid_ = new AssertionGrid(assertions, coreConcept,
+				ontology, wmi);
+//		System.out.println(coreAssertionGrid_);
 	}
 
-	private Collection<MinedAssertion> getExistingAssertions(
+	private Collection<DefiniteAssertion> getExistingAssertions(
 			ConceptModule conceptModule, OntologySocket ontology) {
-		Collection<MinedAssertion> existingAssertions = new ArrayList<>();
+		Collection<DefiniteAssertion> existingAssertions = new ArrayList<>();
 
 		// For every ISA
 		OntologyConcept concept = conceptModule.getConcept();
@@ -75,25 +80,25 @@ public class DisjointnessDisambiguator {
 					concept.getIdentifier());
 		}
 		// Add any concretes
-		Collection<MinedAssertion> concreteTaxonomics = new ArrayList<>();
-		for (MinedAssertion concrete : conceptModule
+		Collection<DefiniteAssertion> concreteTaxonomics = new ArrayList<>();
+		for (DefiniteAssertion concrete : conceptModule
 				.getConcreteParentageAssertions()) {
-			if (concrete.isHierarchical())
-				concreteTaxonomics.add(concrete);
+			concreteTaxonomics.add(concrete);
 		}
 
 		// Add the information.
 		try {
 			if (!conceptModule.isCreatedConcept()) {
 				for (OntologyConcept isaTruth : isaTruths)
-					existingAssertions.add(new MinedAssertion(CycConstants.ISA
-							.getConcept(), concept, isaTruth, null, null));
+					existingAssertions.add(new DefiniteAssertion(
+							CycConstants.ISA.getConcept(), null, concept,
+							isaTruth));
 				for (OntologyConcept genlTruth : genlTruths)
-					existingAssertions.add(new MinedAssertion(
-							CycConstants.GENLS.getConcept(), concept,
-							genlTruth, null, null));
+					existingAssertions.add(new DefiniteAssertion(
+							CycConstants.GENLS.getConcept(), null, concept,
+							genlTruth));
 			}
-			for (MinedAssertion ma : concreteTaxonomics)
+			for (DefiniteAssertion ma : concreteTaxonomics)
 				existingAssertions.add(ma);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -114,17 +119,24 @@ public class DisjointnessDisambiguator {
 	 *            If assertions can be removed.
 	 */
 	private AssertionGrid integrateGroundTruths(ConceptModule conceptModule,
-			Collection<MinedAssertion> existingAssertions,
-			boolean assertionRemoval) {
+			Collection<DefiniteAssertion> existingAssertions,
+			boolean assertionRemoval, OntologySocket ontology) {
 		if (conceptModule.isCreatedConcept())
+			return new AssertionGrid(coreAssertionGrid_, conceptModule.getConcept(),
+					conceptModule.getStanding(),
+					new ArrayList<DefiniteAssertion>(0), ASSERTION_REMOVAL);
+		else {
+			WeightedStanding standing = new WeightedStanding(
+					conceptModule.getStanding());
+			if (ontology.isaCollection(conceptModule.getConcept()))
+				standing.addStanding(null, TermStanding.COLLECTION, 1);
+			else
+				standing.addStanding(null, TermStanding.INDIVIDUAL, 1);
+			// TODO Need to test assertion removal.
 			return new AssertionGrid(coreAssertionGrid_,
-					OntologyConcept.PLACEHOLDER, new ArrayList<MinedAssertion>(0),
-					ASSERTION_REMOVAL);
-
-		// TODO Need to test assertion removal.
-		return new AssertionGrid(coreAssertionGrid_,
-				conceptModule.getConcept(), existingAssertions,
-				assertionRemoval);
+					conceptModule.getConcept(), standing, existingAssertions,
+					assertionRemoval);
+		}
 	}
 
 	/**
@@ -134,30 +146,28 @@ public class DisjointnessDisambiguator {
 	 * 
 	 * @param conceptModule
 	 *            The concept to be consistent with.
-	 * @param standing
-	 *            The standing of the concept.
 	 * @param ontology
 	 *            The ontology access.
 	 * @return The maximally conjoint set of assertions.
 	 */
 	@SuppressWarnings("unchecked")
 	public void findMaximalConjoint(ConceptModule conceptModule,
-			TermStanding standing, OntologySocket ontology) {
-		Collection<MinedAssertion> existingAssertions = getExistingAssertions(
+			OntologySocket ontology) {
+		Collection<DefiniteAssertion> existingAssertions = getExistingAssertions(
 				conceptModule, ontology);
 		currentAssertionGrid_ = integrateGroundTruths(conceptModule,
-				existingAssertions, ASSERTION_REMOVAL);
+				existingAssertions, ASSERTION_REMOVAL, ontology);
 		if (InteractiveMode.interactiveMode_) {
 			currentAssertionGrid_.findNConjoint(
-					InteractiveMode.NUM_DISAMBIGUATED,
-					standing == TermStanding.COLLECTION, ontology);
+					InteractiveMode.NUM_DISAMBIGUATED, ontology);
 			caseNumber_ = ConceptMiningTask.interactiveInterface_
 					.interactiveDisambiguation(conceptModule,
 							currentAssertionGrid_, ontology);
-			consistentAssertions_ = currentAssertionGrid_.getAssertions(caseNumber_);
+			consistentAssertions_ = currentAssertionGrid_
+					.getAssertions(caseNumber_);
 		} else {
-			consistentAssertions_ = currentAssertionGrid_.findMaximalConjoint(
-					standing == TermStanding.COLLECTION, ontology);
+			consistentAssertions_ = currentAssertionGrid_
+					.findMaximalConjoint(ontology);
 			caseNumber_ = 0;
 		}
 
@@ -173,11 +183,15 @@ public class DisjointnessDisambiguator {
 		return currentAssertionGrid_.getCaseWeight(caseNumber_);
 	}
 
-	public Collection<MinedAssertion> getConsistentAssertions() {
+	public boolean isCollection() {
+		return currentAssertionGrid_.isCollection(caseNumber_);
+	}
+
+	public Collection<DefiniteAssertion> getConsistentAssertions() {
 		return consistentAssertions_;
 	}
 
-	public Collection<MinedAssertion> getRemovedAssertions() {
+	public Collection<DefiniteAssertion> getRemovedAssertions() {
 		return removedAssertions_;
 	}
 

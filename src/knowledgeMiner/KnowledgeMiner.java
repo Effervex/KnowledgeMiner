@@ -3,16 +3,20 @@
  ******************************************************************************/
 package knowledgeMiner;
 
-import graph.core.CommonConcepts;
-import graph.core.DirectedAcyclicGraph;
 import io.IOManager;
 import io.KMSocket;
 import io.ResourceAccess;
+import io.ontology.DAGSocket;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.LineNumberReader;
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
@@ -20,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import knowledgeMiner.debugInterface.ConceptThreadInterface;
 import knowledgeMiner.debugInterface.QuietListInterface;
@@ -30,10 +33,14 @@ import knowledgeMiner.mining.wikipedia.FirstSentenceMiner;
 import knowledgeMiner.preprocessing.CycPreprocessor;
 import knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
 import util.UtilityMethods;
-import util.collection.CacheMap;
+import util.collection.HierarchicalWeightedSet;
+import util.serialisation.FSTSerialisationMechanism;
+import util.serialisation.SerialisationMechanism;
+import cyc.CycConstants;
 import cyc.OntologyConcept;
 
 /**
@@ -56,16 +63,19 @@ public class KnowledgeMiner {
 	 */
 	public static final double CUTOFF_THRESHOLD = 0.01;
 
-	/** TODO Temp field. If children are being mined. */
-	public static boolean miningChildren_ = true;
+	public static final String RUN_ID = "runID";
+	private static final String RESOURCE_WIKIPEDIA = "Wikipedia";
+	private static final String RESOURCE_ONTOLOGY = "Ontology";
+
+	/** If new concepts are being created. */
+	public static boolean mappingRun_ = false;
 
 	public static boolean onlineWeightUpdating_ = false;
 
 	/** The current version of Wikipedia being used. */
 	public static String wikiVersion_ = ENWIKI_DEFAULT;
 
-	/** Cached verified mappings. */
-	private CacheMap<Integer, SortedSet<ConceptModule>> cachedMappings_;
+	public static int runID_ = -1;
 
 	private CountDownLatch completedLatch_;
 
@@ -74,6 +84,9 @@ public class KnowledgeMiner {
 
 	/** The thread executor. */
 	private ThreadPoolExecutor executor_;
+
+	/** A map linking heuristic strings to their heuristics. */
+	private Map<String, Object> heuristicStringMap_;
 
 	private int index_ = 0;
 
@@ -84,7 +97,7 @@ public class KnowledgeMiner {
 
 	/** The mapping aspect of KnowledgeMiner. */
 	private CycMapper mapper_;
-	
+
 	/** The mining aspect of KnowledgeMiner. */
 	private CycMiner miner_;
 
@@ -100,10 +113,12 @@ public class KnowledgeMiner {
 	private boolean singleThread_;
 
 	private long startTime_;
+
 	private WMISocket wiki_;
 
-	/** A map linking heuristic strings to their heuristics. */
-	private Map<String, Object> heuristicStringMap_;
+	private BufferedReader fileInput_;
+
+	private int numLines_;
 
 	/**
 	 * Constructor for a new KnowledgeMiner with no IO.
@@ -123,7 +138,6 @@ public class KnowledgeMiner {
 		mapper_.initialise();
 		miner_ = new CycMiner(this, mapper_);
 		preprocessor_ = new CycPreprocessor();
-		cachedMappings_ = new CacheMap<>(CACHE_SIZES, true);
 
 		// Start the executor
 		executor_ = (ThreadPoolExecutor) Executors.newFixedThreadPool(Math.max(
@@ -155,16 +169,29 @@ public class KnowledgeMiner {
 		int artId = -1;
 		while (artId == -1) {
 			try {
-				artId = wiki_.getNextArticle((int) index_);
-				if (artId == -1
-						|| (seededCount_ >= endCount_ && endCount_ != -1)) {
-					completedLatch_.countDown();
-					return;
-				}
+				if (fileInput_ != null) {
+					String in = fileInput_.readLine();
+					if (in == null) {
+						completedLatch_.countDown();
+						return;
+					} else
+						in = in.split("\t")[0];
+					artId = Integer.parseInt(in);
+					index_++;
+				} else {
+					artId = wiki_.getNextArticle((int) index_);
 
+					if (artId == -1
+							|| (seededCount_ >= endCount_ && endCount_ != -1)) {
+						completedLatch_.countDown();
+						return;
+					}
+
+					index_ = artId;
+				}
 				String type = wiki_.getPageType(artId);
-				index_ = artId;
-				if (!type.equals("article") && !type.equals("disambiguation"))
+				if (!type.equals(WMISocket.TYPE_ARTICLE)
+						&& !type.equals(WMISocket.TYPE_DISAMBIGUATION))
 					artId = -1;
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -178,43 +205,58 @@ public class KnowledgeMiner {
 		if (executor_.getQueue().size() >= poolLimit_)
 			return;
 
-		String constant = null;
+		OntologyConcept concept = null;
 		int id = -1;
-		while (constant == null) {
+		while (concept == null) {
+			concept = null;
 			try {
-				id = ontology_.getNextNode(index_);
-				if (id == -1 || (seededCount_ >= endCount_ && endCount_ != -1)) {
-					completedLatch_.countDown();
-					return;
+				if (fileInput_ != null) {
+					String in = fileInput_.readLine();
+					if (in == null) {
+						completedLatch_.countDown();
+						return;
+					} else
+						in = in.split("\t")[0];
+					id = Integer.parseInt(in);
+					index_++;
+				} else {
+					id = ontology_.getNextNode(index_);
+					if (id == -1
+							|| (seededCount_ >= endCount_ && endCount_ != -1)) {
+						completedLatch_.countDown();
+						return;
+					}
+
+					index_ = id;
 				}
 
-				index_ = id;
-				constant = ontology_.findConceptByID(id);
-				// If there is an ephemeral mark, or the constant is a
-				// predicate, skip the constant.
-				if (constant != null
-						&& (ontology_.getProperty(id, true,
-								DirectedAcyclicGraph.EPHEMERAL_MARK) != null || ontology_
-								.evaluate(null, CommonConcepts.ISA.getID(),
-										constant,
-										CommonConcepts.PREDICATE.getID())))
-					constant = null;
+				// Check if the concept is valid (according to post processors)
+				concept = new OntologyConcept(id);
+				HierarchicalWeightedSet<OntologyConcept> constantSet = new HierarchicalWeightedSet<>();
+				constantSet.add(concept);
+				constantSet = getMapper().getWikiToCycMappingSuite()
+						.postProcess(constantSet, wiki_, ontology_);
+				// Processed out - skip this concept.
+				if (constantSet.isEmpty())
+					concept = null;
 			} catch (Exception e) {
 				e.printStackTrace();
-				constant = null;
+				concept = null;
 			}
 		}
 
-		processConcept(new ConceptMiningTask(new ConceptModule(
-				new OntologyConcept(id))));
+		processConcept(new ConceptMiningTask(new ConceptModule(concept)));
 	}
 
-	public void addCached(Integer article, SortedSet<ConceptModule> results) {
-		cachedMappings_.put(article, results);
-	}
-
-	public SortedSet<ConceptModule> getCached(Integer article) {
-		return cachedMappings_.get(article);
+	/**
+	 * Gets a heuristic (mapping or mining) by string name.
+	 * 
+	 * @param heuristicStr
+	 *            The string to retrieve a heuristic with.
+	 * @return A heuristic with a matching string.
+	 */
+	public Object getHeuristicByString(String heuristicStr) {
+		return heuristicStringMap_.get(heuristicStr);
 	}
 
 	/**
@@ -222,22 +264,21 @@ public class KnowledgeMiner {
 	 * 
 	 * @param inputID
 	 *            The ID of the input term.
-	 * @param heuristicName
+	 * @param heuristic
 	 *            The name of the heuristic results to retrieve.
 	 * @param taskType
 	 *            The type of task to check.
 	 * @return The precomputed results or null if no results.
 	 */
-	public Object getHeuristicResult(int inputID, String heuristicName) {
-		if (inputID < 0)
+	public Object getHeuristicResult(int inputID, WeightedHeuristic heuristic) {
+		if (inputID < 0 || heuristic == null)
+			return null;
+		if (!heuristic.isPrecomputed())
 			return null;
 		if (kmp_ == null)
 			kmp_ = KnowledgeMinerPreprocessor.getInstance();
-		Map<Integer, Object> resultMap = kmp_.getLoadHeuristicMap(
-				heuristicName, inputID);
-		if (resultMap != null)
-			return resultMap.get(inputID);
-		return null;
+		return kmp_.getLoadHeuristicResult(heuristic.getHeuristicName(),
+				inputID);
 	}
 
 	public CycMapper getMapper() {
@@ -248,32 +289,9 @@ public class KnowledgeMiner {
 		return miner_;
 	}
 
-	/**
-	 * Maps all of Cyc to Wikipedia, ignoring internal constants and removing
-	 * useless concepts.
-	 * 
-	 * @throws Exception
-	 *             Should something go awry...
-	 */
-	public void mapAllCyc() throws Exception {
-		index_ = 0;
-		startTime_ = System.currentTimeMillis();
-		poolLimit_ = executor_.getMaximumPoolSize();
-
-		completedLatch_ = new CountDownLatch(poolLimit_);
-		poolLimit_ *= 2;
-		for (int i = 0; i < poolLimit_; i++)
-			readConcept();
-
-		completedLatch_.await();
-		while (!executor_.awaitTermination(10, TimeUnit.SECONDS))
-			LoggerFactory.getLogger(getClass()).info(
-					"Awaiting completion of threads.");
-		System.out.println("Done!");
-	}
-
-	public void mapAllWikipedia(int startIndex, int end)
-			throws InterruptedException {
+	public void mapAllResource(String resourceName, int startIndex, int end,
+			String filename) throws Exception {
+		readInputFile(filename);
 		index_ = startIndex;
 		endCount_ = end;
 		startTime_ = System.currentTimeMillis();
@@ -281,8 +299,12 @@ public class KnowledgeMiner {
 
 		completedLatch_ = new CountDownLatch(poolLimit_);
 		poolLimit_ *= 2;
-		for (int i = 0; i < poolLimit_; i++)
-			readArticle();
+		for (int i = 0; i < poolLimit_; i++) {
+			if (resourceName.equals(RESOURCE_WIKIPEDIA))
+				readArticle();
+			else if (resourceName.equals(RESOURCE_ONTOLOGY))
+				readConcept();
+		}
 
 		completedLatch_.await();
 		while (executor_.getActiveCount() > 0) {
@@ -292,6 +314,23 @@ public class KnowledgeMiner {
 		}
 		System.out.println("Done!");
 		statusUpdate();
+	}
+
+	private void readInputFile(String filename) throws FileNotFoundException,
+			IOException {
+		if (filename != null) {
+			File file = new File(filename);
+			if (file.exists()) {
+				fileInput_ = new BufferedReader(new FileReader(file));
+				LineNumberReader lnr = new LineNumberReader(
+						new FileReader(file));
+				lnr.skip(Long.MAX_VALUE);
+				numLines_ = lnr.getLineNumber();
+				// Finally, the LineNumberReader object should be closed to
+				// prevent resource leak
+				lnr.close();
+			}
+		}
 	}
 
 	public void preprocess() throws Exception {
@@ -316,17 +355,33 @@ public class KnowledgeMiner {
 		}
 	}
 
+	public void registerHeuristic(Object heuristic) {
+		heuristicStringMap_.put(heuristic.toString(), heuristic);
+	}
+
 	public void statusUpdate() {
 		long elapsedTime = System.currentTimeMillis() - startTime_;
-		String output = UtilityMethods.toTimeFormat(elapsedTime)
-				+ " runtime. Mapped " + ConceptMiningTask.assertedCount_
-				+ ". Current index at " + index_;
-		System.out.println("\n\n\n\n" + output + "\n" + executor_ + "\n\n\n\n");
-		LoggerFactory.getLogger("STATUS").info(output);
+		StringBuilder builder = new StringBuilder(
+				UtilityMethods.toTimeFormat(elapsedTime) + " runtime. Mapped "
+						+ ConceptMiningTask.assertedCount_
+						+ ". Current index at " + index_);
+		if (fileInput_ != null) {
+			float percent = (1f * index_) / numLines_;
+			long remaining = (long) (elapsedTime / percent) - elapsedTime;
+			DecimalFormat format = new DecimalFormat("##0.00");
+			builder.append("/" + numLines_ + " ("
+					+ format.format(percent * 100) + "%). ETA "
+					+ UtilityMethods.toTimeFormat(remaining));
+		}
+		System.out
+				.println("\n\n\n\n" + builder + "\n" + executor_ + "\n\n\n\n");
+		LoggerFactory.getLogger("STATUS").info(builder.toString());
+		((FSTSerialisationMechanism) SerialisationMechanism.FST.getSerialiser())
+				.reset();
 		try {
 			IOManager.getInstance().flush();
 			miner_.printCurrentHeuristicStates();
-			kmp_.writeClearHeuristics();
+			kmp_.writeHeuristics();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -377,6 +432,40 @@ public class KnowledgeMiner {
 	}
 
 	/**
+	 * Gets a known mapping using the article as lookup.
+	 * 
+	 * @param article
+	 *            The article to find the mapping to.
+	 * @param ontology
+	 *            The ontology access.
+	 * @return The mapped concept or null. If no mapping found, sets the state
+	 *         array appropriately.
+	 */
+	public static OntologyConcept getKnownMapping(int article,
+			OntologySocket ontology) {
+		byte state = ConceptMiningTask.getArticleState(article);
+		if (state == ConceptMiningTask.UNMAPPABLE_CURRENT
+				|| state == ConceptMiningTask.UNMAPPABLE_PRIOR)
+			return null;
+
+		// Query the ontology and find the mapping (if any)
+		int edgeID = ontology.findEdgeIDByArgs(
+				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getID(), null,
+				CycConstants.WIKI_VERSION.getID(), "\"" + article + "\"");
+		if (edgeID < 0
+				&& ConceptMiningTask.getArticleState(article) == ConceptMiningTask.UNKNOWN) {
+			ConceptMiningTask.setArticleState(article,
+					ConceptMiningTask.UNMAPPABLE_PRIOR, null);
+			return null;
+		}
+
+		// Parse the concept out
+		OntologyConcept concept = OntologyConcept.parseArgument(ontology
+				.findEdgeByID(edgeID)[1]);
+		return concept;
+	}
+
+	/**
 	 * Get the number of threads to use.
 	 * 
 	 * @return The number of threads the system should use.
@@ -402,26 +491,96 @@ public class KnowledgeMiner {
 		boolean preprocess = false;
 		int start = 0;
 		int end = -1;
+		String filename = null;
+		boolean mappingCyc = false;
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].equals("preprocess"))
 				preprocess = true;
-			if (args[i].equals("-s")) {
+			else if (args[i].equals("-s")) {
 				i++;
 				start = Integer.parseInt(args[i]);
-			}
-			if (args[i].equals("-e")) {
+			} else if (args[i].equals("-e")) {
 				i++;
 				end = Integer.parseInt(args[i]);
+			} else if (args[i].equals("-f")) {
+				i++;
+				filename = args[i];
+			} else if (args[i].equals("-i")) {
+				i++;
+				runID_ = Integer.parseInt(args[i]);
+			} else if (args[i].equals("-m")) {
+				mappingRun_ = true;
+			} else if (args[i].equals("-c")) {
+				mappingCyc = true;
 			}
 		}
 
 		if (preprocess)
 			km.preprocess();
 
+		if (runID_ != -1)
+			km.readRunMappings(runID_);
+
 		// Link an input file to KM
-		km.mapAllWikipedia(start, end);// mapFile(IOManager.getInstance().getInput());
+		String resourceName = RESOURCE_WIKIPEDIA;
+		if (mappingCyc)
+			resourceName = RESOURCE_ONTOLOGY;
+		km.mapAllResource(resourceName, start, end, filename);
 
 		System.exit(0);
+	}
+
+	/**
+	 * Reads in all existing mappings for a given run ID and marks the concept
+	 * and article of the mapping as completed (so it will not be re-mapped). If
+	 * there exists a mapping, but it is of a different run ID, it will be
+	 * remapped. TODO Remove the old run's information.
+	 */
+	private void readRunMappings(int runID) {
+		System.out.println("Beginning preloading.");
+		DAGSocket ontology = (DAGSocket) ResourceAccess.requestOntologySocket();
+		String delimiter = "###";
+		String mapArgs = "getprop E $1 runID " + delimiter + " T";
+		String wikiEdges = "findedges "
+				+ CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getID() + " (1) "
+				+ CycConstants.WIKI_VERSION.getConceptName() + " (3)";
+		String regEx = "\\|(\\d+)";
+		try {
+			String result = ontology.command("map", mapArgs + "\n" + wikiEdges
+					+ "\n" + regEx, false);
+			if (result.isEmpty())
+				return;
+			String[] split = result.split(delimiter);
+			if (split.length > 0)
+				System.out.println("Preloading " + (split.length / 2)
+						+ " existing mappings.");
+			for (int i = 0; i < split.length; i++) {
+				String inputID = split[i++].trim().substring(1);
+				String[] edgeRunSplit = split[i].trim().split("\\|");
+				if (edgeRunSplit[0].equals("1")
+						&& edgeRunSplit[1].equals(runID + "")) {
+					// Note the completed mapping
+					String[] edgeArgs = ontology.findEdgeByID(Integer
+							.parseInt(inputID));
+					if (StringUtils.isNumeric(edgeArgs[1])) {
+						// Set the ontology state
+						int ontID = Integer.parseInt(edgeArgs[1]);
+						ConceptMiningTask.setConceptState(ontID,
+								ConceptMiningTask.MAPPED_CURRENT, null);
+						// Set the article state
+						int artID = Integer.parseInt(UtilityMethods
+								.shrinkString(edgeArgs[3], 1));
+						ConceptMiningTask.setArticleState(artID,
+								ConceptMiningTask.MAPPED_CURRENT, null);
+					}
+				}
+			}
+			if (split.length > 0)
+				System.out.println("Done!");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		System.out.println("Preloading complete.");
 	}
 
 	/**
@@ -450,20 +609,5 @@ public class KnowledgeMiner {
 			readArticle();
 		}
 
-	}
-
-	/**
-	 * Gets a heuristic (mapping or mining) by string name.
-	 * 
-	 * @param heuristicStr
-	 *            The string to retrieve a heuristic with.
-	 * @return A heuristic with a matching string.
-	 */
-	public Object getHeuristicByString(String heuristicStr) {
-		return heuristicStringMap_.get(heuristicStr);
-	}
-
-	public void registerHeuristic(Object heuristic) {
-		heuristicStringMap_.put(heuristic.toString(), heuristic);
 	}
 }

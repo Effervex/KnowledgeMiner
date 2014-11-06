@@ -24,7 +24,7 @@ public abstract class WeightedHeuristic implements Heuristic, Weighted {
 	public static final double DEFAULT_ALPHA = 0.1;
 
 	/** The initial weight of the heuristic. */
-	public static final double INITIAL_WEIGHT = 0.5;
+	public static final double INITIAL_WEIGHT = 1.0;
 
 	/** The name of this heuristic. */
 	private final String heuristicName_;
@@ -40,10 +40,14 @@ public abstract class WeightedHeuristic implements Heuristic, Weighted {
 	/** The mapping class for KnowledgeMiner. */
 	protected CycMapper mapper_;
 
+	/** If this heuristic should be precomputed. */
+	protected final boolean usingPrecomputed_;
+
 	/** The weight of the heuristic. */
 	protected double weight_;
 
-	public WeightedHeuristic(CycMapper mapper) {
+	public WeightedHeuristic(boolean usePrecomputed, CycMapper mapper) {
+		usingPrecomputed_ = usePrecomputed;
 		weight_ = INITIAL_WEIGHT;
 		mapper_ = mapper;
 		alpha_ = DEFAULT_ALPHA;
@@ -51,7 +55,7 @@ public abstract class WeightedHeuristic implements Heuristic, Weighted {
 		// Form the heuristic name
 		heuristicName_ = generateHeuristicName(this.getClass());
 	}
-
+	
 	/**
 	 * Initialises (if necessary) and gets the instances collection.
 	 */
@@ -93,11 +97,6 @@ public abstract class WeightedHeuristic implements Heuristic, Weighted {
 		return heuristicName_;
 	}
 
-	public static String generateHeuristicName(Class<? extends Object> clazz) {
-		return clazz.getSimpleName().replaceAll("(?<=[A-Z][^A-Z]{3})[^A-Z]+",
-				"");
-	}
-
 	@Override
 	public final double getWeight() {
 		return weight_;
@@ -110,6 +109,10 @@ public abstract class WeightedHeuristic implements Heuristic, Weighted {
 		result = prime * result
 				+ ((heuristicName_ == null) ? 0 : heuristicName_.hashCode());
 		return result;
+	}
+
+	public final boolean isPrecomputed() {
+		return usingPrecomputed_;
 	}
 
 	/**
@@ -146,6 +149,11 @@ public abstract class WeightedHeuristic implements Heuristic, Weighted {
 	 */
 	public void updateWeight(double updateValue) {
 		weight_ = updateWeight(weight_, updateValue, alpha_);
+	}
+
+	public static String generateHeuristicName(Class<? extends Object> clazz) {
+		return clazz.getSimpleName().replaceAll("(?<=[A-Z][^A-Z]{3})[^A-Z]+",
+				"");
 	}
 
 	public static double updateWeight(double oldWeight, double newWeight,

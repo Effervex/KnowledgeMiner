@@ -5,16 +5,20 @@ package knowledgeMiner.mining.wikipedia;
 
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
+import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.InformationType;
+import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
+import knowledgeMiner.mining.PartialAssertion;
 import util.collection.WeightedSet;
 import cyc.CycConstants;
 import cyc.StringConcept;
 
 /**
- * A class that mines information purely using anchor data for articles.
+ * A class that mines information (synonyms) purely using anchor data for
+ * articles.
  * 
  * @author Sam Sarjant
  */
@@ -27,10 +31,10 @@ public class AnchorMiner extends WikipediaArticleMiningHeuristic {
 	 * 
 	 * @param mapper
 	 *            The Mapping access.
-	 * @param miner 
+	 * @param miner
 	 */
 	public AnchorMiner(CycMapper mapper, CycMiner miner) {
-		super(mapper, miner);
+		super(false, mapper, miner);
 	}
 
 	@Override
@@ -38,12 +42,17 @@ public class AnchorMiner extends WikipediaArticleMiningHeuristic {
 			int informationRequested, WMISocket wmi, OntologySocket cyc)
 			throws Exception {
 		WeightedSet<String> labels = wmi.getLabels(info.getArticle());
+		labels.normaliseWeightTo1(KnowledgeMiner.CUTOFF_THRESHOLD);
 		for (String label : labels) {
 			if (labels.getWeight(label) < LABEL_THRESHOLD)
 				break;
-			info.addConcreteAssertion(createAssertion(
+
+			MinedAssertion assertion = new PartialAssertion(
 					CycConstants.SYNONYM_RELATION.getConcept(),
-					new StringConcept(label)));
+					basicProvenance_, info.getMappableSelfRef(),
+					new StringConcept(label));
+			assertion.setWeight(labels.getWeight(label));
+			info.addAssertion(assertion);
 		}
 	}
 

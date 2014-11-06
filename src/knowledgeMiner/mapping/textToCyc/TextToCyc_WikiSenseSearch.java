@@ -14,10 +14,12 @@ import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.MappingHeuristic;
+import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 
 import org.slf4j.LoggerFactory;
 
 import util.collection.WeightedSet;
+import util.wikipedia.WikiParser;
 import cyc.OntologyConcept;
 
 /**
@@ -35,13 +37,15 @@ public class TextToCyc_WikiSenseSearch extends
 	@Override
 	protected WeightedSet<OntologyConcept> mapSourceInternal(String term,
 			WMISocket wmi, OntologySocket ontology) throws Exception {
+		term = WikiParser.cleanAllMarkup(term);
+		term = term.replaceAll(" ?\\n ?", " ").trim();
 		LoggerFactory.getLogger(getClass()).trace(term);
 		WeightedSet<Integer> arts = wmi.getWeightedArticles(term);
 		WeightedSet<OntologyConcept> concepts = new WeightedSet<>();
-		for (Integer art : arts)
-			concepts.addAll(
-					mapper_.getVerifiedMappings(art, null, wmi, ontology),
-					arts.getWeight(art));
+		for (Integer art : arts) {
+			WikipediaMappedConcept wikiMapped = new WikipediaMappedConcept(art);
+			concepts.addAll(wikiMapped.mapThing(mapper_, wmi, ontology));
+		}
 		return concepts;
 	}
 

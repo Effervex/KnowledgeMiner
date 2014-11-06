@@ -10,6 +10,7 @@ import java.util.regex.Matcher;
 
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.MappingHeuristic;
+import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 
 import org.slf4j.LoggerFactory;
 
@@ -43,9 +44,8 @@ public class TextToCyc_WikifySearch extends
 		// Return if the term could not be entirely wikified (if at all)
 		if (annotated == null || annotated.equals(term) || !m.matches())
 			return new WeightedSet<>(0);
-		WeightedSet<OntologyConcept> result = new WeightedSet<>();
-		result.addAll(mapper_.getVerifiedMappings(
-				wmi.getArticleByTitle(m.group(1)), null, wmi, cyc));
-		return result;
+		WikipediaMappedConcept wikiMapped = new WikipediaMappedConcept(
+				wmi.getArticleByTitle(m.group(1)));
+		return wikiMapped.mapThing(mapper_, wmi, cyc);
 	}
 }

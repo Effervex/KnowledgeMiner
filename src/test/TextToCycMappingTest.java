@@ -49,7 +49,7 @@ public class TextToCycMappingTest {
 		KnowledgeMiner.getInstance();
 		cyc_ = ResourceAccess.requestOntologySocket();
 		wmi_ = ResourceAccess.requestWMISocket();
-		mappingRoot_ = new CycMapper(null);
+		mappingRoot_ = new CycMapper();
 		mappingRoot_.initialise();
 	}
 
@@ -63,18 +63,18 @@ public class TextToCycMappingTest {
 	public void testTextToCycMapping() {
 		OntologyConcept.parsingArgs_ = true;
 		WeightedSet<OntologyConcept> results = mappingRoot_.mapTextToCyc(
-				"Bill Clinton", true, true, false, wmi_, cyc_);
+				"Bill Clinton", true, true, false, true, wmi_, cyc_);
 		Collection<OntologyConcept> mostLikely = results.getMostLikely();
 		assertEquals(mostLikely.size(), 1);
 		assertTrue(mostLikely.contains(new OntologyConcept("BillClinton")));
 
 		results = mappingRoot_.mapTextToCyc(
 				"[[Gary Oldman]] (1990-1992) [[Ethan Hawke]] (1998-2004)",
-				false, true, false, wmi_, cyc_);
+				false, true, false, true, wmi_, cyc_);
 		assertTrue(results.isEmpty());
 
 		results = mappingRoot_.mapTextToCyc("Gary Oldman (1980-1983)", false,
-				true, false, wmi_, cyc_);
+				true, false, true, wmi_, cyc_);
 		mostLikely = results.getMostLikely();
 		assertEquals(mostLikely.size(), 1);
 		OntologyConcept temporalArg = new OntologyConcept("GaryOldman");
@@ -83,7 +83,7 @@ public class TextToCycMappingTest {
 		assertTrue(mostLikely.contains(temporalArg));
 
 		results = mappingRoot_.mapTextToCyc("[[Gary Oldman]] (1980-1983)",
-				false, true, false, wmi_, cyc_);
+				false, true, false, true, wmi_, cyc_);
 		mostLikely = results.getMostLikely();
 		assertEquals(mostLikely.size(), 1);
 		temporalArg = new OntologyConcept("GaryOldman");
@@ -92,13 +92,12 @@ public class TextToCycMappingTest {
 		assertTrue(mostLikely.contains(temporalArg));
 
 		results = mappingRoot_.mapTextToCyc("[[film director|director]]",
-				false, true, false, wmi_, cyc_);
+				false, true, false, true, wmi_, cyc_);
 		mostLikely = results.getMostLikely();
 		assertEquals(mostLikely.size(), 1);
 		assertTrue(mostLikely.contains(new OntologyConcept("Director-Movie")));
 
-		results = mappingRoot_.mapTextToCyc("origin", false, true, false, wmi_,
-				cyc_);
+		results = mappingRoot_.mapTextToCyc("origin", false, true, false, true, wmi_, cyc_);
 		mostLikely = results.getMostLikely();
 		assertEquals(mostLikely.size(), 4);
 		assertTrue(mostLikely.contains(new OntologyConcept("fromLocation")));
@@ -113,7 +112,7 @@ public class TextToCycMappingTest {
 		// Single term
 		OntologyConcept.parsingArgs_ = true;
 		HierarchicalWeightedSet<OntologyConcept> results = mappingRoot_
-				.mapTextToCyc("Actress", true, true, false, wmi_, cyc_);
+				.mapTextToCyc("Actress", true, true, false, true, wmi_, cyc_);
 		HierarchicalWeightedSet<OntologyConcept>[] flattened = results
 				.listHierarchy();
 		assertEquals(flattened.length, 1);
@@ -123,7 +122,7 @@ public class TextToCycMappingTest {
 
 		// Dual terms
 		results = mappingRoot_.mapTextToCyc("Actress, model", true, true,
-				false, wmi_, cyc_);
+				false, true, wmi_, cyc_);
 		flattened = results.listHierarchy();
 		assertEquals(flattened.length, 4);
 		item = OntologyConcept.parseArgument("\"Actress, model\"");
@@ -141,7 +140,7 @@ public class TextToCycMappingTest {
 
 		// Newline terms
 		results = mappingRoot_.mapTextToCyc("Actress\n model", true, true,
-				false, wmi_, cyc_);
+				false, true, wmi_, cyc_);
 		flattened = results.listHierarchy();
 		assertEquals(flattened.length, 3);
 		item = OntologyConcept.parseArgument("\"Actress model\"");
@@ -155,7 +154,7 @@ public class TextToCycMappingTest {
 		assertTrue(flattened[2].getMostLikely().contains(item));
 
 		results = mappingRoot_.mapTextToCyc("13 February 1967 (US)", true,
-				true, false, wmi_, cyc_);
+				true, false, true, wmi_, cyc_);
 		flattened = results.listHierarchy();
 		assertEquals(flattened.length, 3);
 		item = OntologyConcept.parseArgument("\"13 February 1967 (US)\"");
@@ -169,7 +168,7 @@ public class TextToCycMappingTest {
 		assertTrue(flattened[1].getMostLikely().contains(item));
 
 		results = mappingRoot_.mapTextToCyc("13 February 1967 (US)\n(Test",
-				true, true, false, wmi_, cyc_);
+				true, true, false, true, wmi_, cyc_);
 		flattened = results.listHierarchy();
 		assertEquals(flattened.length, 5);
 		item = OntologyConcept.parseArgument("\"13 February 1967 (US) (Test\"");
@@ -195,7 +194,7 @@ public class TextToCycMappingTest {
 		results = mappingRoot_
 				.mapTextToCyc(
 						"1,022,234,000 (2010, [[List of continents by population|2nd]])",
-						true, true, false, wmi_, cyc_);
+						true, true, false, true, wmi_, cyc_);
 		flattened = results.listHierarchy();
 		assertEquals(flattened.length, 6);
 		item = OntologyConcept.parseArgument("\"1,022,234,000 (2010, 2nd)\"");

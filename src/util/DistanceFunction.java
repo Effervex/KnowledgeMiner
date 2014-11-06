@@ -9,7 +9,7 @@ import io.ontology.OntologySocket;
 
 import java.util.Collection;
 
-import knowledgeMiner.mining.MinedAssertion;
+import knowledgeMiner.mining.DefiniteAssertion;
 import cyc.OntologyConcept;
 
 /**
@@ -55,7 +55,7 @@ public abstract class DistanceFunction {
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	public float assertionDistance(MinedAssertion assertion) throws Exception {
+	public float assertionDistance(DefiniteAssertion assertion) throws Exception {
 		OntologySocket cyc = ResourceAccess.requestOntologySocket();
 		OntologyConcept relation = assertion.getRelation();
 		float distanceSum = 0;

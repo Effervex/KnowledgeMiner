@@ -13,7 +13,7 @@ import util.text.Annotation;
  * @author Sam Sarjant
  */
 public class WikiAnnotation extends Annotation {
-	private String label_;
+	private String articleName_;
 	private WMISocket wmi_;
 
 	/**
@@ -21,17 +21,17 @@ public class WikiAnnotation extends Annotation {
 	 * 
 	 * @param text
 	 *            The text being annotated.
-	 * @param label
+	 * @param articleName
 	 *            The annotation text.
 	 * @param weight
 	 *            The weight of the annotation.
 	 * @param wmi
 	 *            The WMI Access.
 	 */
-	public WikiAnnotation(String text, String label, double weight,
+	public WikiAnnotation(String text, String articleName, double weight,
 			WMISocket wmi) {
 		super(text, weight);
-		label_ = label;
+		articleName_ = articleName;
 		wmi_ = wmi;
 	}
 
@@ -47,8 +47,12 @@ public class WikiAnnotation extends Annotation {
 	 */
 	public WikiAnnotation(WikiAnnotation annotation, int start, WMISocket wmi) {
 		super(annotation, start);
-		label_ = annotation.label_;
+		articleName_ = annotation.articleName_;
 		wmi_ = wmi;
+	}
+
+	public String getArticleName() {
+		return articleName_;
 	}
 
 	/**
@@ -70,26 +74,26 @@ public class WikiAnnotation extends Annotation {
 	public WikiAnnotation(String text, String label, int start, int end,
 			double weight, WMISocket wmi) {
 		super(text, start, end, weight);
-		label_ = label;
+		articleName_ = label;
 		wmi_ = wmi;
 	}
 
 	@Override
 	public String toString() {
-		if (label_.charAt(0) == '[')
-			return label_;
+		if (articleName_.charAt(0) == '[')
+			return articleName_;
 
 		String text = getText();
 		try {
 			// Append the link
-			if (text.equals(label_)
+			if (text.equals(articleName_)
 					|| wmi_.getArticleByTitle(text) == wmi_
-							.getArticleByTitle(label_))
+							.getArticleByTitle(articleName_))
 				return "[[" + text + "]]";
 			else
-				return "[[" + label_ + "|" + text + "]]";
+				return "[[" + articleName_ + "|" + text + "]]";
 		} catch (Exception e) {
 		}
-		return "[[" + label_ + "|" + text + "]]";
+		return "[[" + articleName_ + "|" + text + "]]";
 	}
 }

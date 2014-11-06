@@ -75,7 +75,7 @@ public class CycToWiki_ContextRelatedSynonyms extends
 				break;
 			case 1:
 				// Get all non-narrower predicates
-				Collection<String[]> otherAssertions = cyc.allAssertions(strID,
+				Collection<String[]> otherAssertions = cyc.getAllAssertions(strID,
 						2, CommonConcepts.ISA.getID(),
 						CommonConcepts.GENLS.getID(),
 						CommonConcepts.DISJOINTWITH.getID());
@@ -128,7 +128,7 @@ public class CycToWiki_ContextRelatedSynonyms extends
 		WeightedSet<Integer> mappings = synonymMapper_.mapSourceInternal(
 				cycTerm, wmi, cyc, relatedArticles);
 		LoggerFactory.getLogger(CycMapper.class).trace("C-WSynonym: {} {}",
-				cycTerm.toString(), mappings);
+				cycTerm.getID(), mappings);
 		return mappings;
 	}
 

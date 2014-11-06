@@ -9,11 +9,12 @@ import io.resources.WMISocket;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 
 import knowledgeMiner.mapping.CycMapper;
+import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.CycMiner;
+import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
 import util.UtilityMethods;
@@ -37,7 +38,7 @@ public class CategoryChildMiner extends WikipediaArticleMiningHeuristic {
 	 * @param miner
 	 */
 	public CategoryChildMiner(CycMapper mapper, CycMiner miner) {
-		super(mapper, miner);
+		super(true, mapper, miner);
 	}
 
 	/**
@@ -47,6 +48,7 @@ public class CategoryChildMiner extends WikipediaArticleMiningHeuristic {
 	 *            Article ID.
 	 * @param wmi
 	 *            WMI access.
+	 * @param info
 	 * @param categoryID
 	 *            The category article.
 	 * 
@@ -54,24 +56,45 @@ public class CategoryChildMiner extends WikipediaArticleMiningHeuristic {
 	 * @throws IOException
 	 *             Should something go awry...
 	 */
-	private Collection<Integer> findChildArticles(String articleTitle,
-			int articleID, WMISocket wmi) throws IOException {
-		Collection<Integer> childArts = new HashSet<>();
+	private void findChildArticles(String articleTitle,
+			int articleID, WMISocket wmi, MinedInformation info)
+			throws IOException {
 		// Already a category, use this
 		if (wmi.getPageType(articleID).equals("category"))
-			childArts.addAll(WMISocket.union(wmi.getChildArticles(articleID)));
+			addChildrenFromCategory(articleID, info, wmi);
 		else {
 			Collection<Integer> categories = findRelevantCategories(
 					articleTitle, articleID, wmi);
-
-			childArts.addAll(WMISocket.union(wmi.getChildArticles(categories
-					.toArray(new Integer[categories.size()]))));
+			for (Integer categoryID : categories)
+				addChildrenFromCategory(categoryID, info, wmi);
 		}
-		return childArts;
 	}
 
 	/**
-	 * Finds the relevant categories for a given Cyc term and article, baed on
+	 * Adds children to the mined information from the category.
+	 * 
+	 * @param categoryID
+	 *            The category to add children from.
+	 * @param info
+	 *            The info to add to.
+	 * @param wmi
+	 *            The WMI access.
+	 * @throws IOException
+	 *             Should something go awry...
+	 */
+	protected void addChildrenFromCategory(int categoryID,
+			MinedInformation info, WMISocket wmi) throws IOException {
+		Collection<Integer> childArts = WMISocket.union(wmi
+				.getChildArticles(categoryID));
+		HeuristicProvenance provenance = new HeuristicProvenance(this,
+				categoryID + "");
+		// Add every child as an assertion, with the category as provenance
+		for (Integer childArt : childArts)
+			info.addChild(new WikipediaMappedConcept(childArt), provenance);
+	}
+
+	/**
+	 * Finds the relevant categories for a given Cyc term and article, based on
 	 * whether the term/title is present in the category name.
 	 * 
 	 * @param categories
@@ -112,7 +135,7 @@ public class CategoryChildMiner extends WikipediaArticleMiningHeuristic {
 		String articleTitle = wmi.getPageTitle(article, false).toLowerCase();
 		if (informationRequested(informationRequested,
 				InformationType.CHILD_ARTICLES)) {
-			info.addChildArticles(findChildArticles(articleTitle, article, wmi));
+			findChildArticles(articleTitle, article, wmi, info);
 		}
 	}
 

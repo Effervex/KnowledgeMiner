@@ -3,7 +3,6 @@
  ******************************************************************************/
 package knowledgeMiner.mining.wikipedia;
 
-import graph.module.NLPToSyntaxModule;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
@@ -14,23 +13,21 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import knowledgeMiner.ConceptModule;
 import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.CycMapper;
-import knowledgeMiner.mining.AssertionQueue;
+import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
+import knowledgeMiner.mining.PartialAssertion;
 import knowledgeMiner.mining.WeightedInformation;
-import knowledgeMiner.mining.WeightedStanding;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
-import util.collection.HierarchicalWeightedSet;
 import util.collection.MultiMap;
-import util.collection.WeightedSet;
 import util.wikipedia.InfoboxData;
 import cyc.CycConstants;
 import cyc.OntologyConcept;
@@ -56,7 +53,10 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 
 	private static final Pattern NUMBER_SUFFIX = Pattern.compile("(.+?)\\d+");
 
-	private static final Pattern IMAGE_URL = Pattern.compile("(?:.+?:)?(\\S+\\.\\w+)");
+	private static final Pattern IMAGE_URL = Pattern
+			.compile("(?:.+?:)?(\\S+\\.\\w+)");
+
+	private static final PartialAssertion IGNORABLE_ASSERTION = new PartialAssertion();
 
 	/** Example articles per relation. */
 	private MultiMap<String, Integer> exampleArticles_ = MultiMap
@@ -65,8 +65,6 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 	/** The infobox mappings to Cyc predicates. */
 	private Map<String, String> infoboxRelationMappings_ = new HashMap<>();
 
-	private static boolean creatingRelations_ = false;
-
 	/**
 	 * Constructor for a new InfoboxRelationMiner.
 	 * 
@@ -74,33 +72,8 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 	 *            The Mapping class.
 	 */
 	public InfoboxRelationMiner(CycMapper mapper, CycMiner miner) {
-		super(mapper, miner, "infoboxRelationMining", INFOBOX_RELATION_FILE);
-	}
-
-	/**
-	 * Simple recursive method for adding assertion queues. Includes safeguards
-	 * for empty assertion queues with sub-queues.
-	 * 
-	 * @param info
-	 *            The info to add to.
-	 * @param assertionQueue
-	 *            The queue to potentially add.
-	 * @return If an assertion was added.
-	 */
-	private boolean addAssertionQueue(MinedInformation info,
-			AssertionQueue assertionQueue) {
-		boolean result = false;
-		if (assertionQueue.isEmpty()) {
-			// Check for sub queues
-			for (AssertionQueue subQueue : assertionQueue
-					.getSubAssertionQueues()) {
-				result |= addAssertionQueue(info, subQueue);
-			}
-		} else {
-			info.addAssertion(assertionQueue);
-			return true;
-		}
-		return result;
+		super(true, mapper, miner, "infoboxRelationMining",
+				INFOBOX_RELATION_FILE);
 	}
 
 	/**
@@ -123,7 +96,7 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	private boolean mapSpecial(String relation, String value,
+	private PartialAssertion mapSpecial(String relation, String value,
 			MinedInformation info, String infoboxType, WMISocket wmi,
 			OntologySocket ontology) throws Exception {
 		relation = relation.toLowerCase();
@@ -133,76 +106,34 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 			Matcher m = IMAGE_URL.matcher(value);
 			if (m.find())
 				value = m.group(1);
-			int id = ontology.createConcept("(" + CycConstants.URLFN.getID()
-					+ " \"" + WIKIPEDIA_IMAGE_URL + value
-					+ "\")");
-			info.addConcreteAssertion(new MinedAssertion(
+
+			return new PartialAssertion(
 					CycConstants.CONCEPT_IMAGE.getConcept(),
-					OntologyConcept.PLACEHOLDER, new OntologyConcept(id),
-					CycConstants.DATA_MICROTHEORY.getConceptName(),
-					new HeuristicProvenance(this, "image")));
-			return true;
+					new HeuristicProvenance(this, "image"),
+					info.getMappableSelfRef(), new OntologyConcept(
+							CycConstants.URLFN.getID() + "", "\""
+									+ WIKIPEDIA_IMAGE_URL + value + "\""));
 		}
 		// Names (This was too general and caught many false values).
-//		if (relation.matches(".*name\\d*$")) {
-//		 TODO Strip value of syntax.
-//			info.addConcreteAssertion(new MinedAssertion(
-//					CycConstants.SYNONYM_RELATION.getConcept(),
-//					CycConcept.PLACEHOLDER, new StringConcept(value),
-//					CycConstants.DATA_MICROTHEORY.getConceptName(),
-//					new HeuristicProvenance(this, "image")));
-//			return true;
-//		}
+		// if (relation.matches(".*name\\d*$")) {
+		// TODO Strip value of syntax.
+		// info.addConcreteAssertion(new MinedAssertion(
+		// CycConstants.SYNONYM_RELATION.getConcept(),
+		// CycConcept.PLACEHOLDER, new StringConcept(value),
+		// CycConstants.DATA_MICROTHEORY.getConceptName(),
+		// new HeuristicProvenance(this, "image")));
+		// return true;
+		// }
 		// Website
 		if (relation.equals("website")) {
-			parseRelation("homepage", value, info, infoboxType, wmi, ontology);
-			return true;
+			return parseRelation("homepage", value, info, infoboxType, wmi,
+					ontology);
 		}
 
 		// Ignorable relations
 		if (relation.equals("alt") || relation.matches(".*caption\\d*$"))
-			return true;
-		return false;
-	}
-
-	/**
-	 * Resolves a set of Cyc predicates and potential values into a number of
-	 * assertions to the Cyc term.
-	 * 
-	 * @param cycPredicates
-	 *            The potential predicates being represented.
-	 * @param relationValues
-	 *            The potential values of the predicates.
-	 * @param info
-	 *            The information to add to.
-	 * @param relation
-	 *            The infobox relation.
-	 * @param infoboxType
-	 *            The infobox type for this relation.
-	 * @param ontology
-	 *            The ontology access.
-	 * @return If a relation was created.
-	 * @throws Exception
-	 *             Should something go awry...
-	 */
-	private boolean resolveRelation(WeightedSet<OntologyConcept> cycPredicates,
-			HierarchicalWeightedSet<OntologyConcept> relationValues,
-			MinedInformation info, String relation, String infoboxType,
-			OntologySocket ontology) throws Exception {
-		LoggerFactory.getLogger(CycMiner.class).trace("resolveRelation: {}",
-				info.getArticle());
-		AssertionQueue assertionQueue = null;
-		try {
-			assertionQueue = MinedAssertion.createAllAssertions(cycPredicates,
-					relationValues, new HeuristicProvenance(this, relation),
-					ontology);
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println(cycPredicates + "\n" + relationValues);
-			System.exit(1);
-		}
-		assertionQueue.cleanEmptyParents();
-		return addAssertionQueue(info, assertionQueue);
+			return IGNORABLE_ASSERTION;
+		return null;
 	}
 
 	@Override
@@ -221,28 +152,16 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 			Map<String, String> infoboxRelations = infobox
 					.getInfoboxRelations();
 
-			int[] standing = new int[TermStanding.values().length];
 			for (String relation : infoboxRelations.keySet()) {
 				// Determine the standing.
-				TermStanding relStanding = voteStanding(relation);
-				if (relStanding != TermStanding.UNKNOWN) {
-					standing[relStanding.ordinal()]++;
-					standing[TermStanding.UNKNOWN.ordinal()]++;
-				}
+				info.addStandingInformation(getStanding(relation));
 
 				// Extract info from the relation
-				parseRelation(relation, infoboxRelations.get(relation), info,
+				PartialAssertion assertion = parseRelation(relation,
+						infoboxRelations.get(relation), info,
 						infobox.getInfoboxType(), wmi, ontology);
-			}
-
-			// Determine standing by majority vote
-			float total = standing[TermStanding.UNKNOWN.ordinal()];
-			if (standing[TermStanding.INDIVIDUAL.ordinal()] / total > WeightedStanding.VOTING_CONFIDENCE) {
-				info.setStanding(new WeightedStanding(TermStanding.INDIVIDUAL,
-						basicProvenance_));
-			} else if (standing[TermStanding.COLLECTION.ordinal()] / total > WeightedStanding.VOTING_CONFIDENCE) {
-				info.setStanding(new WeightedStanding(TermStanding.COLLECTION,
-						basicProvenance_));
+				if (assertion != null && assertion != IGNORABLE_ASSERTION)
+					info.addAssertion(assertion);
 			}
 		}
 	}
@@ -317,11 +236,13 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	public boolean parseRelation(String relation, String value,
+	public PartialAssertion parseRelation(String relation, String value,
 			MinedInformation info, String infoboxType, WMISocket wmi,
 			OntologySocket ontology) throws Exception {
-		if (mapSpecial(relation, value, info, infoboxType, wmi, ontology))
-			return true;
+		PartialAssertion pa = mapSpecial(relation, value, info, infoboxType,
+				wmi, ontology);
+		if (pa != null)
+			return pa;
 
 		// Remove number suffix
 		String originalRelation = relation;
@@ -329,52 +250,11 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 		if (m.matches())
 			relation = m.group(1);
 
-		LoggerFactory.getLogger(CycMiner.class).trace("parseRelation: {}",
-				info.getArticle());
-		// First, disambiguate the value
-		HierarchicalWeightedSet<OntologyConcept> relationValues = mapper_
-				.mapTextToCyc(value, false, false, true, wmi, ontology);
-		// If no values, then no relation.
-		if (relationValues.isEmpty()) {
-			return false;
-		}
-
-		// Relation mappings
-		// TODO Just map text to cyc, but remove individuals
-		LoggerFactory.getLogger(CycMiner.class).trace(
-				"mapRelationToPredicate: {}", info.getArticle());
-		HierarchicalWeightedSet<OntologyConcept> cycPredicate = mapper_
-				.mapRelationToPredicate(relation, wmi, ontology);
-		if (cycPredicate.isEmpty()) {
-			if (relationValues.isEmpty())
-				return false;
-			else if (creatingRelations_) {
-				// TODO Note the unmapped predicates, creating new ones if
-				// necessary
-				String relationName = NLPToSyntaxModule.textToConcept(relation);
-				relationName = StringUtils.uncapitalize(relationName);
-				OntologyConcept relationConcept = miner_
-						.getUnresolved()
-						.createNewRelation(
-								relationName,
-								"From Wikipedia infoboxtype '"
-										+ infoboxType
-										+ "'. <i>Requires user-provided description.</i>",
-								ontology);
-				cycPredicate.add(relationConcept);
-				// TODO Everytime a new predicate is used, keep track of the isa
-				// and genls to define the parents. Common values will be
-				// heavily used.
-			}
-		}
-
-		// Resolve the mappings and values to produce a relation
-		cycPredicate = (HierarchicalWeightedSet<OntologyConcept>) cycPredicate
-				.cleanEmptyParents();
-		relationValues = (HierarchicalWeightedSet<OntologyConcept>) relationValues
-				.cleanEmptyParents();
-		return resolveRelation(cycPredicate, relationValues, info, relation,
-				infoboxType, ontology);
+		HeuristicProvenance provenance = new HeuristicProvenance(this,
+				originalRelation + "=" + value);
+		return new PartialAssertion(new TextMappedConcept(relation, true, true),
+				provenance, info.getMappableSelfRef(), new TextMappedConcept(
+						value, true, false));
 	}
 
 	@Override
@@ -382,7 +262,8 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 		super.updateGlobal(info, wmi);
 
 		// For every asserted made, record it against the standing
-		TermStanding actualStanding = info.getStanding();
+		ConceptModule cm = (ConceptModule) info;
+		TermStanding actualStanding = cm.getConceptStanding();
 		// Run through every infobox relation
 		try {
 			List<InfoboxData> infoTypes = wmi.getInfoboxData(info.getArticle());

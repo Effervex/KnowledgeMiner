@@ -12,10 +12,6 @@ import knowledgeMiner.mapping.CycMapper;
 
 import org.slf4j.LoggerFactory;
 
-import util.Weighted;
-import cyc.OntologyConcept;
-import cyc.CycConstants;
-
 /**
  * 
  * @author Sam Sarjant
@@ -26,11 +22,11 @@ public abstract class MiningHeuristic extends WeightedHeuristic {
 	private final int informationProduced_;
 
 	/** The weights of each infoType held by this heuristic. */
-	private final WeightedInformationType[] infoTypeWeights_;
-
-	protected final CycMiner miner_;
+	private final double[] infoTypeWeights_;
 
 	protected final HeuristicProvenance basicProvenance_;
+
+	protected final CycMiner miner_;
 
 	/**
 	 * Constructor for a new MiningHeuristic
@@ -40,93 +36,24 @@ public abstract class MiningHeuristic extends WeightedHeuristic {
 	 * @param miner
 	 *            The mining class.
 	 */
-	public MiningHeuristic(CycMapper mapper, CycMiner miner) {
-		super(mapper);
+	public MiningHeuristic(boolean usePrecomputed, CycMapper mapper,
+			CycMiner miner) {
+		super(usePrecomputed, mapper);
 		miner_ = miner;
 		basicProvenance_ = new HeuristicProvenance(this, null);
 
 		boolean[] infoTypes = new boolean[InformationType.values().length];
-		infoTypeWeights_ = new WeightedInformationType[infoTypes.length];
+		infoTypeWeights_ = new double[infoTypes.length];
 		setInformationTypes(infoTypes);
 		int bitwise = 0;
 		for (int i = 0; i < infoTypes.length; i++) {
-			if (infoTypes[i])
+			if (infoTypes[i]) {
 				bitwise += 1 << i;
-			infoTypeWeights_[i] = new WeightedInformationType(INITIAL_WEIGHT);
+				infoTypeWeights_[i] = INITIAL_WEIGHT;
+			}
 		}
 
 		informationProduced_ = bitwise;
-	}
-
-	/**
-	 * Creates a mined assertion using this heuristic to tag the assertion.
-	 * 
-	 * @param relation
-	 *            The assertion relation.
-	 * @param arg1
-	 *            The first argument of the assertion (typically the term).
-	 * @param arg2
-	 *            The second argument of the assertion.
-	 * @return The new assertion.
-	 * @throws IllegalAccessException
-	 *             If the assertions haven't been initialised yet.
-	 */
-	protected final MinedAssertion createAssertion(OntologyConcept relation,
-			OntologyConcept arg1, OntologyConcept arg2) throws IllegalAccessException {
-		return new MinedAssertion(relation, arg1, arg2, null, basicProvenance_);
-	}
-
-	/**
-	 * Creates a partially-qualified assertion by leaving out a single argument
-	 * to be filled in by a Cyc Term later.
-	 * 
-	 * @param relation
-	 *            The assertion relation.
-	 * @param arg2
-	 *            The second argument of the assertion.
-	 * @return The new partially-qualified assertion.
-	 * @throws IllegalAccessException
-	 *             If the assertions haven't been initialised yet.
-	 */
-	protected MinedAssertion createAssertion(OntologyConcept relation,
-			OntologyConcept arg2) throws IllegalAccessException {
-		return createAssertion(relation, OntologyConcept.PLACEHOLDER, arg2);
-	}
-
-	/**
-	 * Adds a parent term to this mined information.
-	 * 
-	 * @param childTerm
-	 *            The child term.
-	 * @param parentTerm
-	 *            The parent term being added.
-	 * @param article
-	 *            The assertion source.
-	 * @return The new assertion.
-	 * @throws IllegalAccessException
-	 */
-	protected final MinedAssertion createParentAssertion(OntologyConcept childTerm,
-			OntologyConcept parentTerm, int article) throws IllegalAccessException {
-		return new MinedAssertion(CycConstants.ISA_GENLS.getConcept(),
-				childTerm, parentTerm, null, basicProvenance_);
-	}
-
-	/**
-	 * Creates a partially-qualified parental assertion by leaving out the child
-	 * argument to be filled in by a Cyc Term later.
-	 * 
-	 * @param parentTerm
-	 *            The parent term.
-	 * @param article
-	 *            The article for which a parent assertion is being created.
-	 * @return The new partially-qualified parental assertion.
-	 * @throws IllegalAccessException
-	 *             If the assertions haven't been initialised yet.
-	 */
-	protected MinedAssertion createParentAssertion(OntologyConcept parentTerm,
-			int article) throws IllegalAccessException {
-		return createParentAssertion(OntologyConcept.PLACEHOLDER, parentTerm,
-				article);
 	}
 
 	/**
@@ -181,7 +108,7 @@ public abstract class MiningHeuristic extends WeightedHeuristic {
 	 * @return The weight of this heuristic's specific information type.
 	 */
 	public final double getInfoTypeWeight(InformationType type) {
-		return weight_ * infoTypeWeights_[type.ordinal()].getWeight();
+		return weight_ * infoTypeWeights_[type.ordinal()];
 	}
 
 	/**
@@ -210,6 +137,20 @@ public abstract class MiningHeuristic extends WeightedHeuristic {
 	}
 
 	/**
+	 * Updates the heuristic using entire collections of assertions about a
+	 * concept and article. Note that updates on an assertion level should use
+	 * the updateViaAssertion method.
+	 * 
+	 * @param info
+	 *            The information to update with.
+	 * @param wmi
+	 *            The WMI access.
+	 */
+	public void updateGlobal(MinedInformation info, WMISocket wmi) {
+		// Do nothing by default.
+	}
+
+	/**
 	 * Updates the weight of both this heuristic and the sub-information type
 	 * that this heuristic produces.
 	 * 
@@ -229,56 +170,10 @@ public abstract class MiningHeuristic extends WeightedHeuristic {
 			WMISocket wmi) {
 		// Perform online weight updating.
 		if (KnowledgeMiner.onlineWeightUpdating_) {
-			infoTypeWeights_[infoType.ordinal()].updateWeight(weight);
+			infoTypeWeights_[infoType.ordinal()] = WeightedHeuristic
+					.updateWeight(infoTypeWeights_[infoType.ordinal()], weight,
+							DEFAULT_ALPHA);
 			updateWeight(weight);
 		}
-	}
-
-	/**
-	 * Updates the heuristic using entire collections of assertions about a
-	 * concept and article. Note that updates on an assertion level should use
-	 * the updateViaAssertion method.
-	 * 
-	 * @param info
-	 *            The information to update with.
-	 * @param wmi
-	 *            The WMI access.
-	 */
-	public void updateGlobal(MinedInformation info, WMISocket wmi) {
-		// Do nothing by default.
-	}
-
-	/**
-	 * A small class for noting the weight of the individual information types
-	 * produced by this heuristic.
-	 * 
-	 * @author Sam Sarjant
-	 */
-	private class WeightedInformationType implements Weighted {
-		private double infoWeight_;
-
-		/**
-		 * Constructor for a new MiningHeuristic.WeightedInformationType
-		 * 
-		 */
-		public WeightedInformationType(double weight) {
-			infoWeight_ = weight;
-		}
-
-		@Override
-		public double getWeight() {
-			return infoWeight_;
-		}
-
-		@Override
-		public void setWeight(double weight) {
-			infoWeight_ = weight;
-		}
-
-		public void updateWeight(double updateValue) {
-			infoWeight_ = WeightedHeuristic.updateWeight(infoWeight_,
-					updateValue, DEFAULT_ALPHA);
-		}
-
 	}
 }

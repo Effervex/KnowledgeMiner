@@ -37,83 +37,6 @@ public class CycMapperTest {
 	}
 
 	@Test
-	public void testGetMappedArticle() throws Exception {
-		// Mapping (easy)
-		WeightedSet<Integer> mapping = mapper_.getVerifiedMappings(
-				new OntologyConcept("Flea"), null, wmi_, cyc_);
-		assertEquals(mapping.size(), 2);
-		assertEquals(mapping.getOrdered().first(),
-				wmi_.getArticleByTitle("Flea"), 0);
-		assertEquals(mapping.getWeight(mapping.getOrdered().first()), 1.0, 0.0);
-
-		// Difficult mapping
-		mapping = mapper_.getVerifiedMappings(new OntologyConcept(
-				"FractalRepresentation"), null, wmi_, cyc_);
-		assertEquals(mapping.size(), 1);
-		assertEquals(mapping.getOrdered().first(),
-				wmi_.getArticleByTitle("Fractal"), 0);
-		assertEquals(mapping.getWeight(mapping.getOrdered().first()), 1.0, 0.0);
-
-		mapping = mapper_.getVerifiedMappings(new OntologyConcept("CherieBooth"),
-				null, wmi_, cyc_);
-		assertEquals(mapping.size(), 1);
-		assertEquals(mapping.getOrdered().first(),
-				wmi_.getArticleByTitle("Cherie Blair"), 0);
-		assertEquals(mapping.getWeight(mapping.getOrdered().first()), 1.0, 0.0);
-
-		// mapping = mapper_.getVerifiedMappings(new CycConcept(
-		// "MarineBase-MCASElToro-Grounds-Eastpac"), null, wmi_, cyc_);
-		// assertEquals(mapping.size(), 8);
-		// assertEquals(mapping.getOrdered().first(),
-		// wmi_.getArticleByTitle("Marine Corps Air Station El Toro"), 0);
-		// assertEquals(mapping.getWeight(mapping.getOrdered().first()), 1.0,
-		// 0);
-
-		mapping = mapper_.getVerifiedMappings(new OntologyConcept("Cyclist"), null,
-				wmi_, cyc_);
-		assertEquals(mapping.size(), 4);
-		// Unlikely mapping (low weight)
-		assertEquals(mapping.getOrdered().first(),
-				wmi_.getArticleByTitle("Cycling"), 0);
-		assertEquals(mapping.getWeight(mapping.getOrdered().first()), 0.2, 0.01);
-
-		// Disambiguations
-		mapping = mapper_.getVerifiedMappings(new OntologyConcept("Collection"),
-				null, wmi_, cyc_);
-		assertEquals(mapping.size(), 71);
-		// Not sure if there is a correct answer for this one
-		assertEquals(mapping.getOrdered().first(),
-				wmi_.getArticleByTitle("Collection (museum)"), 0);
-		assertEquals(mapping.getWeight(mapping.getOrdered().first()), 1.0, 0.0);
-
-		mapping = mapper_.getVerifiedMappings(new OntologyConcept("Format"), null,
-				wmi_, cyc_);
-		assertEquals(mapping.size(), 10);
-		// Difficult to say what the match is.
-		assertEquals(mapping.getOrdered().first(),
-				wmi_.getArticleByTitle("Radio format"), 0);
-		assertEquals(mapping.getWeight(mapping.getOrdered().first()), 1.0, 0);
-	}
-
-	@Test
-	public void testGetMappedTerm() throws Exception {
-		WeightedSet<OntologyConcept> mapping = mapper_.getVerifiedMappings(
-				wmi_.getArticleByTitle("Boston"), null, wmi_, cyc_);
-		assertEquals(mapping.size(), 6);
-		// Low prob
-		assertEquals(mapping.getOrdered().first(), new OntologyConcept(
-				"CityOfBostonMA"));
-		assertEquals(mapping.getWeight(mapping.getOrdered().first()), 1.0, 0.0);
-
-		mapping = mapper_.getVerifiedMappings(
-				wmi_.getArticleByTitle("taxonomic"), null, wmi_, cyc_);
-		assertEquals(mapping.size(), 2);
-		// Low prob
-		assertEquals(mapping.getOrdered().first(), new OntologyConcept("Taxonomy"));
-		assertEquals(mapping.getWeight(mapping.getOrdered().first()), 1.0, 0.0);
-	}
-
-	@Test
 	public void testMapCycToWikipedia() {
 		try {
 			WeightedSet<Integer> mapped = mapper_.mapCycToWikipedia(
@@ -122,8 +45,8 @@ public class CycMapperTest {
 			assertEquals(first.size(), 1);
 			assertTrue(first.contains(wmi_.getArticleByTitle("Flea")));
 
-			mapped = mapper_.mapCycToWikipedia(new OntologyConcept("BillClinton"),
-					null, wmi_, cyc_);
+			mapped = mapper_.mapCycToWikipedia(new OntologyConcept(
+					"BillClinton"), null, wmi_, cyc_);
 			first = mapped.getMostLikely();
 			assertEquals(first.size(), 1);
 			assertTrue(first.contains(wmi_.getArticleByTitle("Bill Clinton")));
@@ -172,8 +95,8 @@ public class CycMapperTest {
 	public void testMapTextToCyc() {
 		// Simple
 		OntologyConcept.parsingArgs_ = true;
-		HierarchicalWeightedSet<OntologyConcept> results = mapper_.mapTextToCyc(
-				"BillClinton", false, true, false, wmi_, cyc_);
+		HierarchicalWeightedSet<OntologyConcept> results = mapper_
+				.mapTextToCyc("BillClinton", false, true, false, true, wmi_, cyc_);
 		Collection<OntologyConcept> likely = results.getMostLikely();
 		assertEquals(likely.size(), 1);
 		OntologyConcept item = new OntologyConcept("BillClinton");
@@ -181,8 +104,9 @@ public class CycMapperTest {
 
 		// Anchors
 		results = mapper_.mapTextToCyc("Kiwi [[Record producer|Producer]]",
-				false, true, false, wmi_, cyc_);
-		results = (HierarchicalWeightedSet<OntologyConcept>) results.cleanEmptyParents();
+				false, true, false, true, wmi_, cyc_);
+		results = (HierarchicalWeightedSet<OntologyConcept>) results
+				.cleanEmptyParents();
 		WeightedSet<OntologyConcept> merged = WeightedSet.mergeSets(results
 				.getSubSets());
 		likely = merged.getMostLikely();
@@ -191,25 +115,25 @@ public class CycMapperTest {
 		assertTrue(likely.contains(item));
 
 		// Brackets
-		results = mapper_
-				.mapTextToCyc("Kiwi (the bird) Kid", false, true, false, wmi_, cyc_);
-		results = (HierarchicalWeightedSet<OntologyConcept>) results.cleanEmptyParents();
-		merged = WeightedSet.mergeSets(results
-				.getSubSets());
+		results = mapper_.mapTextToCyc("Kiwi (the bird) Kid", false, true,
+				false, true, wmi_, cyc_);
+		results = (HierarchicalWeightedSet<OntologyConcept>) results
+				.cleanEmptyParents();
+		merged = WeightedSet.mergeSets(results.getSubSets());
 		likely = merged.getMostLikely();
 		assertEquals(likely.size(), 1);
 		item = new OntologyConcept("Kiwi-Bird");
 		assertTrue(likely.contains(item));
 
 		// Difficult
-		results = mapper_.mapTextToCyc("Kiwi", false, true, false, wmi_, cyc_);
+		results = mapper_.mapTextToCyc("Kiwi", false, true, false, true, wmi_, cyc_);
 		likely = results.getMostLikely();
 		assertEquals(likely.size(), 1);
 		item = new OntologyConcept("Kiwi-Bird");
 		assertTrue(likely.contains(item));
 
 		// Potentially incorrect
-		results = mapper_.mapTextToCyc("Flea", false, true, false, wmi_, cyc_);
+		results = mapper_.mapTextToCyc("Flea", false, true, false, true, wmi_, cyc_);
 		likely = results.getMostLikely();
 		assertEquals(likely.size(), 1);
 		item = new OntologyConcept("Flea-Musician");
@@ -217,63 +141,73 @@ public class CycMapperTest {
 
 		// TIME FUNCTIONS
 		// Year
-		results = mapper_.mapTextToCyc("1987", false, true, false, wmi_, cyc_);
+		results = mapper_.mapTextToCyc("1987", false, true, false, true, wmi_, cyc_);
 		likely = results.getMostLikely();
 		assertEquals(likely.size(), 1);
 		item = new OntologyConcept("(YearFn '1987)");
 		assertTrue(likely.contains(item));
 
 		// Year Month
-		results = mapper_.mapTextToCyc("4, 1987", false, true, false, wmi_, cyc_);
+		results = mapper_.mapTextToCyc("4, 1987", false, true, false, true,
+				wmi_, cyc_);
 		likely = results.getMostLikely();
 		assertEquals(likely.size(), 1);
 		item = new OntologyConcept("(MonthFn April (YearFn '1987))");
 		assertTrue(likely.contains(item));
 
 		// Day Year Month
-		results = mapper_.mapTextToCyc("4, 4, 1987", false, true, false, wmi_, cyc_);
+		results = mapper_.mapTextToCyc("4, 4, 1987", false, true, false, true,
+				wmi_, cyc_);
 		likely = results.getMostLikely();
 		assertEquals(likely.size(), 1);
 		item = new OntologyConcept("(DayFn '4 (MonthFn April (YearFn '1987)))");
 		assertTrue(likely.contains(item));
 
-		results = mapper_.mapTextToCyc("1987, 4, 5", false, true, false, wmi_, cyc_);
+		results = mapper_.mapTextToCyc("1987, 4, 5", false, true, false, true,
+				wmi_, cyc_);
 		likely = results.getMostLikely();
 		assertEquals(likely.size(), 1);
 		item = new OntologyConcept("(DayFn '5 (MonthFn April (YearFn '1987)))");
 		assertTrue(likely.contains(item));
 
-		results = mapper_.mapTextToCyc("April 4, 1987", false, true, false, wmi_, cyc_);
+		results = mapper_.mapTextToCyc("April 4, 1987", false, true, false,
+				true, wmi_, cyc_);
 		likely = results.getMostLikely();
 		assertEquals(likely.size(), 1);
 		item = new OntologyConcept("(DayFn '4 (MonthFn April (YearFn '1987)))");
 		assertTrue(likely.contains(item));
 
-		results = mapper_.mapTextToCyc("4 April, 1987", false, true, false, wmi_, cyc_);
+		results = mapper_.mapTextToCyc("4 April, 1987", false, true, false,
+				true, wmi_, cyc_);
 		likely = results.getMostLikely();
 		assertEquals(likely.size(), 1);
 		item = new OntologyConcept("(DayFn '4 (MonthFn April (YearFn '1987)))");
 		assertTrue(likely.contains(item));
 
 		// Day Month
-		results = mapper_.mapTextToCyc("4 April", false, true, false, wmi_, cyc_);
+		results = mapper_.mapTextToCyc("4 April", false, true, false, true,
+				wmi_, cyc_);
 		likely = results.getMostLikely();
 		assertEquals(likely.size(), 1);
-		item = new OntologyConcept("(DayFn '4 (MonthFn April TheYear-Indexical))");
+		item = new OntologyConcept(
+				"(DayFn '4 (MonthFn April TheYear-Indexical))");
 		assertTrue(likely.contains(item));
 
-		results = mapper_.mapTextToCyc("April 4", false, true, false, wmi_, cyc_);
+		results = mapper_.mapTextToCyc("April 4", false, true, false, true,
+				wmi_, cyc_);
 		likely = results.getMostLikely();
 		assertEquals(likely.size(), 1);
-		item = new OntologyConcept("(DayFn '4 (MonthFn April TheYear-Indexical))");
+		item = new OntologyConcept(
+				"(DayFn '4 (MonthFn April TheYear-Indexical))");
 		assertTrue(likely.contains(item));
 
 		// Weekday date
 		results = mapper_.mapTextToCyc("Tuesday, September 11, 2001", false,
-				true, false, wmi_, cyc_);
+				true, false, true, wmi_, cyc_);
 		likely = results.getMostLikely();
 		assertEquals(likely.size(), 1);
-		item = new OntologyConcept("(DayFn '11 (MonthFn September (YearFn '2001)))");
+		item = new OntologyConcept(
+				"(DayFn '11 (MonthFn September (YearFn '2001)))");
 		assertTrue(likely.contains(item));
 	}
 
@@ -300,13 +234,15 @@ public class CycMapperTest {
 					wmi_.getArticleByTitle("Batman (comic strip)"), wmi_, cyc_);
 			first = result.getMostLikely();
 			assertEquals(first.size(), 1);
-			assertTrue(first.contains(new OntologyConcept("Batman-TheComicStrip")));
+			assertTrue(first.contains(new OntologyConcept(
+					"Batman-TheComicStrip")));
 
 			result = mapper_.mapWikipediaToCyc(wmi_.getArticleByTitle("Konin"),
 					wmi_, cyc_);
 			first = result.getMostLikely();
 			assertEquals(first.size(), 1);
-			assertTrue(first.contains(new OntologyConcept("Konin-ProvincePoland")));
+			assertTrue(first.contains(new OntologyConcept(
+					"Konin-ProvincePoland")));
 
 			// Test a difficult query (Jaguar the cat)
 			result = mapper_.mapWikipediaToCyc(
@@ -348,7 +284,8 @@ public class CycMapperTest {
 					wmi_.getArticleByTitle("Programmer"), wmi_, cyc_);
 			first = result.getMostLikely();
 			assertEquals(first.size(), 1);
-			assertTrue(first.contains(new OntologyConcept("ComputerProgrammer")));
+			assertTrue(first
+					.contains(new OntologyConcept("ComputerProgrammer")));
 
 			// result = mapper_.mapWikipediaToCyc(wmi_
 			// .getArticleByTitle("John Martin (oceanographer)"));
@@ -383,7 +320,7 @@ public class CycMapperTest {
 	public static void setUp() throws Exception {
 		cyc_ = ResourceAccess.requestOntologySocket();
 		wmi_ = ResourceAccess.requestWMISocket();
-		mapper_ = new CycMapper(null);
+		mapper_ = new CycMapper();
 		mapper_.initialise();
 		KnowledgeMiner.getInstance();
 	}

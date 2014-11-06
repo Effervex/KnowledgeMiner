@@ -11,7 +11,7 @@ import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
-import knowledgeMiner.mining.WeightedStanding;
+import knowledgeMiner.mining.PartialAssertion;
 import util.wikipedia.WikiParser;
 import cyc.CycConstants;
 import cyc.StringConcept;
@@ -29,7 +29,7 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 	 * @param miner
 	 */
 	public TitleMiner(CycMapper mapper, CycMiner miner) {
-		super(mapper, miner);
+		super(false, mapper, miner);
 	}
 
 	@Override
@@ -45,41 +45,37 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 			throws Exception {
 		int article = info.getArticle();
 		String title = wmi.getPageTitle(article, false).trim();
+		if (WikiParser.isAListOf(title))
+			return;
 
 		// Assert the title as a canonical synonym.
 		if (informationRequested(informationRequested,
-				InformationType.RELATIONS) && !title.startsWith("List of"))
-			info.addConcreteAssertion(createAssertion(
+				InformationType.RELATIONS))
+			info.addAssertion(new PartialAssertion(
 					CycConstants.SYNONYM_RELATION_CANONICAL.getConcept(),
+					basicProvenance_, info.getMappableSelfRef(),
 					new StringConcept(NLPToSyntaxModule.convertToAscii(title))));
 
 		if (informationRequested(informationRequested, InformationType.STANDING)) {
-			// Check for List
-			if (WikiParser.isAListOf(title)) {
-				info.setStanding(new WeightedStanding(TermStanding.UNKNOWN,
-						basicProvenance_));
-			} else {
-				// Remove commas and text after commas (Moscow, Russia ->
-				// Moscow)
-				int index = title.indexOf(',');
-				String contextFree = title;
-				if (index != -1)
-					contextFree = title.substring(0, index);
+			// Remove commas and text after commas (Moscow, Russia ->
+			// Moscow)
+			int index = title.indexOf(',');
+			String contextFree = title;
+			if (index != -1)
+				contextFree = title.substring(0, index);
 
-				// If the article title has at least two words, determine
-				// standing by the capitalisation of the last word
-				contextFree.trim();
-				String[] split = contextFree.split(" ");
-				if (split.length > 1) {
-					if (Character
-							.isUpperCase(split[split.length - 1].charAt(0))) {
-						info.setStanding(new WeightedStanding(
-								TermStanding.INDIVIDUAL, basicProvenance_));
-					} else if (Character.isLowerCase(split[split.length - 1]
-							.charAt(0))) {
-						info.setStanding(new WeightedStanding(
-								TermStanding.COLLECTION, basicProvenance_));
-					}
+			// If the article title has at least two words, determine
+			// standing by the capitalisation of the last word
+			contextFree.trim();
+			String[] split = contextFree.split(" ");
+			if (split.length > 1) {
+				if (Character.isUpperCase(split[split.length - 1].charAt(0))) {
+					info.addStandingInformation(TermStanding.INDIVIDUAL,
+							getWeight(), basicProvenance_);
+				} else if (Character.isLowerCase(split[split.length - 1]
+						.charAt(0))) {
+					info.addStandingInformation(TermStanding.COLLECTION,
+							getWeight(), basicProvenance_);
 				}
 			}
 		}

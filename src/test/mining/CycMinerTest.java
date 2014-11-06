@@ -9,12 +9,10 @@ import io.resources.WMISocket;
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mining.CycMiner;
-import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
 
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 import cyc.OntologyConcept;
 
@@ -91,15 +89,5 @@ public class CycMinerTest {
 		mapping = new ConceptModule(new OntologyConcept("NeutronStar"),
 				wmi_.getArticleByTitle("Neutron Star"), 1d, true);
 		miner_.mineArticle(mapping, MinedInformation.ALL_TYPES, wmi_, cyc_);
-	}
-
-	@Test
-	public void countPotentialChildren() throws Exception {
-		ConceptModule cm = new ConceptModule(new OntologyConcept("Actor"),
-				wmi_.getArticleByTitle("Actor"), 1.0, true);
-		cm.addMinedInfoType(MinedInformation.ALL_TYPES
-				- (1 << InformationType.CHILD_ARTICLES.ordinal()));
-		miner_.mineArticle(cm, MinedInformation.ALL_TYPES, wmi_, cyc_);
-		System.out.println(cm.getChildArticles().size());
 	}
 }

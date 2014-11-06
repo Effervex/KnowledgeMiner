@@ -30,18 +30,25 @@ public enum CycConstants {
 	SYNONYM_RELATION("wikipediaArticleSynonym"),
 	SYNONYM_RELATION_CANONICAL("wikipediaArticleName-Canonical"),
 	SYNONYMOUS_EXTERNAL_CONCEPT("synonymousExternalConcept"),
-	SYNONYMOUS_EXTERNAL_PREDICATE("synonymousExternalPredWRTTypes"),
+	// SYNONYMOUS_EXTERNAL_PREDICATE("synonymousExternalPredWRTTypes"),
 	UNIVERSAL_VOCAB_MT("UniversalVocabularyMt"),
 	WIKIPEDIA_URL("wikipediaArticleURL-Expansion"),
 	UGLY_PRED("uglyString"),
 	GENLS("genls"),
 	ISA("isa"),
 	COMMENT("comment"),
+	WIKIPEDIA_COMMENT("wikipediaComment"),
 	BIRTH_DATE("birthDate"),
 	DEATH_DATE("dateOfDeath"),
 	URLFN("URLFn"),
-	CONCEPT_IMAGE("conceptImage");
+	CONCEPT_IMAGE("conceptImage"),
+	QUOTEDISA("quotedIsa"),
+	INDIVIDUAL("Individual"),
+	COLLECTION("Collection"),
+	PREDICATE("Predicate"),
+	FUNCTION("Function-Denotational");
 
+	public static OntologyConcept WIKI_VERSION;
 	private OntologyConcept concept_;
 
 	private CycConstants(String constName) {
@@ -93,13 +100,36 @@ public enum CycConstants {
 				"CycLTerm");
 
 		// Setting up the Wikipedia version constant
-		ontologySocket.createAndAssert(KnowledgeMiner.wikiVersion_,
-				CommonConcepts.INDIVIDUAL.getID(),
-				"The version of Wikipedia being used.");
+		WIKI_VERSION = new OntologyConcept(ontologySocket.createAndAssert(
+				KnowledgeMiner.wikiVersion_, CommonConcepts.INDIVIDUAL.getID(),
+				"A version of Wikipedia being used during Knowledge Mining."));
 		ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ISA.getID(), KnowledgeMiner.wikiVersion_,
 				"IndexedInformationSource");
+
+		// Wikipedia Comment
+		ontologySocket
+				.createAndAssert(
+						WIKIPEDIA_COMMENT.getConceptName(),
+						CommonConcepts.BINARY_PREDICATE.getID(),
+						"A [[DocumentationPredicate]] that is used to represent the comment of the mapped Wikipedia article for this concept. This mapping may be marked up (contain links to other concepts) or just be plain text. In any case, it's superpredicate [[comment]] should take precedence over this predicate.");
+		ontologySocket.assertToOntology(
+				IMPLEMENTATION_MICROTHEORY.getConceptName(),
+				CommonConcepts.ISA.getID(), WIKIPEDIA_COMMENT.getID(),
+				"DocumentationPredicate");
+		ontologySocket.assertToOntology(
+				IMPLEMENTATION_MICROTHEORY.getConceptName(),
+				CommonConcepts.GENLPREDS.getID(), WIKIPEDIA_COMMENT.getID(),
+				COMMENT.getID());
+		ontologySocket.assertToOntology(
+				IMPLEMENTATION_MICROTHEORY.getConceptName(),
+				CommonConcepts.ARG1ISA.getID(), WIKIPEDIA_COMMENT.getID(),
+				CommonConcepts.THING.getID());
+		ontologySocket.assertToOntology(
+				IMPLEMENTATION_MICROTHEORY.getConceptName(),
+				CommonConcepts.ARG2ISA.getID(), WIKIPEDIA_COMMENT.getID(),
+				CommonConcepts.CHARACTER_STRING.getID());
 
 		// Setting up the various synonyms
 		lexicalPredicate(
@@ -125,7 +155,7 @@ public enum CycConstants {
 		ontologySocket
 				.createAndAssert(
 						MAPPING_CONFIDENCE.getConceptName(),
-						CommonConcepts.PREDICATE.getID(),
+						CommonConcepts.BINARY_PREDICATE.getID(),
 						"A numerical value between 0 and 1 representing the confidence with which a mapping between THING and the synonymous Wikipedia article is true.");
 		ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
@@ -249,8 +279,9 @@ public enum CycConstants {
 						"ProjectMicrotheory", genlsMt);
 	}
 
-	private static void lexicalPredicate(OntologyConcept predicate, String comment,
-			Object genls, Object arg1Isa, OntologySocket cyc) throws Exception {
+	private static void lexicalPredicate(OntologyConcept predicate,
+			String comment, Object genls, Object arg1Isa, OntologySocket cyc)
+			throws Exception {
 		cyc.createAndAssert(predicate.getConceptName(),
 				CommonConcepts.PREDICATE.getID(), comment);
 		cyc.assertToOntology(BASEKB.getConceptName(),
@@ -273,8 +304,9 @@ public enum CycConstants {
 	 */
 	public static void initialiseAssertions(OntologySocket ontologySocket)
 			throws Exception {
-		KNOWLEDGE_MINER.concept_.setID(ontologySocket.createAndAssert(KNOWLEDGE_MINER.getConceptName(),
-				"Cyclist", "The KnowledgeMiner cyclist represents "
+		KNOWLEDGE_MINER.concept_.setID(ontologySocket.createAndAssert(
+				KNOWLEDGE_MINER.getConceptName(), "Cyclist",
+				"The KnowledgeMiner cyclist represents "
 						+ "the algorithm that automatically extracts "
 						+ "and asserts information from various resources."));
 		setUpMicrotheories(ontologySocket);

@@ -37,7 +37,7 @@ public class WikiToCyc_TitleMatching extends
 		// If the id represents a non-article
 		// try {
 		// // TODO Too restrictive
-		// if (!wmi.getPageType(articleID).equals("article"))
+//		 if (!wmi.getPageType(articleID).equals(WMISocket.TYPE_ARTICLE))
 		// return weightedResults;
 		// } catch (Exception e) {
 		// e.printStackTrace();

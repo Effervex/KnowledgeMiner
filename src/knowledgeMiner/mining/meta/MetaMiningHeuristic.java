@@ -23,7 +23,7 @@ public abstract class MetaMiningHeuristic extends MiningHeuristic {
 	 * @param mapper
 	 */
 	public MetaMiningHeuristic(CycMapper mapper, CycMiner miner) {
-		super(mapper, miner);
+		super(false, mapper, miner);
 	}
 
 	@Override

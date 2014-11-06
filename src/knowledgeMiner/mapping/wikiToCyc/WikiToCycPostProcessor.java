@@ -4,6 +4,7 @@
 package knowledgeMiner.mapping.wikiToCyc;
 
 import graph.core.CommonConcepts;
+import graph.core.DirectedAcyclicGraph;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 import knowledgeMiner.mapping.MappingPostProcessor;
@@ -15,7 +16,8 @@ import cyc.OntologyConcept;
  * 
  * @author Sam Sarjant
  */
-public class WikiToCycPostProcessor extends MappingPostProcessor<OntologyConcept> {
+public class WikiToCycPostProcessor extends
+		MappingPostProcessor<OntologyConcept> {
 
 	/**
 	 * Constructor for a new WikiToCycPostProcessor
@@ -25,16 +27,22 @@ public class WikiToCycPostProcessor extends MappingPostProcessor<OntologyConcept
 	}
 
 	@Override
-	public WeightedSet<OntologyConcept> process(WeightedSet<OntologyConcept> collection,
-			WMISocket wmi, OntologySocket ontology) {
+	public WeightedSet<OntologyConcept> process(
+			WeightedSet<OntologyConcept> collection, WMISocket wmi,
+			OntologySocket ontology) {
 		// Only keep Constants (no Predicates)
 		WeightedSet<OntologyConcept> newSet = new WeightedSet<>();
 		for (OntologyConcept s : collection) {
 			try {
-				if (!ontology.isa(s.getIdentifier(),
+				// If ephemeral, skip
+				if (ontology.getProperty(s.getIdentifier(), true,
+						DirectedAcyclicGraph.EPHEMERAL_MARK) != null)
+					continue;
+				// If a predicate, skip
+				if (ontology.isa(s.getIdentifier(),
 						CommonConcepts.PREDICATE.getID()))
-					newSet.add(s, collection.getWeight(s));
-
+					continue;
+				newSet.add(s, collection.getWeight(s));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

@@ -33,6 +33,7 @@ public class TextToCyc_IntervalParse extends
 		super(mapper);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public WeightedSet<OntologyConcept> mapSourceInternal(String source,
 			WMISocket wmi, OntologySocket cyc) throws Exception {
@@ -48,10 +49,10 @@ public class TextToCyc_IntervalParse extends
 
 		// Parse each side, and resolve using the existing resolution info.
 		// Looking for Temporal Things
-		WeightedSet<OntologyConcept> past = mapper_.mapTextToCyc(split[0], false, false,
-				true, wmi, cyc);
-		WeightedSet<OntologyConcept> future = mapper_.mapTextToCyc(split[1], false,
-				false, true, wmi, cyc);
+		WeightedSet<OntologyConcept> past = mapper_.mapViaHeuristic(split[0],
+				TextToCyc_DateParse.class, wmi, cyc);
+		WeightedSet<OntologyConcept> future = mapper_.mapViaHeuristic(split[1],
+				TextToCyc_DateParse.class, wmi, cyc);
 		resolveIntervals(past, future, results, cyc);
 
 		return results;
@@ -72,8 +73,9 @@ public class TextToCyc_IntervalParse extends
 	 * @throws Exception
 	 */
 	private void resolveIntervals(WeightedSet<OntologyConcept> past,
-			WeightedSet<OntologyConcept> future, WeightedSet<OntologyConcept> results,
-			OntologySocket cyc) throws Exception {
+			WeightedSet<OntologyConcept> future,
+			WeightedSet<OntologyConcept> results, OntologySocket cyc)
+			throws Exception {
 		for (OntologyConcept pastFact : past) {
 			// If fact is a TemporalThing
 			if (cyc.isa(pastFact.getIdentifier(), CommonConcepts.DATE.getID())) {

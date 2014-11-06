@@ -162,7 +162,7 @@ public class InformationDripBootstrapping {
 				// TODO Record details of this run
 
 				// Clear preprocessed data
-				KnowledgeMinerPreprocessor.getInstance().writeClearHeuristics();
+				KnowledgeMinerPreprocessor.getInstance().writeHeuristics();
 
 				if (rippleLayer.isEmpty())
 					break;

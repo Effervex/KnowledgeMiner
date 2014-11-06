@@ -3,13 +3,16 @@
  ******************************************************************************/
 package io.resources;
 
+import graph.module.NLPToSyntaxModule;
 import io.KMAccess;
 import io.KMSocket;
+import io.ResourceAccess;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -81,6 +84,12 @@ public class WMISocket extends KMSocket {
 
 	/** If an infobox has no type. */
 	public static final String NO_TYPE = "xnotypex";
+
+	public static final String TYPE_DISAMBIGUATION = "disambiguation";
+
+	public static final String TYPE_ARTICLE = "article";
+
+	private static final String TYPE_CATEGORY = "category";
 
 	public WMISocket(WMIAccess access) {
 		super(access);
@@ -567,6 +576,21 @@ public class WMISocket extends KMSocket {
 		return batchCommand("children", categoryIDs, new IDCollectionParser());
 	}
 
+	/**
+	 * Gets the parent categories of a given category (via the "parents"
+	 * method).
+	 * 
+	 * @param categoryIDs
+	 *            The categories to get parent categories from.
+	 * @return A collection of category IDs which are supercategories of the
+	 *         parameter category.
+	 * @throws IOException
+	 */
+	public List<Collection<Integer>> getParentCategories(Integer... categoryIDs)
+			throws IOException {
+		return batchCommand("parents", categoryIDs, new IDCollectionParser());
+	}
+
 	public int getEquivalentCategory(int articleID) {
 		// This requires backtracing from categories to their equivalent
 		// articles (can be more than one)
@@ -575,6 +599,11 @@ public class WMISocket extends KMSocket {
 
 	public int getNextArticle(int id) throws IOException {
 		String result = command("next " + id, true);
+		return Integer.parseInt(result.split("\\|")[0]);
+	}
+
+	public int getPrevArticle(int id) throws IOException {
+		String result = command("prev " + id, true);
 		return Integer.parseInt(result.split("\\|")[0]);
 	}
 
@@ -1637,5 +1666,86 @@ public class WMISocket extends KMSocket {
 			return MACHINE_NAME;
 		else
 			return LOCALHOST;
+	}
+
+	public static String getArticleURL(String articleTitle) {
+		if (articleTitle == null)
+			return null;
+		String title = NLPToSyntaxModule.convertToAscii(articleTitle)
+				.replaceAll(" ", "_");
+		return "http://en.wikipedia.org/wiki/" + title;
+	}
+
+	public static String getArticleURL(int article) {
+		try {
+			return getArticleURL(ResourceAccess.requestWMISocket()
+					.getPageTitle(article, true));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	 * Gets all sub categories for this page. If the page is an article, get the
+	 * subcategories of the page's categories. If an article, just get the sub
+	 * categories of the category.
+	 *
+	 * @param pageID
+	 *            The ID of the page to get sub categories for.
+	 * @return All sub categories for the page.
+	 * @throws IOException
+	 *             Should something go awry...
+	 */
+	public Collection<Integer> getPageSubCategories(int pageID)
+			throws IOException {
+		return getRecursiveCategories(pageID, true);
+	}
+
+	private Collection<Integer> getRecursiveCategories(int pageID,
+			boolean subCategories) throws IOException {
+		if (pageID == -1)
+			return Collections.EMPTY_LIST;
+		// Is article or category?
+		Collection<Integer> currentCategories = new HashSet<>();
+		String type = getPageType(pageID);
+		if (type.equals(TYPE_ARTICLE))
+			currentCategories.addAll(getArticleCategories(pageID));
+		else if (type.equals(TYPE_CATEGORY))
+			currentCategories.add(pageID);
+		else
+			return Collections.EMPTY_LIST;
+
+		Collection<Integer> totalCategories = new HashSet<>();
+		// Recurse through children
+		do {
+			totalCategories.addAll(currentCategories);
+			Collection<Integer> recurseCats = null;
+			if (subCategories)
+				recurseCats = union(getChildCategories(currentCategories
+						.toArray(new Integer[currentCategories.size()])));
+			else
+				recurseCats = union(getParentCategories(currentCategories
+						.toArray(new Integer[currentCategories.size()])));
+			recurseCats.removeAll(totalCategories);
+			currentCategories = recurseCats;
+		} while (!currentCategories.isEmpty());
+		return totalCategories;
+	}
+
+	/**
+	 * Gets all super categories for this page. If the page is an article, get
+	 * the supercategories of the page's categories. If an article, just get the
+	 * super categories of the category.
+	 *
+	 * @param pageID
+	 *            The ID of the page to get super categories for.
+	 * @return All super categories for the page.
+	 * @throws IOException
+	 *             Should something go awry...
+	 */
+	public Collection<Integer> getPageSuperCategories(int pageID)
+			throws IOException {
+		return getRecursiveCategories(pageID, false);
 	}
 }

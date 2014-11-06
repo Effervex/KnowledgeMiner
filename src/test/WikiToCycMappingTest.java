@@ -37,7 +37,7 @@ public class WikiToCycMappingTest {
 	public static void setUp() throws Exception {
 		cyc_ = ResourceAccess.requestOntologySocket();
 		wmi_ = ResourceAccess.requestWMISocket();
-		mappingRoot_ = new CycMapper(null);
+		mappingRoot_ = new CycMapper();
 		mappingRoot_.initialise();
 	}
 

@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import knowledgeMiner.ConceptModule;
+import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.wikipedia.InfoboxRelationMiner;
 import knowledgeMiner.mining.wikipedia.InfoboxTypeMiner;
@@ -135,13 +136,13 @@ public class IOManager {
 		removed_.flush();
 	}
 
-	public void writeAssertion(OntologyConcept concept, MinedAssertion assertion)
+	public void writeAssertion(OntologyConcept concept, DefiniteAssertion assertion)
 			throws IOException {
 		if (assertions_ != null)
 			assertions_.write(concept.getConceptName() + "\t"
 					+ assertion.getRelation() + "\t"
 					+ assertion.toPrettyString() + "\t"
-					+ assertion.getSources() + "\t" + assertion.getStatus()
+					+ assertion.getProvenance() + "\t" + assertion.getStatus()
 					+ "\n");
 	}
 

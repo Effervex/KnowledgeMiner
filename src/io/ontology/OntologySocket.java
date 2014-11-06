@@ -20,6 +20,7 @@ import cyc.CycConstants;
 public abstract class OntologySocket extends KMSocket {
 	protected boolean ephemeral_;
 	protected boolean forceConstraints_;
+	public static final int NON_EXISTENT_ID = -56434;
 
 	public OntologySocket(KMAccess<? extends KMSocket> access) {
 		super(access);
@@ -31,7 +32,7 @@ public abstract class OntologySocket extends KMSocket {
 
 	protected abstract boolean parseProofResult(String result);
 
-	public abstract Collection<String[]> allAssertions(Object concept,
+	public abstract Collection<String[]> getAllAssertions(Object concept,
 			int argPos, Object... exceptPredicates);
 
 	public abstract int assertToOntology(String microtheory,
@@ -83,8 +84,12 @@ public abstract class OntologySocket extends KMSocket {
 	}
 
 	public abstract int getNextEdge(int id);
+	
+	public abstract int getPrevEdge(int id);
 
 	public abstract int getNextNode(int id);
+
+	public abstract int getPrevNode(int id);
 
 	public abstract int getNumConstants();
 
@@ -138,7 +143,7 @@ public abstract class OntologySocket extends KMSocket {
 									.iterator().next().getIdentifier()))
 				return false;
 
-			int numAssertions = allAssertions(concept.getID(), -1).size();
+			int numAssertions = getAllAssertions(concept.getID(), -1).size();
 			if (numAssertions > 2)
 				return false;
 		}

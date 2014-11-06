@@ -3,22 +3,18 @@
  ******************************************************************************/
 package knowledgeMiner.mining;
 
-import graph.core.CommonConcepts;
-import io.ontology.OntologySocket;
-import io.resources.WMISocket;
-
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
-import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.TermStanding;
+import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
+import knowledgeMiner.mining.wikipedia.WikipediaArticleMiningHeuristic;
 import util.Mergeable;
-import util.UtilityMethods;
-import util.WeightedSetComparator;
+import cyc.AssertionArgument;
+import cyc.CycConstants;
+import cyc.MappableConcept;
 import cyc.OntologyConcept;
 
 /**
@@ -27,37 +23,39 @@ import cyc.OntologyConcept;
  * 
  * @author Sam Sarjant
  */
-public class MinedInformation implements Mergeable<MinedInformation>, Serializable {
+public class MinedInformation implements Mergeable<MinedInformation>,
+		Serializable {
 	private static final long serialVersionUID = 1L;
 
 	/** The bitwise int for all info types being true. */
 	public static final int ALL_TYPES = (1 << InformationType.values().length) - 1;
 
-	/** The bitwise representation of the mined information. */
-	private int minedTypes_ = -1;
-
-	/** The parentage assertions found for this concept. */
-	private SortedSet<AssertionQueue> parentageAssertions_ = new TreeSet<>(
-			new WeightedSetComparator());
-
-	/** The article being processed. */
-	protected int articleID_;
-
 	/** The non-parentage assertions found for this concept */
-	private SortedSet<AssertionQueue> assertions_ = new TreeSet<>(
-			new WeightedSetComparator());
-
-	/** The potential child articles for this term. */
-	protected Collection<Integer> childArticles_ = new HashSet<>();
+	private Collection<PartialAssertion> assertions_ = new HashSet<>();
 
 	/**
 	 * The assertions that are non-refutable and the selected disambiguated
 	 * assertions.
 	 */
-	private Collection<MinedAssertion> concreteAssertions_ = new HashSet<>();
+	private Collection<DefiniteAssertion> concreteAssertions_ = new HashSet<>();
 
 	/** The assertions to make during disjointness disambiguation. */
-	private Collection<MinedAssertion> concreteParentageAssertions_ = new HashSet<>();
+	private Collection<DefiniteAssertion> concreteParentageAssertions_ = new HashSet<>();
+
+	/**
+	 * If there are any assertions that COULD be resolved as parentage
+	 * assertions.
+	 */
+	private boolean hasParentageAssertions_ = false;
+
+	/** The bitwise representation of the mined information. */
+	private int minedTypes_ = -1;
+
+	/** The self ref to the mappable article. */
+	private WikipediaMappedConcept selfRef_;
+
+	/** The article being processed. */
+	protected int articleID_;
 
 	/** The type of infobox this article contains (if any). */
 	protected List<String> infoboxType_ = null;
@@ -78,56 +76,79 @@ public class MinedInformation implements Mergeable<MinedInformation>, Serializab
 	 */
 	public MinedInformation(int article) {
 		articleID_ = article;
+		selfRef_ = WikipediaArticleMiningHeuristic
+				.createSelfRefConcept(articleID_);
 	}
 
 	/**
-	 * Gets the unresolved assertion queues.
+	 * Adds an assertion to this information.
 	 * 
-	 * @return The unresolved assertion queues.
+	 * @param singleAssertion
+	 *            The assertion to add.
 	 */
-	public SortedSet<AssertionQueue> getAmbiguousAssertions() {
-		return assertions_;
-	}
-
-	/**
-	 * Adds an AssertionQueue to this module, such that the assertions are later
-	 * used during disambiguation to calculate the level of confidence in the
-	 * mapping.
-	 * 
-	 * @param assertion
-	 *            The assertion(s) being added.
-	 */
-	public void addAssertion(AssertionQueue assertion) {
-		if (assertion.size() == 0)
-			if (assertion.hasSubSets())
-				for (AssertionQueue aq : assertion.getSubAssertionQueues())
-					addAssertion(aq);
-			else
-				return;
-		else {
-			if (assertion.isHierarchical())
-				parentageAssertions_.add(assertion);
-
-			// Add all assertions to assertions_
-			assertions_.add(assertion);
+	public void addAssertion(MinedAssertion singleAssertion) {
+		if (singleAssertion == null)
+			return;
+		if (singleAssertion instanceof DefiniteAssertion) {
+			// A definite assertion - add to concretes.
+			concreteAssertions_.add((DefiniteAssertion) singleAssertion);
+			if (singleAssertion.isHierarchical()) {
+				concreteParentageAssertions_
+						.add((DefiniteAssertion) singleAssertion);
+				hasParentageAssertions_ = true;
+			}
+		} else {
+			// Only partially complete - add to disambiguatable.
+			assertions_.add((PartialAssertion) singleAssertion);
+			if (singleAssertion.isHierarchical())
+				hasParentageAssertions_ = true;
 		}
 	}
 
-	public void addChildArticles(Collection<Integer> articles) {
-		UtilityMethods.removeNegOnes(articles);
-		childArticles_.addAll(articles);
+	/**
+	 * Adds an assertion to this information from the predicate and args.
+	 * 
+	 * @param predicate
+	 *            The predicate of the assertion.
+	 * @param provenance
+	 *            The source of the assertion.
+	 * @param args
+	 *            The arguments of the assertion - can be
+	 *            {@link MappableConcept}.
+	 */
+	public void addAssertion(OntologyConcept predicate,
+			HeuristicProvenance provenance, AssertionArgument... args) {
+		if (predicate == null || args == null || args.length == 0)
+			return;
+		boolean isMappable = false;
+		for (AssertionArgument aa : args) {
+			if (aa instanceof MappableConcept) {
+				isMappable = true;
+				break;
+			}
+		}
+
+		MinedAssertion assertion = null;
+		if (isMappable)
+			assertion = new PartialAssertion(predicate, provenance, args);
+		else
+			assertion = new DefiniteAssertion(predicate, provenance,
+					(OntologyConcept[]) args);
+		addAssertion(assertion);
 	}
 
 	/**
-	 * Adds a concrete, non-disambiguatable assertion to the mined information.
+	 * Adds a child article of this article to the information.
 	 * 
-	 * @param minedAssertion
-	 *            The concrete assertion to add.
+	 * @param childArt
+	 *            The child article to add.
+	 * @param provenance
+	 *            The source of the assertion.
 	 */
-	public void addConcreteAssertion(MinedAssertion minedAssertion) {
-		if (minedAssertion.isHierarchical())
-			concreteParentageAssertions_.add(minedAssertion);
-		concreteAssertions_.add(minedAssertion);
+	public void addChild(MappableConcept childArt,
+			HeuristicProvenance provenance) {
+		addAssertion(CycConstants.ISA_GENLS.getConcept(), provenance, childArt,
+				selfRef_);
 	}
 
 	/**
@@ -155,10 +176,33 @@ public class MinedInformation implements Mergeable<MinedInformation>, Serializab
 		minedTypes_ |= infoType;
 	}
 
+	/**
+	 * Adds a parent article of this article to the information.
+	 * 
+	 * @param parentArt
+	 *            The parent article to add.
+	 * @param provenance
+	 *            The source of the assertion.
+	 */
+	public void addParent(MappableConcept parentArt,
+			HeuristicProvenance provenance) {
+		addAssertion(CycConstants.ISA_GENLS.getConcept(), provenance, selfRef_,
+				parentArt);
+		hasParentageAssertions_ = true;
+	}
+
+	public void addStandingInformation(TermStanding standing, double weight,
+			HeuristicProvenance provenance) {
+		standing_.addStanding(provenance, standing, weight);
+	}
+
+	public void addStandingInformation(WeightedStanding standing)
+			throws Exception {
+		standing_.mergeInformation(standing);
+	}
+
 	public void clearInformation() {
 		assertions_.clear();
-		childArticles_.clear();
-		parentageAssertions_.clear();
 		standing_ = new WeightedStanding();
 		infoboxType_ = null;
 		concreteAssertions_.clear();
@@ -183,11 +227,6 @@ public class MinedInformation implements Mergeable<MinedInformation>, Serializab
 				return false;
 		} else if (!assertions_.equals(other.assertions_))
 			return false;
-		if (childArticles_ == null) {
-			if (other.childArticles_ != null)
-				return false;
-		} else if (!childArticles_.equals(other.childArticles_))
-			return false;
 		if (concreteAssertions_ == null) {
 			if (other.concreteAssertions_ != null)
 				return false;
@@ -203,11 +242,6 @@ public class MinedInformation implements Mergeable<MinedInformation>, Serializab
 		if (Double.doubleToLongBits(miningWeight_) != Double
 				.doubleToLongBits(other.miningWeight_))
 			return false;
-		if (parentageAssertions_ == null) {
-			if (other.parentageAssertions_ != null)
-				return false;
-		} else if (!parentageAssertions_.equals(other.parentageAssertions_))
-			return false;
 		if (standing_ == null) {
 			if (other.standing_ != null)
 				return false;
@@ -220,38 +254,29 @@ public class MinedInformation implements Mergeable<MinedInformation>, Serializab
 		return articleID_;
 	}
 
-	public Collection<Integer> getChildArticles() {
-		return childArticles_;
+	/**
+	 * Gets the unresolved assertion queues.
+	 * 
+	 * @return The unresolved assertion queues.
+	 */
+	public Collection<PartialAssertion> getAssertions() {
+		return assertions_;
 	}
 
-	public Collection<MinedAssertion> getConcreteAssertions() {
+	public Collection<DefiniteAssertion> getConcreteAssertions() {
 		return concreteAssertions_;
 	}
 
-	public Collection<MinedAssertion> getConcreteParentageAssertions() {
+	public Collection<DefiniteAssertion> getConcreteParentageAssertions() {
 		return concreteParentageAssertions_;
-	}
-
-	/**
-	 * Grounds a floating parentage assertion to either isa or genls.
-	 * 
-	 * @param floating
-	 *            The assertion to ground.
-	 * @param standing
-	 *            The standing to ground to.
-	 * @throws Exception
-	 */
-	protected void groundAssertionStanding(MinedAssertion floating,
-			TermStanding standing) throws Exception {
-		MinedAssertion groundedAssertion = floating.clone();
-		groundedAssertion.makeParentageAssertion(standing);
-		concreteParentageAssertions_.remove(floating);
-		concreteAssertions_.remove(floating);
-		addConcreteAssertion(groundedAssertion);
 	}
 
 	public List<String> getInfoboxTypes() {
 		return infoboxType_;
+	}
+
+	public MappableConcept getMappableSelfRef() {
+		return selfRef_;
 	}
 
 	public int getMinedInformation() {
@@ -260,12 +285,8 @@ public class MinedInformation implements Mergeable<MinedInformation>, Serializab
 		return minedTypes_;
 	}
 
-	public SortedSet<AssertionQueue> getParentageAssertions() {
-		return parentageAssertions_;
-	}
-
-	public TermStanding getStanding() {
-		return standing_.getStanding();
+	public WeightedStanding getStanding() {
+		return standing_;
 	}
 
 	/**
@@ -280,12 +301,6 @@ public class MinedInformation implements Mergeable<MinedInformation>, Serializab
 		return minedTypes_ ^ ALL_TYPES;
 	}
 
-	public WeightedStanding getWeightedStanding() {
-		if (standing_ == null)
-			return new WeightedStanding(TermStanding.UNKNOWN);
-		return standing_;
-	}
-
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -293,8 +308,6 @@ public class MinedInformation implements Mergeable<MinedInformation>, Serializab
 		result = prime * result + articleID_;
 		result = prime * result
 				+ ((assertions_ == null) ? 0 : assertions_.hashCode());
-		result = prime * result
-				+ ((childArticles_ == null) ? 0 : childArticles_.hashCode());
 		result = prime
 				* result
 				+ ((concreteAssertions_ == null) ? 0 : concreteAssertions_
@@ -305,52 +318,13 @@ public class MinedInformation implements Mergeable<MinedInformation>, Serializab
 		long temp;
 		temp = Double.doubleToLongBits(miningWeight_);
 		result = prime * result + (int) (temp ^ (temp >>> 32));
-		result = prime
-				* result
-				+ ((parentageAssertions_ == null) ? 0 : parentageAssertions_
-						.hashCode());
 		result = prime * result
 				+ ((standing_ == null) ? 0 : standing_.hashCode());
 		return result;
 	}
 
-	/**
-	 * Checks if the assertions made include a given parentage assertion and if
-	 * so, adds that assertion as a concrete assertion. This forces asserted
-	 * information to comply with the parentage assertion during disjointness
-	 * disambiguation.
-	 * 
-	 * @param parentTerm
-	 *            The parent term to search for in the mined information.
-	 * @param ontology
-	 *            The Cyc access.
-	 * @return True if this mined information asserts that the term is a parent.
-	 * @throws IllegalAccessException
-	 *             If the assertions haven't been initialised.
-	 */
-	public boolean hasParent(OntologyConcept directParent, OntologySocket ontology)
-			throws IllegalAccessException {
-		for (AssertionQueue parentAssertion : parentageAssertions_) {
-			// TODO Hierarchical
-			for (MinedAssertion minedAssertion : parentAssertion
-					.flattenHierarchy()) {
-				// Equals parent term
-				OntologyConcept parentTerm = minedAssertion.getArgs()[1];
-				// Genls parent term
-				if (directParent.toString().equals(parentTerm.toString())
-						|| ontology.evaluate(null,
-								CommonConcepts.ASSERTED_SENTENCE.getID(), "("
-										+ CommonConcepts.GENLS.getID() + " "
-										+ directParent.getIdentifier() + " "
-										+ parentTerm.getIdentifier() + ")")) {
-					// Reshape the parentage
-					addConcreteAssertion(new MinedAssertion(minedAssertion,
-							directParent, 2));
-					return true;
-				}
-			}
-		}
-		return false;
+	public boolean hasParentageAssertions() {
+		return hasParentageAssertions_;
 	}
 
 	public boolean isMined() {
@@ -384,18 +358,17 @@ public class MinedInformation implements Mergeable<MinedInformation>, Serializab
 		if (articleID_ != otherInfo.articleID_)
 			throw new Exception("Information does not match!");
 
-		for (AssertionQueue assertionQueue : otherInfo.assertions_) {
+		for (PartialAssertion assertionQueue : otherInfo.assertions_) {
 			if (recreateInternals)
 				addAssertion(assertionQueue.clone());
 			else
 				addAssertion(assertionQueue);
 		}
-		childArticles_.addAll(otherInfo.childArticles_);
-		for (MinedAssertion concrete : otherInfo.concreteAssertions_) {
+		for (DefiniteAssertion concrete : otherInfo.concreteAssertions_) {
 			if (recreateInternals)
-				addConcreteAssertion(concrete.clone());
+				addAssertion(concrete.clone());
 			else
-				addConcreteAssertion(concrete);
+				addAssertion(concrete);
 		}
 		if (otherInfo.infoboxType_ != null)
 			infoboxType_ = otherInfo.infoboxType_;
@@ -409,39 +382,8 @@ public class MinedInformation implements Mergeable<MinedInformation>, Serializab
 		return true;
 	}
 
-	/**
-	 * Uses the grouped and tested information contained within this
-	 * {@link MinedInformation} as training data for the heuristics that
-	 * produced the information.
-	 * 
-	 * @param wmi
-	 *            The WMI access.
-	 */
-	public void recordTrainingInfo(WMISocket wmi) {
-		// Update every heuristic with global information
-		for (MiningHeuristic heuristic : KnowledgeMiner.getInstance()
-				.getMiner().getMiningHeuristics())
-			heuristic.updateGlobal(this, wmi);
-
-		// Update the heuristics that predicted the standing.
-		standing_.updateHeuristics(wmi);
-
-		// Update the heuristics that produced the assertions.
-		for (WeightedInformation assertion : concreteAssertions_)
-			assertion.updateHeuristics(wmi);
-	}
-
 	public void setInfoboxTypes(List<String> infoboxTypes) {
 		infoboxType_ = infoboxTypes;
-	}
-
-	public void setStanding(WeightedStanding standing) {
-		standing_ = standing;
-	}
-
-	public void setStandingStatus(int status, TermStanding actual) {
-		standing_.setActualStanding(actual);
-		standing_.setStatus(status);
 	}
 
 	/**
@@ -461,9 +403,6 @@ public class MinedInformation implements Mergeable<MinedInformation>, Serializab
 			buffer.append("\nStanding: " + standing_);
 		if (infoboxType_ != null)
 			buffer.append("\nInfobox type: " + infoboxType_);
-		// Child Articles
-		if (!childArticles_.isEmpty())
-			buffer.append("\nChild articles: " + childArticles_);
 		// Parentage
 		if (!concreteAssertions_.isEmpty())
 			buffer.append("\nConcrete parentage assertions: "

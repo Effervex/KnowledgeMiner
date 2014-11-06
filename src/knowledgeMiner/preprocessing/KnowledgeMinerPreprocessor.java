@@ -21,16 +21,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import javax.activity.InvalidActivityException;
 
 import knowledgeMiner.ConceptMiningTask;
 import knowledgeMiner.ConceptModule;
@@ -47,8 +43,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.IOFileFilter;
 import org.slf4j.LoggerFactory;
 
 import util.UtilityMethods;
@@ -71,9 +65,6 @@ public class KnowledgeMinerPreprocessor {
 	public static boolean ENABLE_PREPROCESSING = true;
 
 	public static final int NUM_MAPPINGS = (int) Math.pow(2, 13);
-
-	/** If any new data has been found. */
-	private Set<String> changedHeuristics_;
 
 	/**
 	 * The data being precomputed. Heuristic name => sortedmap of
@@ -98,13 +89,10 @@ public class KnowledgeMinerPreprocessor {
 	/** The start time of the processing. */
 	private long startTime_;
 
-	private Lock writeLock_;
-
 	@SuppressWarnings("rawtypes")
 	private KnowledgeMinerPreprocessor() {
 		miner_ = KnowledgeMiner.getInstance().getMiner();
 		mapper_ = KnowledgeMiner.getInstance().getMapper();
-		writeLock_ = new ReentrantLock();
 
 		// Initialise the heuristic map
 		heuristicResults_ = new HashMap<String, HeuristicResult>();
@@ -119,16 +107,6 @@ public class KnowledgeMinerPreprocessor {
 		for (MiningHeuristic miningHeuristic : miner_.getMiningHeuristics())
 			heuristicResults_.put(miningHeuristic.getHeuristicName(),
 					new HeuristicResult(miningHeuristic.getHeuristicName()));
-
-		changedHeuristics_ = new HashSet<>();
-	}
-
-	/**
-	 * Basic helper method for consistent file naming.
-	 */
-	private String makeFilename(String heuristic, Integer startKey,
-			Integer endKey) {
-		return heuristic + startKey + "-" + endKey + ".dat";
 	}
 
 	/**
@@ -138,9 +116,11 @@ public class KnowledgeMinerPreprocessor {
 	 *            The type of task to process.
 	 * @param heuristics
 	 *            The heuristics to process with.
+	 * @param reverseOrder
 	 */
 	private void precomputeAll(PrecomputationTaskType taskType,
-			Collection<? extends WeightedHeuristic> heuristics) {
+			Collection<? extends WeightedHeuristic> heuristics,
+			boolean reverseOrder) {
 		boolean loopOntology = taskType == PrecomputationTaskType.CYC_TO_WIKI;
 
 		// Set up the iterator
@@ -152,12 +132,23 @@ public class KnowledgeMinerPreprocessor {
 		// Set up an executor and add all concepts to the execution queue.
 		ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors
 				.newFixedThreadPool(Math.max(1, KnowledgeMiner.getNumThreads()));
-		int id = 0;
+		int id = (reverseOrder) ? 35000000 : 0;
+
 		while (true) {
 			try {
 				// Get next thing
-				int nextID = (loopOntology) ? ontology.getNextNode(id) : wmi
-						.getNextArticle(id);
+				int nextID = 0;
+				if (loopOntology) {
+					if (reverseOrder)
+						nextID = ontology.getPrevNode(id);
+					else
+						nextID = ontology.getNextNode(id);
+				} else {
+					if (reverseOrder)
+						nextID = wmi.getPrevArticle(id);
+					else
+						nextID = wmi.getNextArticle(id);
+				}
 				if (nextID < 0)
 					break;
 
@@ -180,7 +171,8 @@ public class KnowledgeMinerPreprocessor {
 				} else {
 					String type = wmi.getPageType(nextID);
 					// If it's an article or disambiguation, process it.
-					if (type.equals("article") || type.equals("disambiguation")) {
+					if (type.equals(WMISocket.TYPE_ARTICLE)
+							|| type.equals(WMISocket.TYPE_DISAMBIGUATION)) {
 						PrecomputationTask preTask = new PrecomputationTask(
 								new ConceptModule(id), heuristics, taskType,
 								this);
@@ -260,12 +252,12 @@ public class KnowledgeMinerPreprocessor {
 	 * @param index
 	 *            The index of the data to be recorded.
 	 */
-	public Map<Integer, Object> getLoadHeuristicMap(String heuristicName,
-			int index) {
+	public Object getLoadHeuristicResult(String heuristicName, int index) {
 		if (!ENABLE_PREPROCESSING)
-			return new HashMap<>();
+			return null;
 
-		return heuristicResults_.get(heuristicName).getLoadHeuristicMap(index);
+		return heuristicResults_.get(heuristicName).getLoadHeuristicResults(
+				index);
 	}
 
 	public void incrementProcessed() {
@@ -282,12 +274,7 @@ public class KnowledgeMinerPreprocessor {
 
 		if (numWritten_ % NUM_MAPPINGS == 0) {
 			System.out.println("Writing heuristics to file.");
-			writeLock_.lock();
-			try {
-				writeClearHeuristics();
-			} finally {
-				writeLock_.unlock();
-			}
+			writeHeuristics();
 		}
 	}
 
@@ -303,7 +290,7 @@ public class KnowledgeMinerPreprocessor {
 	public boolean isProcessed(String heuristicName, int id) {
 		if (overwriteMode_ || !ENABLE_PREPROCESSING)
 			return false;
-		return getLoadHeuristicMap(heuristicName, id).containsKey(id);
+		return getLoadHeuristicResult(heuristicName, id) != null;
 	}
 
 	/**
@@ -314,16 +301,18 @@ public class KnowledgeMinerPreprocessor {
 	 *            The input to map/mine.
 	 * @param heuristics
 	 *            The heuristics to mine with (if null, use all).
+	 * @param reverseOrder
+	 *            TODO
 	 * @param The
 	 *            task type to perform.
 	 */
 	public void precomputeData(ConceptModule cm,
 			Collection<? extends WeightedHeuristic> heuristics,
-			PrecomputationTaskType taskType) {
+			PrecomputationTaskType taskType, boolean reverseOrder) {
 		ENABLE_PREPROCESSING = true;
 		// If articleID is -1, run through every article via threads
 		if (cm == null) {
-			precomputeAll(taskType, heuristics);
+			precomputeAll(taskType, heuristics, reverseOrder);
 		} else {
 			PrecomputationTask preTask = new PrecomputationTask(cm, heuristics,
 					taskType, this);
@@ -343,19 +332,10 @@ public class KnowledgeMinerPreprocessor {
 	 *            The data linked to the index.
 	 */
 	public void recordData(String heuristicName, int index, Object data) {
-		if (heuristicName == null || index == -1 || data == null
+		if (heuristicName == null || index < 0 || data == null
 				|| !ENABLE_PREPROCESSING)
 			return;
-		writeLock_.lock();
-		try {
-			Map<Integer, Object> cachedMappings = getLoadHeuristicMap(
-					heuristicName, index);
-			Object oldVal = cachedMappings.put(index, data);
-			if (oldVal == null)
-				changedHeuristics_.add(heuristicName);
-		} finally {
-			writeLock_.unlock();
-		}
+		heuristicResults_.get(heuristicName).recordResult(index, data);
 	}
 
 	public void run(CommandLine parse) {
@@ -365,6 +345,7 @@ public class KnowledgeMinerPreprocessor {
 		overwriteMode_ = parse.hasOption("f");
 		numWritten_ = 0;
 		ConceptModule cm = null;
+		boolean reverseOrder = false;
 		if (parse.getOptionValue("i") != null) {
 			int i = Integer.parseInt(parse.getOptionValue("i"));
 			if (parse.hasOption("o"))
@@ -372,6 +353,8 @@ public class KnowledgeMinerPreprocessor {
 			else
 				cm = new ConceptModule(i);
 		}
+		if (parse.hasOption("R"))
+			reverseOrder = true;
 
 		PrecomputationTaskType taskType = null;
 		if (parse.hasOption("m")) {
@@ -417,10 +400,10 @@ public class KnowledgeMinerPreprocessor {
 		}
 		System.out.println("Beginning precomputation with heuristics: "
 				+ heuristics_);
-		precomputeData(cm, heuristics_, taskType);
+		precomputeData(cm, heuristics_, taskType, reverseOrder);
 
 		// Write files
-		writeClearHeuristics();
+		writeHeuristics();
 
 		long elapsedTime = System.currentTimeMillis() - startTime_;
 		System.out.println("\n\nProcessing complete. "
@@ -430,16 +413,14 @@ public class KnowledgeMinerPreprocessor {
 	/**
 	 * Writes the heuristic-processed data to file.
 	 */
-	public void writeClearHeuristics() {
+	public void writeHeuristics() {
 		if (!ENABLE_PREPROCESSING)
 			return;
+
 		// Write every heuristic
-		for (String heuristic : heuristicResults_.keySet()) {
-			if (changedHeuristics_.contains(heuristic))
-				heuristicResults_.get(heuristic).writeHeuristic();
-			changedHeuristics_.remove(heuristic);
-			heuristicResults_.get(heuristic).clear();
-		}
+		for (HeuristicResult heuristic : heuristicResults_.values())
+			heuristic.writeHeuristic();
+
 	}
 
 	/**
@@ -463,133 +444,94 @@ public class KnowledgeMinerPreprocessor {
 	 *            The args to determine which mode to run in.
 	 */
 	public static void main(String[] args) {
+		ENABLE_PREPROCESSING = true;
+		Options options = new Options();
+		options.addOption("m", false, "If precomputing mined data.");
+		options.addOption("w", false, "If mapping from article to ontology.");
+		options.addOption("o", false, "If mapping from ontology to article.");
+		options.addOption("f", false,
+				"Force all heuristics to be run, even if they have stored results.");
+		options.addOption("i", true,
+				"The article/concept to mine. Defaults to all.");
+		options.addOption("R", false,
+				"If the process should run in reverse order.");
+		Option heurOption = new Option("h", true,
+				"The heuristic(s) to use. Defaults to all.");
+		heurOption.setArgs(20);
+		options.addOption(heurOption);
+
+		CommandLineParser parser = new BasicParser();
 		try {
-			migrateToSingular();
+			CommandLine parse = parser.parse(options, args);
+			KnowledgeMinerPreprocessor kmp = getInstance();
+			kmp.run(parse);
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.exit(1);
 		}
-//		ENABLE_PREPROCESSING = true;
-//		Options options = new Options();
-//		options.addOption("m", false, "If precomputing mined data.");
-//		options.addOption("w", false, "If mapping from article to ontology.");
-//		options.addOption("o", false, "If mapping from ontology to article.");
-//		options.addOption("f", false,
-//				"Force all heuristics to be run, even if they have stored results.");
-//		options.addOption("i", true,
-//				"The article/concept to mine. Defaults to all.");
-//		Option heurOption = new Option("h", true,
-//				"The heuristic(s) to use. Defaults to all.");
-//		heurOption.setArgs(20);
-//		options.addOption(heurOption);
-//
-//		CommandLineParser parser = new BasicParser();
-//		try {
-//			CommandLine parse = parser.parse(options, args);
-//			KnowledgeMinerPreprocessor kmp = getInstance();
-//			kmp.run(parse);
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//			System.exit(1);
-//		}
 	}
 
-	public static void migrateToSingular() throws Exception {
-		Iterator<File> iterator = FileUtils.iterateFiles(DIR_PATH,
-				new String[] { "dat" }, false);
-		while (iterator.hasNext()) {
-			File file = iterator.next();
-			Map<Integer, Object> deser = (Map<Integer, Object>) SerialisationMechanism.FST
-					.getSerialiser().deserialize(file);
-			File folder = new File(DIR_PATH, file.getName().replaceAll(
-					"\\d+-\\d+\\.dat", ""));
-			folder.mkdir();
-			for (Integer index : deser.keySet()) {
-				File output = new File(folder, index + ".dat");
-				SerialisationMechanism.FST.getSerialiser().serialize(
-						deser.get(index), output,
-						DefaultSerialisationMechanism.NORMAL);
-			}
-		}
+	/**
+	 * Basic helper method for consistent file naming.
+	 */
+	public static File makeFilename(String heuristic, int index) {
+		// Organise into folders
+		int chunkIndex = (index / NUM_MAPPINGS) * NUM_MAPPINGS;
+		return new File(DIR_PATH, heuristic + File.separator + chunkIndex
+				+ File.separator + index + ".dat");
 	}
 
 	private class HeuristicResult {
-		/** Chunked HashMap results by ID. */
-		private Map<Integer, HashMap<Integer, Object>> chunkedResults_;
+		/** The indices that have changed and need to be serialised. */
+		private Collection<Integer> changed_;
 
 		/** The name of the heuristic this result set is for. */
 		private String heuristicName_;
 
-		/** The loaded files for each heuristic. */
-		private Set<String> loadedFiles_;
+		/** HashMap results by ID. */
+		private Map<Integer, Object> resultMap_;
+
+		private Lock writeLock_;
 
 		/**
 		 * Constructor for a new HeuristicResult
 		 */
 		public HeuristicResult(String heuristicName) {
 			heuristicName_ = heuristicName;
-			chunkedResults_ = new HashMap<>();
-			loadedFiles_ = new HashSet<>();
+			resultMap_ = new HashMap<>();
+			writeLock_ = new ReentrantLock();
+			changed_ = new HashSet<>();
 		}
 
-		/**
-		 * Loads the heuristic results from file (if the file exists). If no
-		 * file found, creates a new map.
-		 * 
-		 * @param filename
-		 *            The file to load.
-		 * @param startKey
-		 *            The start key to save newly created maps under.
-		 * @return A map of results or null if there is a synchronicity issue.
-		 */
-		@SuppressWarnings("unchecked")
-		private HashMap<Integer, Object> loadResults(String filename,
-				int startKey) {
-			File location = new File(DIR_PATH, filename);
-			// Load the file's data into memory
+		private Object loadResult(int index) {
+			File location = makeFilename(heuristicName_, index);
+			Object deser = null;
 			try {
-				writeLock_.lock();
-
-				if (loadedFiles_.contains(filename))
-					return null;
-
-				// Recheck loaded files for thread synchronicity
-				HashMap<Integer, Object> heuristicMap = null;
-				if (location.exists()) {
-					// Deserialise the file
-					Object deser = SerialisationMechanism.FST.getSerialiser()
-							.deserialize(location);
-					if (deser != null) {
-						Map<Integer, Object> loaded = (Map<Integer, Object>) deser;
-						if (loaded instanceof HashMap)
-							heuristicMap = (HashMap<Integer, Object>) loaded;
-						else {
-							heuristicMap = new HashMap<>(NUM_MAPPINGS, 1);
-							heuristicMap.putAll(loaded);
-							changedHeuristics_.add(heuristicName_);
-						}
-					}
-				}
-
-				// Adding to chunked files and loaded files
-				if (heuristicMap == null)
-					heuristicMap = new HashMap<>(NUM_MAPPINGS, 1);
-				chunkedResults_.put(startKey, heuristicMap);
-				loadedFiles_.add(filename);
-				return heuristicMap;
+				deser = SerialisationMechanism.FST.getSerialiser().deserialize(
+						location);
 			} catch (Exception e) {
 				e.printStackTrace();
-			} finally {
-				writeLock_.unlock();
+				// Remove the file and treat as unprocessed
+				location.delete();
+				return null;
 			}
-			return null;
+			if (deser != null) {
+				try {
+					writeLock_.lock();
+					resultMap_.put(index, deser);
+				} finally {
+					writeLock_.unlock();
+				}
+			}
+			return deser;
 		}
 
 		/**
 		 * Clears the results from memory.
 		 */
 		public void clear() {
-			chunkedResults_.clear();
-			loadedFiles_.clear();
+			resultMap_.clear();
+			changed_.clear();
 		}
 
 		/**
@@ -599,21 +541,31 @@ public class KnowledgeMinerPreprocessor {
 		 *            The index to get the map for.
 		 * @return The mapping that would contain the index.
 		 */
-		public Map<Integer, Object> getLoadHeuristicMap(int index) {
+		public Object getLoadHeuristicResults(int index) {
 			// First attempt to load it
-			int startKey = (index / NUM_MAPPINGS) * NUM_MAPPINGS;
-			int endKey = startKey + NUM_MAPPINGS - 1;
-			String filename = makeFilename(heuristicName_, startKey, endKey);
-			Map<Integer, Object> heuristicMap = null;
-			if (!loadedFiles_.contains(filename)) {
-				// The file has been loaded, return the map
-				heuristicMap = loadResults(filename, startKey);
-			}
+			if (resultMap_.containsKey(index))
+				return resultMap_.get(index);
+			return loadResult(index);
+		}
 
-			// File already loaded (also resolves null return from loadResults)
-			if (heuristicMap == null)
-				heuristicMap = chunkedResults_.get(startKey);
-			return heuristicMap;
+		/**
+		 * Records a result for the index and returns the old value (if any).
+		 * 
+		 * @param index
+		 *            The index to record the value for.
+		 * @param data
+		 *            The value to record.
+		 * @return The old value (if any).
+		 */
+		public void recordResult(int index, Object data) {
+			try {
+				writeLock_.lock();
+				Object oldVal = resultMap_.put(index, data);
+				if (oldVal == null || !oldVal.equals(data))
+					changed_.add(index);
+			} finally {
+				writeLock_.unlock();
+			}
 		}
 
 		/**
@@ -621,22 +573,26 @@ public class KnowledgeMinerPreprocessor {
 		 */
 		public void writeHeuristic() {
 			// If there's no data to serialise, continue.
-			if (chunkedResults_.isEmpty())
+			if (resultMap_.isEmpty())
 				return;
 
-			for (Integer startKey : chunkedResults_.keySet()) {
-				// Set up file details
-				Integer endKey = startKey + NUM_MAPPINGS - 1;
-				String filename = makeFilename(heuristicName_, startKey, endKey);
-				File location = new File(DIR_PATH, filename);
-				// Serialise it.
-				try {
-					SerialisationMechanism.FST.getSerialiser().serialize(
-							chunkedResults_.get(startKey), location,
-							DefaultSerialisationMechanism.NORMAL);
-				} catch (InvalidActivityException e) {
-					e.printStackTrace();
+			try {
+				writeLock_.lock();
+				for (Integer index : changed_) {
+					// Set up file details
+					File location = makeFilename(heuristicName_, index);
+					// Serialise it.
+					try {
+						SerialisationMechanism.FST.getSerialiser().serialize(
+								resultMap_.get(index), location,
+								DefaultSerialisationMechanism.NORMAL);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
+				clear();
+			} finally {
+				writeLock_.unlock();
 			}
 		}
 	}

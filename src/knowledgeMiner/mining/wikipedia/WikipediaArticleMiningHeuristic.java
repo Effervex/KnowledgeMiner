@@ -7,13 +7,23 @@ import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Iterator;
+
+import util.collection.MultiMap;
+
+import cyc.AssertionArgument;
+import cyc.CycConstants;
 
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
+import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.CycMiner;
+import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.MiningHeuristic;
+import knowledgeMiner.mining.PartialAssertion;
 import knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor;
 
 /**
@@ -25,6 +35,7 @@ import knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor;
  * @author Sam Sarjant
  */
 public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
+
 	/**
 	 * Constructor for a new WikipediaArticleMiningHeuristic
 	 * 
@@ -33,8 +44,9 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 	 * @param miner
 	 *            The miner
 	 */
-	public WikipediaArticleMiningHeuristic(CycMapper mapper, CycMiner miner) {
-		super(mapper, miner);
+	public WikipediaArticleMiningHeuristic(boolean usePrecomputed,
+			CycMapper mapper, CycMiner miner) {
+		super(usePrecomputed, mapper, miner);
 	}
 
 	/**
@@ -56,6 +68,10 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 	protected abstract void mineArticleInternal(MinedInformation info,
 			int informationRequested, WMISocket wmi, OntologySocket ontology)
 			throws Exception;
+
+	public static WikipediaMappedConcept createSelfRefConcept(Object minedObject) {
+		return new WikipediaMappedConcept((int) minedObject);
+	}
 
 	/**
 	 * An alternative accessor for mining Wikipedia articles. Not recommended.
@@ -90,22 +106,78 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 
 		// Get precomputed info.
 		MinedInformation info = (MinedInformation) KnowledgeMiner.getInstance()
-				.getHeuristicResult(article, getHeuristicName());
-		if (info != null)
+				.getHeuristicResult(article, this);
+		if (info != null
+				&& (informationRequested & info.getMinedInformation()) == informationRequested) {
+			// System.out.println(getHeuristicName() + " (Pre): "
+			// + info.getAssertions());
 			return info;
+		}
 
 		try {
-			info = new ConceptModule(minedInformation.getConcept(),
-					minedInformation.getArticle(), weight_, true);
+			info = new MinedInformation(minedInformation.getArticle());
 			mineArticleInternal(info, informationRequested, wmi, cyc);
 			if (info != null)
 				info.addMinedInfoType(informationRequested);
-			KnowledgeMinerPreprocessor.getInstance().recordData(
-					getHeuristicName(), article, info);
+			// Split child mined data into separate records
+			if (getInfoTypeWeight(InformationType.CHILD_ARTICLES) != 0)
+				splitChildMinedData(info);
+
+			// Record the data
+			// System.out
+			// .println(getHeuristicName() + " (Mined): " +
+			// info.getAssertions());
+			if (isPrecomputed())
+				KnowledgeMinerPreprocessor.getInstance().recordData(
+						getHeuristicName(), article, info);
 			return info;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	/**
+	 * Splits mined data containing child-mined information into different info
+	 * chunks related to the child articles, rather than the parent.
+	 * 
+	 * @param info
+	 *            The info that was mined.
+	 */
+	private void splitChildMinedData(MinedInformation info) {
+		Collection<PartialAssertion> assertions = info.getAssertions();
+		Iterator<PartialAssertion> iter = assertions.iterator();
+		MultiMap<AssertionArgument, PartialAssertion> childMap = MultiMap
+				.createListMultiMap();
+		while (iter.hasNext()) {
+			PartialAssertion assertion = iter.next();
+			AssertionArgument[] args = assertion.getArgs();
+			if (assertion.getRelation().equals(
+					CycConstants.ISA_GENLS.getConcept())
+					&& !args[0].equals(info.getMappableSelfRef())) {
+				// Add to child collection
+				childMap.put(args[0], assertion);
+				iter.remove();
+			}
+		}
+
+		// For every child map, load up the child results and add them
+		for (AssertionArgument child : childMap.keySet()) {
+			// Get the child mined information
+			int childArt = ((WikipediaMappedConcept) child).getArticle();
+			MinedInformation childInfo = (MinedInformation) KnowledgeMiner
+					.getInstance().getHeuristicResult(childArt, this);
+			if (childInfo == null)
+				childInfo = new MinedInformation(childArt);
+
+			// Add the child information to the info
+			for (PartialAssertion pa : childMap.get(child))
+				childInfo.addAssertion(pa);
+
+			// Record it
+			if (isPrecomputed())
+				KnowledgeMinerPreprocessor.getInstance().recordData(
+						getHeuristicName(), childArt, childInfo);
+		}
 	}
 }

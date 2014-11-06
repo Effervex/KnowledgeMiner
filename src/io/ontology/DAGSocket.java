@@ -4,6 +4,7 @@
 package io.ontology;
 
 import graph.core.DAGNode;
+import graph.core.cli.DAGPortHandler;
 import graph.inference.CommonQuery;
 import graph.module.NLPToSyntaxModule;
 import io.IOManager;
@@ -21,8 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import util.UtilityMethods;
-import cyc.OntologyConcept;
 import cyc.CycConstants;
+import cyc.OntologyConcept;
 
 public class DAGSocket extends OntologySocket {
 	/** The default port number for the DAG. */
@@ -58,8 +59,8 @@ public class DAGSocket extends OntologySocket {
 
 		// Set
 		try {
-			command("set", "/env/edgeFlags " + eFlags, false);
-			command("set", "/env/nodeFlags " + nFlags, false);
+			command("set", DAGPortHandler.EDGE_FLAGS + " " + eFlags, false);
+			command("set", DAGPortHandler.NODE_FLAGS + " " + nFlags, false);
 		} catch (Exception e) {
 			logger_.error("setEdgeFlags: {}",
 					Arrays.toString(e.getStackTrace()));
@@ -77,9 +78,11 @@ public class DAGSocket extends OntologySocket {
 			command("set", "/env/singleline true", false);
 			command("set", "/env/endmessage ", false);
 			command("set", "/env/prompt ", false);
-			command("set", "/env/pretty false", false);
+			command("set", DAGPortHandler.PRETTY_RESULTS + " false", false);
 			command("set", "/env/time false", false);
-			command("set", "/env/edgesAddNodes false", false);
+			command("set", DAGPortHandler.DYNAMICALLY_ADD_NODES + " false",
+					false);
+			command("set", "/env/overwriteFunctional false", false);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -106,7 +109,7 @@ public class DAGSocket extends OntologySocket {
 	}
 
 	@Override
-	public Collection<String[]> allAssertions(Object concept, int argPos,
+	public Collection<String[]> getAllAssertions(Object concept, int argPos,
 			Object... exceptPredicates) {
 		Collection<String[]> assertions = new ArrayList<>();
 		StringBuilder arguments = new StringBuilder(concept.toString());
@@ -131,7 +134,7 @@ public class DAGSocket extends OntologySocket {
 			logger_.error("allAssertions: {}:{}, {}", concept, argPos,
 					Arrays.toString(e.getStackTrace()));
 			if (restartConnection()) {
-				Collection<String[]> result = allAssertions(concept, argPos,
+				Collection<String[]> result = getAllAssertions(concept, argPos,
 						exceptPredicates);
 				canRestart_ = true;
 				return result;
@@ -257,31 +260,30 @@ public class DAGSocket extends OntologySocket {
 		if (name.isEmpty())
 			return concepts;
 		try {
-			if (!allowAliases) {
-				// Use node command
-				String result = command("node", noNewLine(name), false);
-				if (result != null && !result.startsWith("-1")) {
-					int pipeIndex = result.indexOf('|');
-					concepts.add(new OntologyConcept(name, Integer.parseInt(result
-							.substring(0, pipeIndex))));
-				}
-			} else {
-				// Use find node
-				StringBuilder buffer = new StringBuilder("\""
-						+ noNewLine(name).replaceAll("\"", "\\\\\"") + "\"");
-				if (caseSensitive)
-					buffer.append(" T");
-				else
-					buffer.append(" F");
-				if (exactString)
-					buffer.append(" T");
-				else
-					buffer.append(" F");
+			// Use find node
+			StringBuilder buffer = new StringBuilder("\""
+					+ noNewLine(name).replaceAll("\"", "\\\\\"") + "\"");
+			if (caseSensitive)
+				buffer.append(" T");
+			else
+				buffer.append(" F");
+			if (exactString)
+				buffer.append(" T");
+			else
+				buffer.append(" F");
 
-				String result = command("findnodes", buffer.toString(), true);
-				String[] split = result.split("\\|");
-				for (int i = 1; i < split.length; i++) {
-					OntologyConcept concept = OntologyConcept.parseArgument(split[i]);
+			String result = command("findnodes", buffer.toString(), true);
+			String[] split = result.split("\\|");
+			for (int i = 1; i < split.length; i++) {
+				if (!split[i].startsWith("(")
+						&& !StringUtils.isNumeric(split[i]))
+					continue;
+				// Alias check.
+				if (allowAliases
+						|| findConceptByID(Integer.parseInt(split[i]))
+								.equalsIgnoreCase(name)) {
+					OntologyConcept concept = OntologyConcept
+							.parseArgument(split[i]);
 					if (concept != null)
 						concepts.add(concept);
 				}
@@ -324,7 +326,8 @@ public class DAGSocket extends OntologySocket {
 	public int findEdgeIDByArgs(Object... edgeArgs) {
 		StringBuilder arguments = new StringBuilder();
 		for (int i = 0; i < edgeArgs.length; i++)
-			arguments.append(edgeArgs[i] + " (" + (i + 1) + ") ");
+			if (edgeArgs[i] != null)
+				arguments.append(edgeArgs[i] + " (" + (i + 1) + ") ");
 		try {
 			String result = command("findedges", arguments.toString().trim(),
 					true);
@@ -351,6 +354,8 @@ public class DAGSocket extends OntologySocket {
 			int index = result.indexOf('|');
 			if (index == -1)
 				return -13;
+			if (result.lastIndexOf('|') == index)
+				return NON_EXISTENT_ID;
 			return Integer.parseInt(result.substring(0, index));
 		} catch (Exception e) {
 			logger_.error("getConceptID: {}, {}", term,
@@ -361,7 +366,7 @@ public class DAGSocket extends OntologySocket {
 				return result2;
 			}
 		}
-		return -1;
+		return NON_EXISTENT_ID;
 	}
 
 	@Override
@@ -391,6 +396,40 @@ public class DAGSocket extends OntologySocket {
 					Arrays.toString(e.getStackTrace()));
 			if (restartConnection()) {
 				int result = getNextNode(id);
+				canRestart_ = true;
+				return result;
+			}
+		}
+		return -1;
+	}
+
+	@Override
+	public int getPrevEdge(int id) {
+		try {
+			return Integer.parseInt(command("prevedge", id + "", false));
+		} catch (Exception e) {
+			logger_.error("getPrevEdge: {}, {}", id,
+					Arrays.toString(e.getStackTrace()));
+			if (restartConnection()) {
+				int result = getPrevEdge(id);
+				canRestart_ = true;
+				return result;
+			}
+		}
+		return -1;
+	}
+
+	@Override
+	public int getPrevNode(int id) {
+		try {
+			String result = command("prevnode", id + "", false);
+			int pipeIndex = result.indexOf('|');
+			return Integer.parseInt(result.substring(0, pipeIndex));
+		} catch (Exception e) {
+			logger_.error("getPrevNode: {}, {}", id,
+					Arrays.toString(e.getStackTrace()));
+			if (restartConnection()) {
+				int result = getPrevNode(id);
 				canRestart_ = true;
 				return result;
 			}
@@ -504,7 +543,8 @@ public class DAGSocket extends OntologySocket {
 				size = 0;
 			Collection<OntologyConcept> results = new ArrayList<>(size);
 			for (int i = 1; i <= size; i++) {
-				OntologyConcept concept = OntologyConcept.parseArgument(split[i]);
+				OntologyConcept concept = OntologyConcept
+						.parseArgument(split[i]);
 				if (concept != null)
 					results.add(concept);
 			}

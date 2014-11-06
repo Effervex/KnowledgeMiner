@@ -19,10 +19,11 @@ import java.util.regex.Matcher;
 
 import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.CycMapper;
+import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.CycMiner;
+import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
-import knowledgeMiner.mining.WeightedStanding;
 import util.UtilityMethods;
 import util.collection.MultiMap;
 import util.wikipedia.BulletListParser;
@@ -46,7 +47,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 	 * @param miner
 	 */
 	public ListMiner(CycMapper mapper, CycMiner miner) {
-		super(mapper, miner);
+		super(true, mapper, miner);
 	}
 
 	/**
@@ -69,8 +70,8 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 			int informationRequested, WMISocket wmi) throws Exception {
 		// Add standing
 		if (informationRequested(informationRequested, InformationType.STANDING))
-			info.setStanding(new WeightedStanding(TermStanding.COLLECTION,
-					basicProvenance_));
+			info.addStandingInformation(TermStanding.COLLECTION, getWeight(),
+					basicProvenance_);
 		// Add children
 		if (informationRequested(informationRequested,
 				InformationType.CHILD_ARTICLES)) {
@@ -86,8 +87,12 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 					items.add(m.group(1));
 			}
 
-			info.addChildArticles(wmi.getArticleByTitle(items
-					.toArray(new String[items.size()])));
+			Collection<Integer> childArts = wmi.getArticleByTitle(items
+					.toArray(new String[items.size()]));
+			HeuristicProvenance provenance = new HeuristicProvenance(this,
+					listArticle + "");
+			for (Integer childArt : childArts)
+				info.addChild(new WikipediaMappedConcept(childArt), provenance);
 
 			// TODO Parse the table elements from the list
 		}
@@ -180,6 +185,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 				String title = wmi.getPageTitle(artId, true);
 				if (title.startsWith(LIST_OF)) {
 					out.write(artId + "\t" + title + "\n");
+					System.out.println(title);
 					listCount++;
 				}
 			} catch (Exception e) {

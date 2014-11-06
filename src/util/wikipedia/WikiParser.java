@@ -3,8 +3,6 @@
  ******************************************************************************/
 package util.wikipedia;
 
-import graph.module.NLPToSyntaxModule;
-
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,10 +28,11 @@ public class WikiParser {
 			{ "<", ">" } };
 	public static final Pattern ANCHOR_PARSER = Pattern
 			.compile("\\[\\[([^\\[\\]]+?)(?:\\|([^\\[\\]]+?))?\\]\\]");
-	public static final Pattern ANCHOR_PARSER_ROUGH = Pattern.compile("[^\\s\\[]*"
-			+ WikiParser.ANCHOR_PARSER.pattern() + "[^\\s\\[]*");
-	public static final Pattern LIST_PATTERN = Pattern.compile("^(\\*|#).+?$",
-			Pattern.MULTILINE);
+	public static final Pattern ANCHOR_PARSER_ROUGH = Pattern
+			.compile("[^\\s\\[]*" + WikiParser.ANCHOR_PARSER.pattern()
+					+ "[^\\s\\[]*");
+	public static final Pattern LIST_PATTERN = Pattern.compile(
+			"^(\\*|#|(?:;.+?:)).+?$", Pattern.MULTILINE);
 	public static final Pattern MEDIA_LINK_PREFIX = Pattern
 			.compile("\\[\\[\\w+:");
 	/**
@@ -137,7 +136,8 @@ public class WikiParser {
 	 */
 	public static String backSearchHeader(String priorText) {
 		// Search backwards for a heading
-		String reverseMarkup = new StringBuilder(priorText).reverse().toString();
+		String reverseMarkup = new StringBuilder(priorText).reverse()
+				.toString();
 		Matcher m2 = HEADER_PARSER.matcher(reverseMarkup);
 		if (m2.find())
 			return new StringBuilder(m2.group(2)).reverse().toString();
@@ -162,6 +162,9 @@ public class WikiParser {
 			string = string.replaceAll(
 					"\\[\\[(?:[^\\[\\]]+\\|)?([^\\[\\]]+)\\]\\]", "$1");
 		} while (!oldStr.equals(string));
+		// Replace external links
+		string = string.replaceAll("(?<!\\[)\\[[^\\[]\\S+ ([^\\]]+)\\]", "$1");
+
 		// Remove bold/italic
 		string = string.replaceAll("'{2,}", "");
 		// Fix floating punctuation
@@ -324,23 +327,6 @@ public class WikiParser {
 	}
 
 	/**
-	 * Cleans a string of nasty characters and weird chunks.
-	 * 
-	 * @param string
-	 *            The string being cleaned.
-	 * @return The clean version of the string.
-	 */
-	public static String cleanString(String string) {
-		string = NLPToSyntaxModule.convertToAscii(string);
-		// Remove any hyperlink markup
-		string = string.replaceAll("(\\[|\\])", "");
-		string = string.replaceAll("&ndash;", "-");
-		string = string.replaceAll("&nbsp;", " ");
-		string = string.replaceAll("&(u|n)\\w+;", "?");
-		return string;
-	}
-
-	/**
 	 * Removes markup that may be useful elsewhere, but for the first sentence
 	 * (and other places) is of no use. E.g. external links and internal
 	 * styling.
@@ -395,8 +381,11 @@ public class WikiParser {
 		markup = COMMENT_PATTERN.matcher(markup).replaceAll("");
 		// Fixing line breaks.
 		markup = markup.replaceAll("<br ?/?>", "\n");
-		// Fixing endashes
+		// Fixing endashes/emdashes
 		markup = markup.replaceAll("&ndash;", "-");
+		markup = markup.replaceAll("&mdash;", " - ");
+		// Fixing spaces
+		markup = markup.replaceAll("&nbsp;", " ");
 		// Removing sole html tags
 		markup = markup.replaceAll("<[^>]+/>", "");
 		// Removing html groups.

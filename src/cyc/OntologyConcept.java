@@ -3,51 +3,52 @@
  ******************************************************************************/
 package cyc;
 
-import java.io.Serializable;
-
 import graph.core.PrimitiveNode;
 import io.ResourceAccess;
 
-import org.apache.commons.lang3.StringUtils;
+import java.io.Serializable;
 
-import de.ruedigermoeller.serialization.annotations.Compress;
+import org.apache.commons.lang3.StringUtils;
 
 import util.UniqueID;
 import util.UtilityMethods;
+import de.ruedigermoeller.serialization.annotations.Compress;
 
-public class OntologyConcept implements Serializable, UniqueID {
+public class OntologyConcept extends AssertionArgument implements Serializable,
+		UniqueID {
 	private static final long serialVersionUID = 1L;
-	public static final OntologyConcept PLACEHOLDER = new OntologyConcept(
-			"-PLACEHOLDER-75839-");
+	public static boolean parsingArgs_ = false;
+	// public static final OntologyConcept PLACEHOLDER = new OntologyConcept(
+	// "-PLACEHOLDER-75839-");
 	@Compress
 	protected String constant_;
 	protected String[] funcArgs_;
-	protected int id_ = -1;
-	private OntologyConcept temporalContext_;
-	public static boolean parsingArgs_ = false;
+	protected transient int id_;
 
 	public OntologyConcept(int id) {
 		id_ = id;
+		getConceptName();
 	}
 
 	public OntologyConcept(String... funcArgs) {
 		if (funcArgs.length == 1) {
-			id_ = ResourceAccess.requestOntologySocket().getConceptID(
-					funcArgs[0]);
 			parseConstantName(funcArgs[0]);
-			return;
-		}
-
-		if (funcArgs.length > 1) {
+		} else if (funcArgs.length > 1) {
 			funcArgs_ = idFunction(funcArgs, parsingArgs_);
-			id_ = ResourceAccess.requestOntologySocket().getConceptID(
-					"(" + StringUtils.join(funcArgs_, ' ') + ")");
 		}
+		refreshID();
 	}
 
 	public OntologyConcept(String constant, int id) {
 		id_ = id;
 		parseConstantName(constant);
+	}
+
+	public OntologyConcept(OntologyConcept ontologyConcept) {
+		super(ontologyConcept);
+		id_ = ontologyConcept.id_;
+		constant_ = ontologyConcept.constant_;
+		funcArgs_ = ontologyConcept.funcArgs_;
 	}
 
 	protected void parseConstantName(String constantName) {
@@ -62,60 +63,15 @@ public class OntologyConcept implements Serializable, UniqueID {
 		}
 	}
 
-	public String[] idFunction(String[] functionList, boolean parseArgs) {
-		String[] result = new String[functionList.length];
-		for (int i = 0; i < result.length; i++) {
-			String funcArg = functionList[i];
-			if (parseArgs && funcArg.startsWith("("))
-				result[i] = "("
-						+ StringUtils.join(
-								idFunction(
-										UtilityMethods.splitToArray(
-												UtilityMethods.shrinkString(
-														funcArg, 1), ' '),
-										parseArgs), ' ') + ")";
-			else if (parseArgs && funcArg.matches("\\d+"))
-				result[i] = ResourceAccess.requestOntologySocket()
-						.findConceptByID(Integer.parseInt(funcArg));
-			else
-				result[i] = funcArg;
-		}
-		return result;
-	}
-
 	@Override
 	public OntologyConcept clone() {
-		OntologyConcept clone = new OntologyConcept(id_);
-		clone.constant_ = constant_;
-		clone.funcArgs_ = funcArgs_;
-		clone.temporalContext_ = temporalContext_;
-		return clone;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		OntologyConcept other = (OntologyConcept) obj;
-		if (getIdentifier() == null) {
-			if (other.getIdentifier() != null)
-				return false;
-		} else if (!getIdentifier().equals(other.getIdentifier()))
-			return false;
-		if (temporalContext_ == null) {
-			if (other.temporalContext_ != null)
-				return false;
-		} else if (!temporalContext_.equals(other.temporalContext_))
-			return false;
-		return true;
+		return new OntologyConcept(this);
 	}
 
 	public String getConceptName() {
 		if (constant_ == null && funcArgs_ == null) {
+			if (id_ == 0)
+				return null;
 			parseConstantName(ResourceAccess.requestOntologySocket()
 					.findConceptByID(id_));
 		}
@@ -126,17 +82,47 @@ public class OntologyConcept implements Serializable, UniqueID {
 	}
 
 	public int getID() {
+		refreshID();
 		return id_;
 	}
 
+	/**
+	 * Rereads the ID from the constant/function args.
+	 */
+	private void refreshID() {
+		if (id_ == 0) {
+			if (constant_ != null)
+				id_ = ResourceAccess.requestOntologySocket().getConceptID(
+						constant_);
+			else if (funcArgs_ != null) {
+				id_ = ResourceAccess.requestOntologySocket().getConceptID(
+						"(" + StringUtils.join(funcArgs_, ' ') + ")");
+			}
+		}
+	}
+
 	public String getIdentifier() {
-		if (id_ == -1)
+		refreshID();
+		if (id_ < 0)
 			return toString();
 		return id_ + "";
 	}
 
-	public OntologyConcept getTemporalContext() {
-		return temporalContext_;
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		OntologyConcept other = (OntologyConcept) obj;
+		if (getIdentifier() == null) {
+			if (other.getIdentifier() != null)
+				return false;
+		} else if (!getIdentifier().equals(other.getIdentifier()))
+			return false;
+		return true;
 	}
 
 	@Override
@@ -155,26 +141,23 @@ public class OntologyConcept implements Serializable, UniqueID {
 	}
 
 	public boolean isOntologyConcept() {
-		return id_ != -1 || funcArgs_ != null;
+		refreshID();
+		return id_ > 0 || funcArgs_ != null;
 	}
 
 	public boolean isPrimitive() {
+		refreshID();
 		return constant_ != null && id_ == -1 && constant_.startsWith("'");
 	}
 
 	public boolean isString() {
+		refreshID();
 		return constant_ != null && id_ == -1 && constant_.startsWith("\"")
 				&& constant_.endsWith("\"");
 	}
 
-	public void setTemporalContext(OntologyConcept context) {
-		temporalContext_ = context;
-	}
-
-	@Override
-	public String toString() {
-		String constName = getConceptName();
-		return constName;
+	public void setID(int id) {
+		id_ = id;
 	}
 
 	public String toPrettyString() {
@@ -185,6 +168,51 @@ public class OntologyConcept implements Serializable, UniqueID {
 			return toString();
 	}
 
+	@Override
+	public String toString() {
+		String constName = getConceptName();
+		return constName;
+	}
+
+	/**
+	 * Formats a function into an array of ID strings for quick recognition by
+	 * the DAG.
+	 * 
+	 * @param functionList
+	 *            The function arguments.
+	 * @param parseArgs
+	 *            If the arguments should be parsed into IDs.
+	 * @return An array of strings representing IDs of the function.
+	 */
+	public static String[] idFunction(String[] functionList, boolean parseArgs) {
+		String[] result = new String[functionList.length];
+		for (int i = 0; i < result.length; i++) {
+			String funcArg = functionList[i];
+			result[i] = funcArg;
+			if (parseArgs && funcArg.startsWith("("))
+				result[i] = "("
+						+ StringUtils.join(
+								idFunction(
+										UtilityMethods.splitToArray(
+												UtilityMethods.shrinkString(
+														funcArg, 1), ' '),
+										parseArgs), ' ') + ")";
+			else if (!parseArgs && funcArg.matches("\\d+"))
+				result[i] = ResourceAccess.requestOntologySocket()
+						.findConceptByID(Integer.parseInt(funcArg));
+			else
+				result[i] = funcArg;
+		}
+		return result;
+	}
+
+	/**
+	 * Parse an ontology concept from a string.
+	 * 
+	 * @param argument
+	 *            The argument to parse.
+	 * @return The concept parsed (or null).
+	 */
 	public static OntologyConcept parseArgument(String argument) {
 		if (argument == null || argument.isEmpty())
 			return null;
@@ -201,16 +229,16 @@ public class OntologyConcept implements Serializable, UniqueID {
 			return new StringConcept(argument);
 		try {
 			int id = Integer.parseInt(argument);
-			return new OntologyConcept(id);
+			OntologyConcept oc = new OntologyConcept(id);
+			if (oc.getConceptName() == null)
+				return null;
+			else
+				return oc;
 		} catch (NumberFormatException e) {
 		}
 		OntologyConcept concept = new OntologyConcept(argument);
 		if (concept.getID() == -13)
 			return null;
 		return concept;
-	}
-
-	public void setID(int id) {
-		id_ = id;
 	}
 }

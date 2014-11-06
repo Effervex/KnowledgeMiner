@@ -3,29 +3,20 @@
  ******************************************************************************/
 package test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.SortedSet;
 
 import knowledgeMiner.mapping.CycMapper;
 
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-
-import util.collection.WeightedSet;
-import cyc.OntologyConcept;
 
 /**
  * A test class for CycMapper.
@@ -90,35 +81,11 @@ public class CycMapperParameterisedTest {
 	public static void setUp() throws Exception {
 		cyc_ = ResourceAccess.requestOntologySocket();
 		wmi_ = ResourceAccess.requestWMISocket();
-		mapper_ = new CycMapper(null);
+		mapper_ = new CycMapper();
 	}
 
 	@After
 	public void tearDown() {
 		wmi_.clearCachedArticles();
-	}
-
-	@Test
-	public void testGetMapping() {
-		try {
-			WeightedSet<Integer> mapping = mapper_.getVerifiedMappings(
-					new OntologyConcept(cycTerm_), null, wmi_, cyc_);
-			if (pageTitle_ != null) {
-				assertFalse("No mapping found", mapping.isEmpty());
-				SortedSet<Integer> ordered = mapping.getOrdered();
-				double weight = -1;
-				if (mapping.contains(wmi_.getArticleByTitle(pageTitle_)))
-					weight = mapping.getWeight(wmi_
-							.getArticleByTitle(pageTitle_));
-				assertEquals(cycTerm_ + ": " + pageTitle_
-						+ " is not first, weight is " + weight,
-						ordered.first(), wmi_.getArticleByTitle(pageTitle_), 0);
-			} else {
-				assertTrue(mapping.isEmpty());
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			fail("Exception!");
-		}
 	}
 }

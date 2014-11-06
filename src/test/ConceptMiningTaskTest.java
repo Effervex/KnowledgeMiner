@@ -5,11 +5,13 @@ package test;
 
 import static org.junit.Assert.assertEquals;
 import io.ResourceAccess;
+import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
 import java.io.IOException;
 
 import knowledgeMiner.ConceptMiningTask;
+import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
 
 import org.junit.After;
@@ -52,27 +54,31 @@ public class ConceptMiningTaskTest {
 	 */
 	@Test
 	public void testCreateNewCycTermName() throws IOException, Exception {
+		OntologySocket ontology = ResourceAccess.requestOntologySocket();
 		OntologyConcept cycTerm = ConceptMiningTask.createNewCycTermName(
-				wmi_.getArticleByTitle("Enslaved (band)"),
-				wmi_.getArticleByTitle("Musical ensemble"), wmi_);
+				"Enslaved (band)", "Musical ensemble", ontology);
 		assertEquals(cycTerm.toString(), "Enslaved-Band");
 
 		// Existing context
-		cycTerm = ConceptMiningTask.createNewCycTermName(
-				wmi_.getArticleByTitle("Enslaved (band)"),
-				wmi_.getArticleByTitle("Musical ensemble"), wmi_);
+		cycTerm = ConceptMiningTask.createNewCycTermName("Enslaved (band)",
+				"Musical ensemble", ontology);
 		assertEquals(cycTerm.toString(), "Enslaved-Band");
 
 		// Parental context
-		cycTerm = ConceptMiningTask.createNewCycTermName(
-				wmi_.getArticleByTitle("Batman"),
-				wmi_.getArticleByTitle("Comics"), wmi_);
+		cycTerm = ConceptMiningTask.createNewCycTermName("Batman", "Comics",
+				ontology);
 		assertEquals(cycTerm.toString(), "Batman-Comics");
 
 		// Equals a (lowercase) predicate
-		cycTerm = ConceptMiningTask.createNewCycTermName(
-				wmi_.getArticleByTitle("Ionization energy"),
-				wmi_.getArticleByTitle("Ion"), wmi_);
+		cycTerm = ConceptMiningTask.createNewCycTermName("Ionization energy",
+				"Ion", ontology);
 		assertEquals(cycTerm.toString(), "IonizationEnergy-Ion");
+	}
+
+	@Test
+	public void testTest() {
+		ConceptMiningTask cmt = new ConceptMiningTask(new ConceptModule(
+				new OntologyConcept("YearFn", "'2010")));
+		cmt.run();
 	}
 }

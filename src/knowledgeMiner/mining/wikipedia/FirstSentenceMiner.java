@@ -4,7 +4,6 @@
 package knowledgeMiner.mining.wikipedia;
 
 import graph.module.NLPToSyntaxModule;
-import io.IOManager;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
@@ -19,7 +18,7 @@ import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
-import knowledgeMiner.mining.WeightedStanding;
+import knowledgeMiner.mining.PartialAssertion;
 import util.UtilityMethods;
 import util.wikipedia.WikiParser;
 import cyc.CycConstants;
@@ -55,10 +54,11 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 	 * 
 	 * @param mapper
 	 *            The mapping part of KnowledgeMiner
-	 * @param miner The miner.
+	 * @param miner
+	 *            The miner.
 	 */
 	public FirstSentenceMiner(CycMapper mapper, CycMiner miner) {
-		super(mapper, miner);
+		super(true, mapper, miner);
 
 		initialiseRegExps();
 	}
@@ -255,8 +255,9 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 				InformationType.RELATIONS)) {
 			ArrayList<String> synonyms = extractSynonyms(firstSentence);
 			for (String synonym : synonyms)
-				info.addConcreteAssertion(createAssertion(
+				info.addAssertion(new PartialAssertion(
 						CycConstants.SYNONYM_RELATION.getConcept(),
+						basicProvenance_, info.getMappableSelfRef(),
 						new StringConcept(synonym)));
 
 			// Assert the sentence itself as a comment
@@ -264,23 +265,25 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 			if (!paragraph.isEmpty()) {
 				// TODO Replace anchors with ontolinks
 				paragraph = replaceAnchorsWithOntolinks(paragraph);
-				
+
 				paragraph = WikiParser.cleanAllMarkup(paragraph);
 				paragraph = NLPToSyntaxModule.convertToAscii(paragraph);
 				paragraph = paragraph.replaceAll("\n+", "<p>");
-				info.addConcreteAssertion(createAssertion(CycConstants.COMMENT
-						.getConcept(), new StringConcept(paragraph)));
+				info.addAssertion(new PartialAssertion(
+						CycConstants.WIKIPEDIA_COMMENT.getConcept(),
+						basicProvenance_, info.getMappableSelfRef(),
+						new StringConcept(paragraph)));
 			}
 		}
 	}
 
 	private String replaceAnchorsWithOntolinks(String paragraph) {
 		// TODO Find anchors
-		
+
 		// Check if anchors are mapped
-		
+
 		// Replace anchors with ontolinks
-		
+
 		return paragraph;
 	}
 
@@ -340,7 +343,8 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 	 * @return The items in bold.
 	 */
 	public ArrayList<String> extractSynonyms(String firstSentence) {
-		Matcher matcher = SYNONYM_PATTERN.matcher(firstSentence);
+		Matcher matcher = SYNONYM_PATTERN.matcher(firstSentence.replaceAll(
+				"[\\(\\)]", ""));
 		ArrayList<String> synonyms = new ArrayList<>();
 		while (matcher.find()) {
 			// 1+3+5?
@@ -392,7 +396,6 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 	public String regExpMatch(String title, String firstSentence,
 			MinedInformation info, WMISocket wmi) throws Exception {
 		String collectionFragment = null;
-		WeightedStanding standing = null;
 		// Check every pattern
 		int firstMatch = Integer.MAX_VALUE;
 		for (Pattern regExp : sentenceRegExps_.keySet()) {
@@ -406,18 +409,10 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 				TermStanding matcherStanding = sentenceRegExps_.get(regExp);
 				if (matcherStanding != TermStanding.UNKNOWN) {
 					// Record the standing, resolving clashes.
-					if (standing == null)
-						standing = new WeightedStanding(matcherStanding, basicProvenance_);
-					else
-						standing.mergeInformation(matcherStanding, basicProvenance_);
+					info.addStandingInformation(matcherStanding, getWeight(),
+							basicProvenance_);
 				}
 			}
-		}
-
-		if (standing != null) {
-			if (standing.getStanding() != TermStanding.UNKNOWN
-					&& standing.getWeight() == 1.0)
-				info.setStanding(standing);
 		}
 
 		if (collectionFragment == null) {
