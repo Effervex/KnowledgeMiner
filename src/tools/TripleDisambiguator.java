@@ -33,6 +33,7 @@ import org.apache.commons.lang3.text.WordUtils;
 import tools.util.DisambiguatedTopic;
 import tools.util.DisambiguatedTriple;
 import tools.util.FamilyMetrics;
+import util.Pair;
 import util.collection.MultiMap;
 import util.collection.WeightedSet;
 import util.text.TermWeight;
@@ -51,7 +52,7 @@ public class TripleDisambiguator {
 	private static final int INPUT_DBPEDIA_INDEX = 3;
 	private static final int INPUT_STEMMED_INDEX = 1;
 	private static final int INPUT_TEXT_INDEX = 0;
-	private static final TermWeight PRIMARY_TERMWEIGHT = TermWeight.DBPEDIA;
+	private static final TermWeight PRIMARY_TERMWEIGHT = TermWeight.WIKIFICATION;
 	private static final int RELATION_LABEL_INDEX = 3;
 	private static final int RELATION_OBJECT_INDEX = 4;
 	private static final int RELATION_SUBJECT_INDEX = 2;
@@ -61,9 +62,8 @@ public class TripleDisambiguator {
 	private CycMapper mapper_;
 	private DAGSocket ontology_;
 	private WMISocket wmi_;
-	public Map<String, String> dbPediaMappings_;
+	public Map<String, Pair<String, Double>> textToArticleMappings_;
 	public Collection<Integer> relatedArticles_;
-	public Map<String, WeightedSet<Integer>> wikifyMap_;
 
 	/**
 	 * Constructor for a new TripleDisambiguator. Loads/processes terms to be
@@ -83,16 +83,6 @@ public class TripleDisambiguator {
 			contextArticle_ = wmi_.getArticleByTitle(contextArticle);
 			relatedArticles_ = wmi_.getOutLinks(contextArticle_);
 			CycConstants.initialiseAssertions(ontology_);
-
-			wikifyMap_ = new HashedMap<>();
-			SortedSet<WikiAnnotation> topics = wmi_.getTopics(wmi_
-					.getMarkup(contextArticle_));
-			for (WikiAnnotation topic : topics) {
-				WeightedSet<Integer> articles = new WeightedSet<>();
-				articles.add(wmi_.getArticleByTitle(topic.getArticleName()),
-						topic.getWeight());
-				wikifyMap_.put(topic.getText(), articles);
-			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -201,9 +191,10 @@ public class TripleDisambiguator {
 				results[FamilyMetrics.Triple.ordinal()] = dt.toString(true);
 
 				// DBpedia disambiguated
-				if (dt.getDomain().equals(dt.getRange()))
+				if (dt.getDomain().toString().equals(dt.getRange().toString()))
 					results[FamilyMetrics.Subject.ordinal()] = StringUtils
-							.capitalize(dt.getDomain().toString()) + " (NEW)";
+							.capitalize(dt.getDomain().toString(true))
+							+ " (NEW)";
 				else
 					results[FamilyMetrics.Subject.ordinal()] = dt.getDomain()
 							.toString();
@@ -230,11 +221,11 @@ public class TripleDisambiguator {
 
 				// Disambiguation article?
 				int subjArticle = dt.getDomain().getArticle();
-				if (subjArticle != -1)
+				int objArticle = dt.getRange().getArticle();
+				if (subjArticle != -1 && subjArticle != objArticle)
 					results[FamilyMetrics.Is_Subject_Disam.ordinal()] = (wmi_
 							.getPageType(subjArticle)
 							.equals(WMISocket.TYPE_DISAMBIGUATION)) ? "T" : "F";
-				int objArticle = dt.getRange().getArticle();
 				if (objArticle != -1)
 					results[FamilyMetrics.Is_Object_Disam.ordinal()] = (wmi_
 							.getPageType(objArticle)
@@ -249,14 +240,15 @@ public class TripleDisambiguator {
 							+ "";
 
 					// Disjoint categories
-//					results[FamilyMetrics.Disjoint_Categories.ordinal()] = (isDisjointCategories(
-//							subjArticle, objArticle)) ? "T" : "F";
-//					System.out.println(dt.getDomain()
-//							+ " -- "
-//							+ dt.getRange()
-//							+ ": "
-//							+ results[FamilyMetrics.Disjoint_Categories
-//									.ordinal()]);
+					// results[FamilyMetrics.Disjoint_Categories.ordinal()] =
+					// (isDisjointCategories(
+					// subjArticle, objArticle)) ? "T" : "F";
+					// System.out.println(dt.getDomain()
+					// + " -- "
+					// + dt.getRange()
+					// + ": "
+					// + results[FamilyMetrics.Disjoint_Categories
+					// .ordinal()]);
 				}
 
 				out.write(StringUtils.join(results, "\t") + "\n");
@@ -302,40 +294,8 @@ public class TripleDisambiguator {
 		return shortTitle;
 	}
 
-	private void printRelations(Collection<DisambiguatedTriple> disamTriples,
-			TermWeight termWeight) throws IOException {
-		String shortTitle = getContextArticleTitle();
-		BufferedWriter out = new BufferedWriter(new FileWriter(shortTitle
-				+ termWeight.toString() + RELATIONS_BEST));
-
-		// Write the header
-		out.write("Triple\tSubject\tRelation\tObject\tSubjWeight\tRelWeight\tObjWeight\n");
-
-		for (DisambiguatedTriple dt : disamTriples) {
-			out.write(dt.toString(true));
-			out.write("\t" + dt.getDomain() + "\t" + dt.getRelation() + "\t"
-					+ dt.getRange());
-			out.write("\t");
-			double weight = dt.getDomain().getWeight(0);
-			if (weight != -1)
-				out.write(weight + "");
-			out.write("\t");
-			weight = dt.getRelation().getWeight(0);
-			if (weight != -1)
-				out.write(weight + "");
-			out.write("\t");
-			weight = dt.getRange().getWeight(0);
-			if (weight != -1)
-				out.write(weight + "");
-			out.write("\t");
-		}
-
-		out.close();
-	}
-
 	private void readDBPediaMappings(File termFile) throws IOException {
 		BufferedReader in = new BufferedReader(new FileReader(termFile));
-		dbPediaMappings_ = new HashedMap<>();
 		String input = in.readLine();
 		while ((input = in.readLine()) != null) {
 			String[] split = input.split("\t");
@@ -344,7 +304,8 @@ public class TripleDisambiguator {
 						DBPEDIA_URI_INDEX).replaceAll("_", " ");
 				articleName = articleName.replaceAll("%28", "(");
 				articleName = articleName.replaceAll("%29", ")");
-				dbPediaMappings_.put(split[INPUT_STEMMED_INDEX], articleName);
+				textToArticleMappings_.put(split[INPUT_STEMMED_INDEX],
+						new Pair<String, Double>(articleName, 1d));
 			}
 		}
 		in.close();
@@ -402,10 +363,32 @@ public class TripleDisambiguator {
 	public Collection<DisambiguatedTriple> disambiguateTriples(
 			Collection<DisambiguatedTriple> triples, File termFile)
 			throws Exception {
-		readDBPediaMappings(termFile);
+		textToArticleMappings_ = new HashedMap<>();
+		if (PRIMARY_TERMWEIGHT.equals(TermWeight.WIKIFICATION)) {
+			// TODO If using WIKIFICATION, use that instead
+			readWikificationMappings();
+		} else if (PRIMARY_TERMWEIGHT.equals(TermWeight.DBPEDIA)) {
+			readDBPediaMappings(termFile);
+		}
 		// TODO Convert this to produce PartialAssertions (mapText("Blah"))
 		Collection<DisambiguatedTriple> disamTriples = disambiguateRelations(triples);
 		return disamTriples;
+	}
+
+	private void readWikificationMappings() {
+		try {
+			SortedSet<WikiAnnotation> topics = wmi_.getTopics(wmi_
+					.getMarkup(contextArticle_));
+			// TODO Problems with stemming and underscores.
+			for (WikiAnnotation topic : topics) {
+				textToArticleMappings_.put(
+						topic.getText(),
+						new Pair<String, Double>(topic.getArticleName(), topic
+								.getWeight()));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public Collection<DisambiguatedTriple> filterTriples(

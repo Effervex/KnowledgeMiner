@@ -92,9 +92,9 @@ public class ExtractArticleText {
 			toProcess.addAll(getCategoryArticles(coreArticleID,
 					recurseSubCategory));
 		else if (andArticleContext) {
-			toProcess.addAll(wmi_.getOutLinks(coreArticleID));
-//			for (Integer cat : wmi_.getArticleCategories(coreArticleID))
-//				toProcess.addAll(getCategoryArticles(cat, recurseSubCategory));
+//			toProcess.addAll(wmi_.getOutLinks(coreArticleID));
+			for (Integer cat : wmi_.getArticleCategories(coreArticleID))
+				toProcess.addAll(getCategoryArticles(cat, recurseSubCategory));
 		} else
 			toProcess.add(coreArticleID);
 

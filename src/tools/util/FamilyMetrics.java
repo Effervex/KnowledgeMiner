@@ -9,6 +9,7 @@ public enum FamilyMetrics {
 	CYC_Subject,
 	CYC_Object,
 	Consistent,
+//	Justification,
 	Domain_Range_Relatedness,
 	Disjoint_Categories,
 	Is_Subject_Disam,
@@ -19,7 +20,10 @@ public enum FamilyMetrics {
 	EVAL_Object_DBpedia,
 	EVAL_Subject_CYC,
 	EVAL_Object_CYC,
-	EVAL_Triple_Correctness,
 	EVAL_Triple_Relevance,
-	EVAL_Correct_Consistency;
+	EVAL_Correct_Consistency,
+	Subject_Weight,
+	Relation_Weight,
+	Object_Weight,
+	Triple_Weight;
 }

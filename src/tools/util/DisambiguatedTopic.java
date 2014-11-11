@@ -16,6 +16,7 @@ import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import org.apache.commons.collections4.map.HashedMap;
 
 import tools.TripleDisambiguator;
+import util.Pair;
 import util.collection.WeightedSet;
 import util.text.TermWeight;
 import cyc.OntologyConcept;
@@ -51,6 +52,8 @@ public class DisambiguatedTopic {
 	private WMISocket wmi_;
 
 	private boolean isCreated_ = false;
+
+	private double disamWeight_;
 
 	private DisambiguatedTopic(String text) {
 		text_ = text;
@@ -93,7 +96,7 @@ public class DisambiguatedTopic {
 	 *
 	 * @param termStrategy
 	 *            The strategy for disambiguation.
-	 * @param dbPediaMappings_
+	 * @param textToArticleMappings_
 	 * @throws IOException
 	 */
 	public Object disambiguate(TermWeight termStrategy,
@@ -101,17 +104,13 @@ public class DisambiguatedTopic {
 		String cleanText = text_.replaceAll("_", " ").trim();
 		switch (termStrategy) {
 		case DBPEDIA:
-			String dbPedia = parent.dbPediaMappings_.get(text_);
-			if (dbPedia != null) {
-				disambiguation_ = wmi.getArticleByTitle(dbPedia);
-				disamType_ = TYPE_ARTICLE;
-			}
-			break;
 		case WIKIFICATION:
-			WeightedSet<Integer> wikified = parent.wikifyMap_.get(text_);
-			if (wikified != null && !wikified.isEmpty()) {
-				disambiguation_ = wikified;
-				disamType_ = TYPE_WEIGHTED_ARTICLES;
+			Pair<String, Double> weightedArticle = parent.textToArticleMappings_
+					.get(text_);
+			if (weightedArticle != null) {
+				disambiguation_ = weightedArticle.objA_;
+				disamWeight_ = weightedArticle.objB_;
+				disamType_ = TYPE_ARTICLE;
 			}
 			break;
 		case OUTLINKS:
@@ -186,7 +185,7 @@ public class DisambiguatedTopic {
 
 	public double getWeight(int i) {
 		if (disamType_ == TYPE_ARTICLE || disamType_ == TYPE_CONCEPT)
-			return 1;
+			return disamWeight_;
 		else if (disamType_ == TYPE_WEIGHTED_ARTICLES) {
 			WeightedSet<Integer> disam = (WeightedSet<Integer>) disambiguation_;
 			return disam.getWeight(disam.iterator().next());
@@ -216,6 +215,8 @@ public class DisambiguatedTopic {
 			return text_;
 		if (disamType_ == TYPE_CONCEPT)
 			return disambiguation_.toString() + " (NEW)";
+		if (disamType_ == TYPE_ARTICLE)
+			return disambiguation_.toString();
 
 		int article = getArticle();
 		try {
@@ -250,6 +251,7 @@ public class DisambiguatedTopic {
 		mappedConcept_ = createdConcept;
 		disambiguation_ = createdConcept;
 		disamType_ = TYPE_CONCEPT;
+		disamWeight_ = 1;
 	}
 
 	public boolean isCreated() {
@@ -268,8 +270,7 @@ public class DisambiguatedTopic {
 				DisambiguatedTopic disTerm = instanceMap_.get(term);
 				out.write(disTerm.getText() + "\t");
 				if (disTerm.disamType_ == TYPE_ARTICLE)
-					out.write(wmi.getPageTitle(
-							(int) disTerm.getDisambiguated(), true));
+					out.write(disTerm.getDisambiguated().toString());
 				else if (disTerm.disamType_ == TYPE_CONCEPT)
 					out.write(disTerm.getDisambiguated().toString());
 				else if (disTerm.disamType_ == TYPE_WEIGHTED_ARTICLES)
@@ -290,10 +291,13 @@ public class DisambiguatedTopic {
 
 	public int getArticle() {
 		if (disamType_ == TYPE_ARTICLE)
-			return (int) disambiguation_;
+			try {
+				return wmi_.getArticleByTitle((String) disambiguation_);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		else if (disamType_ == TYPE_WEIGHTED_ARTICLES)
 			return ((WeightedSet<Integer>) disambiguation_).iterator().next();
-		else
-			return -1;
+		return -1;
 	}
 }
