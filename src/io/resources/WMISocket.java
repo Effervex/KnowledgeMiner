@@ -56,9 +56,6 @@ public class WMISocket extends KMSocket {
 	private static final Pattern LABELS_PATTERN = Pattern
 			.compile("(\\d+),(\\d+),(.+)");
 
-	/** The port to connect to on localhost to access WMI remotely. */
-	public static final int LOCAL_WMI_PORT = 9880;
-
 	/** The name of the machine that WMI is stored on. */
 	private static final String MACHINE_NAME = "wmi";
 
@@ -1654,10 +1651,7 @@ public class WMISocket extends KMSocket {
 
 	@Override
 	protected int getPort() {
-		if (KMAccess.isOnWMI())
-			return WMI_PORT;
-		else
-			return LOCAL_WMI_PORT;
+		return WMI_PORT;
 	}
 
 	@Override

@@ -224,14 +224,16 @@ public class KnowledgeMinerPreprocessor {
 	 */
 	protected void writeMinedData(ConceptModule article, MinedInformation info,
 			MiningHeuristic heuristic) {
+		// TODO Split the MinedInformation into assertion-relative chunks
+		
+		
 		recordData(heuristic.getHeuristicName(), article.getArticle(), info);
 	}
 
 	/**
 	 * Writes the Wikipedia mapped data to file for the given heuristic.
 	 * 
-	 * @param articleID
-	 * 
+	 * @param article The article to write about.
 	 * @param mappings
 	 *            The mapping data to write.
 	 * @param heuristic
