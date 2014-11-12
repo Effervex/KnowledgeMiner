@@ -48,19 +48,19 @@ Throughout this process, multiple mappings can be identified. During the mapping
 =======================
 
 There are some classes that deserve some more description:
-cyc.CycConstants: These are concepts that both already exist in OpenCyc and new ones that are created for KnowledgeMiner specifically. A convenience class.
-cyc.MappableConcept: Mining does not immediately disambiguate mined information into concepts. They are instead stored as incomplete mappings which are grounded during consistency check. This allows mined information to retain its value even as the ontology changes.
-io.IOManager: The class in charge of most File IO.
-io.ResourceAccess: The class in charge of resource IO. That is, ontology access and WMI access should be received via this class - it creates sockets where necessary and operates with ThreadLocal access to sockets.
-knowledgeMiner.AssertionGrid & knowledgeMiner.DisjointnessDisambiguator: The core classes behind the 'Disjointness Disambiguation' process (identification of maximal consistent information).
-knowledgeMiner.WeightedHeuristics: The abstract class underpinning all of the heuristics. Doesn't contribute much alone, but forms the top of the heuristic structure.
-knowledgeMiner.mapping.CycMapper: The core class containing all of the Mapping Heuristics. CycToWiki, WikiToCyc, TextToCyc, etc. Mapping algorithm access should go through this class.
-knowledgeMiner.mining.CycMiner: The core class containing all of the Mining Heuristics. These currently only concern Wikipedia, but could be extended.
-knowledgeMiner.mining.MinedAssertion: The main form of representing assertions (well, an abstract parent of the two forms, but you get the idea).
-knowledgeMiner.mining.MinedInformation: The primary output of mining heuristics. MinedInformation contains any and all types of mined information that can be produced by a mining heuristic.
-knowledgeMiner.mining.SentenceParserHeuristic: A fairly major heuristic that isn't with the Wikipedia heuristics only because it can go beyond them. This heuristic employs a parser to produce assertions from natural text (currently only taxonomic assertions).
-knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor: A class for preprocessing mined information for articles such that runtime is much quicker. Can also preprocess mapped info, but this unfortunately grows stale quickly due to the changing ontology, so is of little use.
-util.wikipedia.WikiParser: A convenience class for doing all sorts of text processing stuff (primarily for Wikipedia).
+* cyc.CycConstants: These are concepts that both already exist in OpenCyc and new ones that are created for KnowledgeMiner specifically. A convenience class.
+* cyc.MappableConcept: Mining does not immediately disambiguate mined information into concepts. They are instead stored as incomplete mappings which are grounded during consistency check. This allows mined information to retain its value even as the ontology changes.
+* io.IOManager: The class in charge of most File IO.
+* io.ResourceAccess: The class in charge of resource IO. That is, ontology access and WMI access should be received via this class - it creates sockets where necessary and operates with ThreadLocal access to sockets.
+* knowledgeMiner.AssertionGrid & knowledgeMiner.DisjointnessDisambiguator: The core classes behind the 'Disjointness Disambiguation' process (identification of maximal consistent information).
+* knowledgeMiner.WeightedHeuristics: The abstract class underpinning all of the heuristics. Doesn't contribute much alone, but forms the top of the heuristic structure.
+* knowledgeMiner.mapping.CycMapper: The core class containing all of the Mapping Heuristics. CycToWiki, WikiToCyc, TextToCyc, etc. Mapping algorithm access should go through this class.
+* knowledgeMiner.mining.CycMiner: The core class containing all of the Mining Heuristics. These currently only concern Wikipedia, but could be extended.
+* knowledgeMiner.mining.MinedAssertion: The main form of representing assertions (well, an abstract parent of the two forms, but you get the idea).
+* knowledgeMiner.mining.MinedInformation: The primary output of mining heuristics. MinedInformation contains any and all types of mined information that can be produced by a mining heuristic.
+* knowledgeMiner.mining.SentenceParserHeuristic: A fairly major heuristic that isn't with the Wikipedia heuristics only because it can go beyond them. This heuristic employs a parser to produce assertions from natural text (currently only taxonomic assertions).
+* knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor: A class for preprocessing mined information for articles such that runtime is much quicker. Can also preprocess mapped info, but this unfortunately grows stale quickly due to the changing ontology, so is of little use.
+* util.wikipedia.WikiParser: A convenience class for doing all sorts of text processing stuff (primarily for Wikipedia).
 
 ================
 == Disclaimer ==
