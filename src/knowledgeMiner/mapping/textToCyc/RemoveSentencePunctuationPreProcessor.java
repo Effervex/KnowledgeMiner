@@ -20,7 +20,7 @@ public class RemoveSentencePunctuationPreProcessor extends
 	@Override
 	public String processSingle(String input, WMISocket wmi,
 			OntologySocket ontology) {
-		return input.replaceAll("[.!?,]$", "");
+		return input.replaceAll("[.!?,:;]$", "");
 	}
 
 }

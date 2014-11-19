@@ -125,6 +125,10 @@ public class CycToWiki_ContextRelatedSynonyms extends
 				}
 			}
 		}
+		
+		// If related articles is empty, just return mappings
+		if (relatedArticles.isEmpty())
+			return mappings;
 
 		// Recalculate weights based on context
 		Integer[] relatedArray = relatedArticles

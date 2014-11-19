@@ -9,5 +9,6 @@ package knowledgeMiner.mining;
  * @author Sam Sarjant
  */
 public enum InformationType {
+	// TODO STANDING, TAXONOMIC, SYNONYM, COMMENT, NON_TAXONOMIC
 	PARENTAGE, RELATIONS, STANDING, CHILD_ARTICLES;
 }

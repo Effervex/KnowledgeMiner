@@ -23,6 +23,7 @@ import knowledgeMiner.mapping.cycToWiki.CycToWiki_ContextRelatedSynonyms;
 import knowledgeMiner.mapping.cycToWiki.CycToWiki_TitleMatching;
 import knowledgeMiner.mapping.cycToWiki.CycToWiki_VoteSynonyms;
 import knowledgeMiner.mapping.textToCyc.CleanJunkPreProcessor;
+import knowledgeMiner.mapping.textToCyc.JoinNewLinePreProcessor;
 import knowledgeMiner.mapping.textToCyc.RemoveAnchorPreProcessor;
 import knowledgeMiner.mapping.textToCyc.RemoveBracketsPreProcessor;
 import knowledgeMiner.mapping.textToCyc.RemoveSentencePunctuationPreProcessor;
@@ -188,6 +189,7 @@ public class CycMapper {
 		textToCycMapping_.addPreProcessor(new CleanJunkPreProcessor());
 		textToCycMapping_.addPreProcessor(new ReplaceUnderscorePreProcessor());
 		textToCycMapping_.addPreProcessor(new SplitNewLinePreProcessor());
+		textToCycMapping_.addPreProcessor(new JoinNewLinePreProcessor());
 		textToCycMapping_.addPreProcessor(new SplitCommaPreProcessor());
 		textToCycMapping_.addPreProcessor(new RemoveBracketsPreProcessor());
 		textToCycMapping_.addPreProcessor(new RemoveSpacesPreProcessor());
