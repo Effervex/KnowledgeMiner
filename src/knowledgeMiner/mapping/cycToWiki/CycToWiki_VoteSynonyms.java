@@ -34,12 +34,6 @@ public class CycToWiki_VoteSynonyms extends
 		super(mappingRoot);
 	}
 
-	@Override
-	protected WeightedSet<Integer> mapSourceInternal(OntologyConcept cycTerm,
-			WMISocket wmi, OntologySocket cyc) throws IOException {
-		return mapSourceInternal(cycTerm, wmi, cyc, null);
-	}
-
 	/**
 	 * Uses related articles to alter the result weights based on how similar
 	 * the results are to the related articles.
@@ -50,16 +44,14 @@ public class CycToWiki_VoteSynonyms extends
 	 *            The WMI access.
 	 * @param cyc
 	 *            The Cyc access.
-	 * @param relatedArticles
-	 *            The related articles (can be null).
 	 * @return A {@link WeightedSet} of articles, weighted by synonym relevance
 	 *         and context weight.
 	 * @throws IOException
 	 *             Should something go awry...
 	 */
+	@Override
 	protected WeightedSet<Integer> mapSourceInternal(OntologyConcept cycTerm,
-			WMISocket wmi, OntologySocket cyc,
-			Collection<Integer> relatedArticles) throws IOException {
+			WMISocket wmi, OntologySocket cyc) throws IOException {
 		WeightedSet<Integer> mappings = new WeightedSet<>();
 		// Compile the synonyms
 		Collection<String> synonyms = new HashSet<>(cyc.getSynonyms(cycTerm
@@ -84,13 +76,8 @@ public class CycToWiki_VoteSynonyms extends
 
 		String[] synonymArray = synonyms.toArray(new String[synonyms.size()]);
 
-		List<WeightedSet<Integer>> synonymMappings = null;
-		if (relatedArticles != null)
-			// With related terms.
-			synonymMappings = wmi.getWeightedArticles(relatedArticles,
-					KnowledgeMiner.CUTOFF_THRESHOLD, synonymArray);
-		else
-			synonymMappings = wmi.getWeightedArticles(synonymArray);
+		List<WeightedSet<Integer>> synonymMappings = wmi
+				.getWeightedArticles(synonymArray);
 		for (WeightedSet<Integer> synonymMapping : synonymMappings)
 			mappings.addAll(synonymMapping);
 		mappings.normaliseWeightTo1(KnowledgeMiner.CUTOFF_THRESHOLD);

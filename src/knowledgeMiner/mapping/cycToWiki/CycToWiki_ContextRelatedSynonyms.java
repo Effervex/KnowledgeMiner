@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.MappingHeuristic;
 
@@ -50,17 +51,17 @@ public class CycToWiki_ContextRelatedSynonyms extends
 			WMISocket wmi, OntologySocket cyc) throws IOException {
 		// Progressively gather context information, starting with upper level
 		// stuff, then working down.
-		WeightedSet<Integer> relatedArticles = synonymMapper_
-				.mapSourceToTarget(cycTerm, wmi, cyc);
-		if (relatedArticles.isEmpty())
+		WeightedSet<Integer> mappings = synonymMapper_.mapSourceToTarget(
+				cycTerm, wmi, cyc);
+		if (mappings.isEmpty())
 			// Context can't be used if no articles found.
-			return relatedArticles;
-		relatedArticles.clear();
+			return mappings;
 
 		if (!isUsefulTerm(cycTerm))
-			return relatedArticles;
+			return mappings;
 
 		int level = 0;
+		WeightedSet<Integer> relatedArticles = new WeightedSet<>();
 		while (relatedArticles.size() < NUM_RELATED_TERMS && level < MAX_LEVELS) {
 			Collection<OntologyConcept> relatedCycTerms = null;
 			String strID = cycTerm.getIdentifier() + "";
@@ -75,8 +76,8 @@ public class CycToWiki_ContextRelatedSynonyms extends
 				break;
 			case 1:
 				// Get all non-narrower predicates
-				Collection<String[]> otherAssertions = cyc.getAllAssertions(strID,
-						2, CommonConcepts.ISA.getID(),
+				Collection<String[]> otherAssertions = cyc.getAllAssertions(
+						strID, 2, CommonConcepts.ISA.getID(),
 						CommonConcepts.GENLS.getID(),
 						CommonConcepts.DISJOINTWITH.getID());
 				relatedCycTerms = new ArrayList<>();
@@ -125,8 +126,16 @@ public class CycToWiki_ContextRelatedSynonyms extends
 			}
 		}
 
-		WeightedSet<Integer> mappings = synonymMapper_.mapSourceInternal(
-				cycTerm, wmi, cyc, relatedArticles);
+		// Recalculate weights based on context
+		Integer[] relatedArray = relatedArticles
+				.toArray(new Integer[relatedArticles.size()]);
+		for (Integer art : mappings) {
+			double sumRel = 0;
+			for (Double d : wmi.getRelatednessList(art, relatedArray))
+				sumRel += d;
+			mappings.scaleElement(art, sumRel);	
+		}
+		mappings.normaliseWeightTo1(KnowledgeMiner.CUTOFF_THRESHOLD);
 		LoggerFactory.getLogger(CycMapper.class).trace("C-WSynonym: {} {}",
 				cycTerm.getID(), mappings);
 		return mappings;

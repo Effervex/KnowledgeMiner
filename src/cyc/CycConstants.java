@@ -124,6 +124,9 @@ public enum CycConstants {
 				COMMENT.getID());
 		ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
+				CommonConcepts.ARITY.getID(), WIKIPEDIA_COMMENT.getID(), "'2");
+		ontologySocket.assertToOntology(
+				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ARG1ISA.getID(), WIKIPEDIA_COMMENT.getID(),
 				CommonConcepts.THING.getID());
 		ontologySocket.assertToOntology(
@@ -289,10 +292,13 @@ public enum CycConstants {
 		cyc.assertToOntology(BASEKB.getConceptName(),
 				CommonConcepts.ISA.getID(), predicate.getID(),
 				CommonConcepts.BINARY_PREDICATE.getID());
-		cyc.assertToOntology(BASEKB.getConceptName(), "arg1Isa",
-				predicate.getID(), arg1Isa);
-		cyc.assertToOntology(BASEKB.getConceptName(), "arg2Isa",
-				predicate.getID(), "CharacterString");
+		cyc.assertToOntology(BASEKB.getConceptName(),
+				CommonConcepts.ARITY.getID(), predicate.getID(), "'2");
+		cyc.assertToOntology(BASEKB.getConceptName(),
+				CommonConcepts.ARG1ISA.getID(), predicate.getID(), arg1Isa);
+		cyc.assertToOntology(BASEKB.getConceptName(),
+				CommonConcepts.ARG2ISA.getID(), predicate.getID(),
+				CommonConcepts.CHARACTER_STRING.getID());
 	}
 
 	/**
