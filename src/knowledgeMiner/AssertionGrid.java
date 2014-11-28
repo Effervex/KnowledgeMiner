@@ -18,6 +18,7 @@ import io.resources.WMISocket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -106,6 +107,8 @@ public class AssertionGrid {
 		coreConcept_ = existingGrid.coreConcept_;
 		standing_ = standing;
 
+		if (existingGrid.assertionGrid_ == null)
+			return;
 		int oldLength = existingGrid.assertionGrid_.length;
 		if (assertionRemoval) {
 			int newLength = oldLength + existingAssertions.size();
@@ -254,6 +257,8 @@ public class AssertionGrid {
 	}
 
 	private double findAvailableSeed() {
+		if (usedSeeds_ == null)
+			return -1;
 		int i = 0;
 		while (usedSeeds_[seedStack_[i].objA_][seedStack_[i].objB_]) {
 			i++;
@@ -398,8 +403,6 @@ public class AssertionGrid {
 		do {
 			// Seed a new case
 			double seedWeight = findAvailableSeed() * bestStanding;
-			if (seedWeight == -1)
-				return null;
 
 			// Add a case for both individual and collection (if there is
 			// ambiguity), with standing weights
@@ -436,10 +439,14 @@ public class AssertionGrid {
 	public Collection<DefiniteAssertion> findMaximalConjoint(
 			OntologySocket ontology) {
 		findNConjoint(1, ontology);
-		DisjointnessDisambiguator.logger_.debug(
-				"Disambiguated {} with weight {}", concept_.getConceptName(),
-				Math.min(1.0, disjointCases_[0].getPotentialWeight()));
-		return disjointCases_[0].getAssertions();
+		if (disjointCases_[0] != null) {
+			DisjointnessDisambiguator.logger_.debug(
+					"Disambiguated {} with weight {}",
+					concept_.getConceptName(),
+					Math.min(1.0, disjointCases_[0].getPotentialWeight()));
+			return disjointCases_[0].getAssertions();
+		}
+		return Collections.EMPTY_LIST;
 	}
 
 	public void findNConjoint(int numDisambiguated, OntologySocket ontology) {
@@ -472,6 +479,8 @@ public class AssertionGrid {
 	}
 
 	public double getCaseWeight(int caseNum) {
+		if (disjointCases_[caseNum] == null)
+			return -1;
 		return Math.min(disjointCases_[caseNum].getPotentialWeight(), 1);
 	}
 
@@ -847,7 +856,10 @@ public class AssertionGrid {
 		public String toString() {
 			if (completedWeight_ == -1)
 				return "Invalid Disjoint Case.";
-			return allAssertions_.toString();
+			if (isaCollection_)
+				return "C:" + allAssertions_.toString();
+			else
+				return "I:" + allAssertions_.toString();
 		}
 	}
 }

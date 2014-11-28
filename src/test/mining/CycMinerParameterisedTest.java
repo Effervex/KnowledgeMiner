@@ -39,12 +39,11 @@ import static org.junit.Assert.*;
 public class CycMinerParameterisedTest {
 	private static final File MINING_FILE = new File("miningTests.txt");
 	private static OntologySocket ontology_;
-
-	private static KnowledgeMiner sut_;
 	private static WMISocket wmi_;
 
 	private int art_;
 	private static String artTitle_;
+	private static KnowledgeMiner km_;
 	private MultiMap<String, String> heuristicMap_;
 
 	public CycMinerParameterisedTest(String articleTitle,
@@ -80,7 +79,7 @@ public class CycMinerParameterisedTest {
 		if (!shouldPerformTest(heurName))
 			return;
 
-		WikipediaArticleMiningHeuristic heuristic = (WikipediaArticleMiningHeuristic) sut_
+		WikipediaArticleMiningHeuristic heuristic = (WikipediaArticleMiningHeuristic) km_
 				.getHeuristicByString(heurName);
 		MinedInformation info = heuristic.mineArticle(art_,
 				MinedInformation.ALL_TYPES, wmi_, ontology_);
@@ -208,6 +207,6 @@ public class CycMinerParameterisedTest {
 	public static void setUp() throws Exception {
 		ontology_ = ResourceAccess.requestOntologySocket();
 		wmi_ = ResourceAccess.requestWMISocket();
-		sut_ = KnowledgeMiner.newInstance("Enwiki_20110722");
+		km_ = KnowledgeMiner.newInstance("Enwiki_20110722");
 	}
 }
