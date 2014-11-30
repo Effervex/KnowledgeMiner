@@ -107,27 +107,23 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 		String text = parse.getCoveredText();
 
 		// Add all visible anchors
-		String anchorText = reAnchorString(text, anchors);
-		Matcher m = WikiParser.ANCHOR_PARSER_ROUGH.matcher(anchorText);
 		// Keep track of which text is in what anchors
 		Map<String, Tree<String>> anchorMap = new HashMap<>();
 		// Keep track of any multiple-work anchors.
 		Map<String, Tree<String>> subAnchorMap = new HashMap<>();
-		while (m.find()) {
-			Tree<String> anchorTree = new Tree<String>(m.group());
-			// Split up anchor text
-			String anchor = (m.group(2) == null) ? m.group(1) : m.group(2);
-			String[] split = anchor.split("\\s+");
-			if (split.length > 1)
-				for (String str : split)
-					if (!subAnchorMap.containsKey(str))
-						subAnchorMap.put(str, anchorTree);
-			anchorMap.put(anchor, anchorTree);
-			strings.addSubTree(anchorTree);
-		}
+		for (Tree<String> t : extractAnchors(text, anchors, anchorMap,
+				subAnchorMap))
+			strings.addSubTree(t);
 
 		// Work backwards through the children, adding nouns, then adjectives to
 		// the nouns
+		pairNounAdjs(parse, anchors, strings, anchorMap, subAnchorMap);
+		return strings;
+	}
+
+	public void pairNounAdjs(Parse parse, SortedMap<String, String> anchors,
+			Tree<String> strings, Map<String, Tree<String>> anchorMap,
+			Map<String, Tree<String>> subAnchorMap) {
 		boolean createNewNounSet = false;
 		boolean includesNN = false;
 		Tree<String> nounTree = null;
@@ -176,7 +172,42 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 		// Adding the noun tree if it is not yet added.
 		if (includesNN && nounTree != null)
 			strings.addSubTree(nounTree);
-		return strings;
+	}
+
+	/**
+	 * Extracts the anchors from the text and returns them in tree form.
+	 *
+	 * @param text
+	 *            The text to reinsert anchors into, then extract anchors from
+	 * @param anchors
+	 *            The reanchoring map.
+	 * @param anchorMap
+	 *            The map of anchors to add to.
+	 * @param subAnchorMap
+	 *            The map of sub anchors (anchors consisting of multiple words).
+	 * @return A collection of extracted anchors.
+	 */
+	public Collection<Tree<String>> extractAnchors(String text,
+			SortedMap<String, String> anchors,
+			Map<String, Tree<String>> anchorMap,
+			Map<String, Tree<String>> subAnchorMap) {
+		Collection<Tree<String>> anchorCol = new ArrayList<>();
+		// Reanchor the string and extract all anchors
+		String anchorText = reAnchorString(text, anchors);
+		Matcher m = WikiParser.ANCHOR_PARSER_ROUGH.matcher(anchorText);
+		while (m.find()) {
+			Tree<String> anchorTree = new Tree<String>(m.group());
+			// Split up anchor text
+			String anchor = (m.group(2) == null) ? m.group(1) : m.group(2);
+			String[] split = anchor.split("\\s+");
+			if (split.length > 1)
+				for (String str : split)
+					if (!subAnchorMap.containsKey(str))
+						subAnchorMap.put(str, anchorTree);
+			anchorMap.put(anchor, anchorTree);
+			anchorCol.add(anchorTree);
+		}
+		return anchorCol;
 	}
 
 	/**
