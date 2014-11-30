@@ -117,7 +117,7 @@ public class SentenceParserHeuristicTest {
 		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
 				ontology_, null);
 		assertNotNull(output);
-		assertEquals(output.size(), 5);
+		assertEquals(output.size(), 14);
 		assertTrue(output.contains(buildPartial(focusConcept, "figure skater",
 				null)));
 		assertTrue(output.contains(buildPartial(focusConcept, "skater", null)));
