@@ -66,8 +66,6 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 *            The tree of nouns.
 	 * @param adjective
 	 *            The adjective.
-	 * @param anchors
-	 *            The replacement map for the anchors.
 	 * @param anchorMap
 	 *            A mapping between text and anchors.
 	 * @param results
@@ -75,15 +73,15 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 * @return A new tree representing the adjective pair added to the nouns.
 	 */
 	private Tree<String> buildAdjectivePairs(Tree<String> nounTree,
-			String adjective, SortedMap<String, String> anchors,
-			Map<String, Tree<String>> anchorMap, Tree<String> results) {
+			String adjective, Map<String, Tree<String>> anchorMap,
+			Tree<String> results) {
 		Collection<Tree<String>> subTrees = nounTree.getSubTrees();
 		Tree<String> subTree = null;
 		if (!subTrees.isEmpty())
 			subTree = buildAdjectivePairs(subTrees.iterator().next(),
-					adjective, anchors, anchorMap, results);
+					adjective, anchorMap, results);
 		Tree<String> thisTree = newTree(adjective + " " + nounTree.getValue(),
-				anchors, anchorMap, results);
+				anchorMap, results);
 		if (subTree != null)
 			thisTree.addSubTree(subTree);
 		return thisTree;
@@ -103,8 +101,8 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 */
 	public Tree<String> composeAdjNounsTree(Parse parse,
 			SortedMap<String, String> anchors) {
-		Tree<String> strings = new Tree<String>(null);
 		String text = parse.getCoveredText();
+		Tree<String> strings = new Tree<String>(null);
 
 		// Add all visible anchors
 		// Keep track of which text is in what anchors
@@ -121,7 +119,19 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 		return strings;
 	}
 
-	public void pairNounAdjs(Parse parse, SortedMap<String, String> anchors,
+	/**
+	 * Build a hierarchical tree from a parse of text by pairing together
+	 * adjectives and nouns. Longer chains of pairs are higher in the tree and
+	 * broken down into their components. Any strings consisting solely of
+	 * anchors are not added (they are already higher in the tree).
+	 *
+	 * @param parse The parse to build the tree from.
+	 * @param anchors The anchors for reanchoring text.
+	 * @param strings The tree to add to.
+	 * @param anchorMap The map of anchor trees.
+	 * @param subAnchorMap The map of subAnchorTrees
+	 */
+	private void pairNounAdjs(Parse parse, SortedMap<String, String> anchors,
 			Tree<String> strings, Map<String, Tree<String>> anchorMap,
 			Map<String, Tree<String>> subAnchorMap) {
 		boolean createNewNounSet = false;
@@ -144,10 +154,10 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 
 				// Get the current tree root and add to it.
 				if (nounTree == null) {
-					nounTree = newTree(childText, anchors, anchorMap, strings);
+					nounTree = newTree(childText, anchorMap, strings);
 				} else {
 					Tree<String> parentTree = newTree(childText + " "
-							+ nounTree.getValue(), anchors, anchorMap, strings);
+							+ nounTree.getValue(), anchorMap, strings);
 					parentTree.addSubTree(nounTree);
 					nounTree = parentTree;
 				}
@@ -160,7 +170,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 						strings.addSubValue(reAnchorString(childText, anchors));
 
 					strings.addSubTree(buildAdjectivePairs(nounTree, childText,
-							anchors, anchorMap, strings));
+							anchorMap, strings));
 				}
 
 				createNewNounSet = true;
@@ -187,7 +197,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 *            The map of sub anchors (anchors consisting of multiple words).
 	 * @return A collection of extracted anchors.
 	 */
-	public Collection<Tree<String>> extractAnchors(String text,
+	private Collection<Tree<String>> extractAnchors(String text,
 			SortedMap<String, String> anchors,
 			Map<String, Tree<String>> anchorMap,
 			Map<String, Tree<String>> subAnchorMap) {
@@ -352,18 +362,15 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 * 
 	 * @param textFragment
 	 *            The text to add as a tree.
-	 * @param anchors
-	 *            The replacement map for the anchors.
 	 * @param anchorMap
 	 *            A map between text and anchors.
 	 * @param results
 	 *            The collection of all results fragments.
-	 * 
 	 * @return A new tree representing the text.
 	 */
 	private Tree<String> newTree(String textFragment,
-			SortedMap<String, String> anchors,
-			Map<String, Tree<String>> anchorMap, Tree<String> results) {
+			Map<String, Tree<String>> anchorMap,
+			Tree<String> results) {
 		// If the string represents an anchor
 		if (anchorMap.containsKey(textFragment)) {
 			Tree<String> anchorTree = anchorMap.get(textFragment);
