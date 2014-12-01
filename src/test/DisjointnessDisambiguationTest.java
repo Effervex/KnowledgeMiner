@@ -13,6 +13,7 @@ import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -63,6 +64,8 @@ public class DisjointnessDisambiguationTest {
 		double weight = cm.disambiguateAssertions(cyc_);
 		System.out.println(cm.getConcreteAssertions());
 		System.out.println(weight);
+		// Serialising the precomputed mining results to file.
+		KnowledgeMinerPreprocessor.getInstance().writeHeuristics();
 	}
 
 	private void addArticleMappings() throws Exception {
