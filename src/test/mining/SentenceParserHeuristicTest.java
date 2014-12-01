@@ -48,24 +48,23 @@ public class SentenceParserHeuristicTest {
 		Collection<PartialAssertion> output = sut_.extractAssertions(sentence,
 				focusConcept, wmi_, ontology_, null);
 		assertNotNull(output);
-		assertEquals(output.size(), 1);
 		assertTrue(output.contains(buildPartial(focusConcept, "battle", null)));
+		assertEquals(output.size(), 1);
 
 		// Adding a conjunction
 		sentence = "Test was a battle and an event.";
 		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
 				ontology_, null);
 		assertNotNull(output);
-		assertEquals(output.size(), 2);
 		assertTrue(output.contains(buildPartial(focusConcept, "battle", null)));
 		assertTrue(output.contains(buildPartial(focusConcept, "event", null)));
+		assertEquals(output.size(), 2);
 
 		// Adjectives (Double JJ)
 		sentence = "Test was an indecisive naval battle.";
 		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
 				ontology_, null);
 		assertNotNull(output);
-		assertEquals(output.size(), 4);
 		assertTrue(output.contains(buildPartial(focusConcept, "battle", null)));
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"indecisive battle",
@@ -75,16 +74,17 @@ public class SentenceParserHeuristicTest {
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"indecisive naval battle",
 				buildPartial(focusConcept, "indecisive naval", null))));
+		assertEquals(output.size(), 4);
 
 		// Double NN
 		sentence = "Test is a figure skater.";
 		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
 				ontology_, null);
 		assertNotNull(output);
-		assertEquals(output.size(), 2);
 		assertTrue(output.contains(buildPartial(focusConcept, "figure skater",
 				null)));
 		assertTrue(output.contains(buildPartial(focusConcept, "skater", null)));
+		assertEquals(output.size(), 2);
 
 		// Anchors
 		sentence = "Test is a professional [[American football|football]] "
@@ -93,7 +93,6 @@ public class SentenceParserHeuristicTest {
 		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
 				ontology_, null);
 		assertNotNull(output);
-		assertEquals(output.size(), 5);
 		assertTrue(output
 				.contains(buildPartial(
 						focusConcept,
@@ -111,13 +110,15 @@ public class SentenceParserHeuristicTest {
 				buildPartial(focusConcept, "professional", null))));
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"[[American football|football]]", null)));
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"coach", null)));
+		assertEquals(output.size(), 6);
 
 		// Three JJs + 2 NNs
 		sentence = "Test was a Swiss former competitive figure skater.";
 		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
 				ontology_, null);
 		assertNotNull(output);
-		assertEquals(output.size(), 14);
 		assertTrue(output.contains(buildPartial(focusConcept, "figure skater",
 				null)));
 		assertTrue(output.contains(buildPartial(focusConcept, "skater", null)));
@@ -142,28 +143,59 @@ public class SentenceParserHeuristicTest {
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"competitive skater",
 				buildPartial(focusConcept, "competitive", null))));
-		assertTrue(output
-				.contains(buildPartial(
-						focusConcept,
-						"former competitive skater",
-						buildPartial(
-								focusConcept,
-								"former",
-								buildPartial(focusConcept,
-										"former competitive", null)))));
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"former competitive skater",
+				buildPartial(focusConcept, "former competitive", null))));
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"Swiss former competitive skater",
 				buildPartial(focusConcept, "Swiss former competitive", null))));
 		assertTrue(output.contains(buildPartial(focusConcept, "former skater",
 				buildPartial(focusConcept, "former", null))));
-		assertTrue(output.contains(buildPartial(
-				focusConcept,
-				"Swiss skater",
-				buildPartial(focusConcept, "Swiss",
-						buildPartial(focusConcept, "Swiss", null)))));
+		assertTrue(output.contains(buildPartial(focusConcept, "Swiss skater",
+				buildPartial(focusConcept, "Swiss", null))));
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"Swiss former skater",
 				buildPartial(focusConcept, "Swiss former", null))));
+		assertEquals(output.size(), 14);
+
+		// Another big example (1 JJ + 3 NN with anchor)
+		sentence = "Test was a [[public access television]] show.";
+		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
+				ontology_, null);
+		assertNotNull(output);
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"[[public access television]]", null)));
+		assertTrue(output.contains(buildPartial(focusConcept, "show", null)));
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"television show", null)));
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"access television show", null)));
+		assertTrue(output.contains(buildPartial(focusConcept, "public show",
+				buildPartial(focusConcept, "public", null))));
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"public television show",
+				buildPartial(focusConcept, "public", null))));
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"[[public access television]] show",
+				buildPartial(focusConcept, "public", null))));
+		assertEquals(output.size(), 7);
+
+		// Adjective as anchor (no redundant sub assertion)
+		sentence = "Uma Karuna Thurman (born April 29, 1970) is an "
+				+ "[[United States|American]] [[actress]] and "
+				+ "[[Model (person)|model]].";
+		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
+				ontology_, null);
+		assertNotNull(output);
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"[[United States|American]]", null)));
+		assertTrue(output.contains(buildPartial(focusConcept, "[[actress]]",
+				null)));
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"[[Model (person)|model]]", null)));
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"[[United States|American]] [[actress]]", null)));
+		assertEquals(output.size(), 4);
 	}
 
 	private PartialAssertion buildPartial(MappableConcept focusConcept,
@@ -179,27 +211,96 @@ public class SentenceParserHeuristicTest {
 	@Test
 	public void testComposeAdjNounsTree() {
 		SortedMap<String, String> anchors = new TreeMap<>();
-		// Basic
+		// Basic noun
 		String sentence = "a battle";
 		Parse parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
-		Tree<String> adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
-		assertNotNull(adjNounTree);
-		assertEquals(adjNounTree.getValue(), "battle");
-		assertTrue(adjNounTree.getCurrentDepth() == 0);
-		assertTrue(adjNounTree.getMaxDepth() == 0);
+		Collection<Tree<String>> adjNounTree = sut_.composeAdjNounsTree(parse,
+				anchors);
+		assertEquals(adjNounTree.size(), 1);
+		assertTrue(adjNounTree.contains(new Tree<String>("battle")));
 
-		sentence = "a naval battle.";
+		// Adj noun combo
+		sentence = "a naval battle";
 		parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
 		adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
-		assertNotNull(adjNounTree);
-		assertEquals(adjNounTree.getValue(), "naval battle");
-		assertTrue(adjNounTree.getCurrentDepth() == 0);
-		assertTrue(adjNounTree.getMaxDepth() == 1);
-		Collection<Tree<String>> subTrees = adjNounTree.getSubTrees();
-		assertEquals(subTrees.size(), 2);
-		Iterator<Tree<String>> iter = subTrees.iterator();
-		assertEquals(iter.next().getValue(), "naval");
-		assertEquals(iter.next().getValue(), "battle");
+		assertEquals(adjNounTree.size(), 2);
+		assertTrue(adjNounTree.contains(new Tree<String>("battle")));
+		Tree<String> subT = new Tree<String>("naval battle");
+		subT.addSubValue("naval");
+		assertTrue(adjNounTree.contains(subT));
+
+		// Double JJ
+		sentence = "an indecisive naval battle";
+		parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
+		adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
+		assertEquals(adjNounTree.size(), 4);
+		assertTrue(adjNounTree.contains(new Tree<String>("battle")));
+		subT = new Tree<String>("naval battle");
+		subT.addSubValue("naval");
+		assertTrue(adjNounTree.contains(subT));
+		subT = new Tree<String>("indecisive battle");
+		subT.addSubValue("indecisive");
+		assertTrue(adjNounTree.contains(subT));
+		subT = new Tree<String>("indecisive naval battle");
+		subT.addSubValue("indecisive naval");
+		assertTrue(adjNounTree.contains(subT));
+
+		// Double NN
+		sentence = "a figure skater";
+		parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
+		adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
+		assertEquals(adjNounTree.size(), 2);
+		assertTrue(adjNounTree.contains(new Tree<String>("skater")));
+		assertTrue(adjNounTree.contains(new Tree<String>("figure skater")));
+
+		// Double JJ + double NN
+		sentence = "a former Swiss figure skater";
+		parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
+		adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
+		assertEquals(adjNounTree.size(), 8);
+		assertTrue(adjNounTree.contains(new Tree<String>("skater")));
+		assertTrue(adjNounTree.contains(new Tree<String>("figure skater")));
+		subT = new Tree<String>("Swiss skater");
+		subT.addSubValue("Swiss");
+		assertTrue(adjNounTree.contains(subT));
+		subT = new Tree<String>("former skater");
+		subT.addSubValue("former");
+		assertTrue(adjNounTree.contains(subT));
+		subT = new Tree<String>("former Swiss skater");
+		subT.addSubValue("former Swiss");
+		assertTrue(adjNounTree.contains(subT));
+		subT = new Tree<String>("Swiss figure skater");
+		subT.addSubValue("Swiss");
+		assertTrue(adjNounTree.contains(subT));
+		subT = new Tree<String>("former figure skater");
+		subT.addSubValue("former");
+		assertTrue(adjNounTree.contains(subT));
+		subT = new Tree<String>("former Swiss figure skater");
+		subT.addSubValue("former Swiss");
+		assertTrue(adjNounTree.contains(subT));
+
+		// Anchors
+		sentence = "a professional football end";
+		parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
+		anchors.clear();
+		anchors.put("end", "[[End (American football)|end]]");
+		anchors.put("football", "[[American football|football]]");
+		adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
+		assertEquals(adjNounTree.size(), 5);
+		assertTrue(adjNounTree.contains(new Tree<String>(
+				"[[American football|football]]")));
+		assertTrue(adjNounTree.contains(new Tree<String>(
+				"[[End (American football)|end]]")));
+		assertTrue(adjNounTree
+				.contains(new Tree<String>(
+						"[[American football|football]] [[End (American football)|end]]")));
+		subT = new Tree<String>("professional [[End (American football)|end]]");
+		subT.addSubValue("professional");
+		assertTrue(adjNounTree.contains(subT));
+		subT = new Tree<String>(
+				"professional [[American football|football]] [[End (American football)|end]]");
+		subT.addSubValue("professional");
+		assertTrue(adjNounTree.contains(subT));
 	}
 
 }

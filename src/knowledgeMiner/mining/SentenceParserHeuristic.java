@@ -37,8 +37,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import util.OpenNLP;
 import util.Tree;
+import util.text.OpenNLP;
 import util.wikipedia.WikiParser;
 import cyc.CycConstants;
 import cyc.MappableConcept;
@@ -57,203 +57,6 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	public SentenceParserHeuristic(CycMapper mapper, CycMiner miner) {
 		super(false, mapper, miner);
 		OpenNLP.getParser();
-	}
-
-	/**
-	 * Recursively builds adjective-noun pairs recursively via the noun tree.
-	 * 
-	 * @param nounTree
-	 *            The tree of nouns.
-	 * @param adjective
-	 *            The adjective.
-	 * @param anchorMap
-	 *            A mapping between text and anchors.
-	 * @param results
-	 *            The results to add to.
-	 * @return A new tree representing the adjective pair added to the nouns.
-	 */
-	private Tree<String> buildAdjectivePairs(Tree<String> nounTree,
-			String adjective, Map<String, Tree<String>> anchorMap,
-			Tree<String> results) {
-		Collection<Tree<String>> subTrees = nounTree.getSubTrees();
-		Tree<String> subTree = null;
-		if (!subTrees.isEmpty())
-			subTree = buildAdjectivePairs(subTrees.iterator().next(),
-					adjective, anchorMap, results);
-		Tree<String> thisTree = newTree(adjective + " " + nounTree.getValue(),
-				anchorMap, results);
-		if (subTree != null)
-			thisTree.addSubTree(subTree);
-		return thisTree;
-	}
-
-	/**
-	 * Compose the hierarchical set of noun-adjective combinations from the NP.
-	 * First gets all anchors, then processes each JJ and NN combination, adding
-	 * them directly or as subvalues of the anchors.
-	 * 
-	 * @param parse
-	 *            The parse to compose the strings from.
-	 * @param anchors
-	 *            The anchors to insert during composition.
-	 * @return A Hierarchical Weighted Set of strings representing the order of
-	 *         strings that should be attempted to assert.
-	 */
-	public Tree<String> composeAdjNounsTree(Parse parse,
-			SortedMap<String, String> anchors) {
-		String text = parse.getCoveredText();
-		Tree<String> strings = new Tree<String>(null);
-
-		// Add all visible anchors
-		// Keep track of which text is in what anchors
-		Map<String, Tree<String>> anchorMap = new HashMap<>();
-		// Keep track of any multiple-work anchors.
-		Map<String, Tree<String>> subAnchorMap = new HashMap<>();
-		for (Tree<String> t : extractAnchors(text, anchors, anchorMap,
-				subAnchorMap))
-			strings.addSubTree(t);
-
-		// Work backwards through the children, adding nouns, then adjectives to
-		// the nouns
-		pairNounAdjs(parse, anchors, strings, anchorMap, subAnchorMap);
-		return strings;
-	}
-
-	/**
-	 * Build a hierarchical tree from a parse of text by pairing together
-	 * adjectives and nouns. Longer chains of pairs are higher in the tree and
-	 * broken down into their components. Any strings consisting solely of
-	 * anchors are not added (they are already higher in the tree).
-	 *
-	 * @param parse The parse to build the tree from.
-	 * @param anchors The anchors for reanchoring text.
-	 * @param strings The tree to add to.
-	 * @param anchorMap The map of anchor trees.
-	 * @param subAnchorMap The map of subAnchorTrees
-	 */
-	private void pairNounAdjs(Parse parse, SortedMap<String, String> anchors,
-			Tree<String> strings, Map<String, Tree<String>> anchorMap,
-			Map<String, Tree<String>> subAnchorMap) {
-		boolean createNewNounSet = false;
-		boolean includesNN = false;
-		Tree<String> nounTree = null;
-		Parse[] children = parse.getChildren();
-		for (int i = children.length - 1; i >= 0; i--) {
-			String childType = children[i].getType();
-			String childText = children[i].getCoveredText();
-			if (childType.startsWith("NN") || childType.equals("NP")) {
-				// If new noun hit, create a new noun set.
-				if (createNewNounSet) {
-					if (includesNN && nounTree != null)
-						strings.addSubTree(nounTree);
-					nounTree = null;
-					createNewNounSet = false;
-					includesNN = false;
-				}
-				includesNN = childType.startsWith("NN");
-
-				// Get the current tree root and add to it.
-				if (nounTree == null) {
-					nounTree = newTree(childText, anchorMap, strings);
-				} else {
-					Tree<String> parentTree = newTree(childText + " "
-							+ nounTree.getValue(), anchorMap, strings);
-					parentTree.addSubTree(nounTree);
-					nounTree = parentTree;
-				}
-			} else if (childType.startsWith("JJ") || childType.equals("ADJP")) {
-				if (nounTree != null) {
-					// Insert as child of anchor if part of anchor
-					if (subAnchorMap.containsKey(childText))
-						subAnchorMap.get(childText).addSubValue(childText);
-					else
-						strings.addSubValue(reAnchorString(childText, anchors));
-
-					strings.addSubTree(buildAdjectivePairs(nounTree, childText,
-							anchorMap, strings));
-				}
-
-				createNewNounSet = true;
-			} else {
-				createNewNounSet = true;
-			}
-		}
-
-		// Adding the noun tree if it is not yet added.
-		if (includesNN && nounTree != null)
-			strings.addSubTree(nounTree);
-	}
-
-	/**
-	 * Extracts the anchors from the text and returns them in tree form.
-	 *
-	 * @param text
-	 *            The text to reinsert anchors into, then extract anchors from
-	 * @param anchors
-	 *            The reanchoring map.
-	 * @param anchorMap
-	 *            The map of anchors to add to.
-	 * @param subAnchorMap
-	 *            The map of sub anchors (anchors consisting of multiple words).
-	 * @return A collection of extracted anchors.
-	 */
-	private Collection<Tree<String>> extractAnchors(String text,
-			SortedMap<String, String> anchors,
-			Map<String, Tree<String>> anchorMap,
-			Map<String, Tree<String>> subAnchorMap) {
-		Collection<Tree<String>> anchorCol = new ArrayList<>();
-		// Reanchor the string and extract all anchors
-		String anchorText = reAnchorString(text, anchors);
-		Matcher m = WikiParser.ANCHOR_PARSER_ROUGH.matcher(anchorText);
-		while (m.find()) {
-			Tree<String> anchorTree = new Tree<String>(m.group());
-			// Split up anchor text
-			String anchor = (m.group(2) == null) ? m.group(1) : m.group(2);
-			String[] split = anchor.split("\\s+");
-			if (split.length > 1)
-				for (String str : split)
-					if (!subAnchorMap.containsKey(str))
-						subAnchorMap.put(str, anchorTree);
-			anchorMap.put(anchor, anchorTree);
-			anchorCol.add(anchorTree);
-		}
-		return anchorCol;
-	}
-
-	/**
-	 * Creates assertions using a set of predicates and a wikifiable string.
-	 * 
-	 * @param predicateSet
-	 *            The possible predicates.
-	 * @param parse
-	 *            The current parse (usually NP) to extract noun(s) from.
-	 * @param anchors
-	 *            The replacement map for the anchors.
-	 * @param wmi
-	 *            The WMI access.
-	 * @param ontology
-	 *            The Cyc access.
-	 * @param provenance
-	 *            The heuristic calling this method.
-	 * @param info
-	 *            The information to add the assertions to.
-	 * @throws Exception
-	 *             Should something go awry...
-	 */
-	private PartialAssertion createAssertions(OntologyConcept predicate,
-			MappableConcept focusConcept, Parse parse,
-			SortedMap<String, String> anchors, WMISocket wmi,
-			OntologySocket ontology, HeuristicProvenance provenance)
-			throws Exception {
-		if (predicate == null)
-			return null;
-		// Return the possible noun strings
-		Tree<String> nounStrs = composeAdjNounsTree(parse, anchors);
-		logger_.trace("createAssertions: " + predicate.toString() + " "
-				+ nounStrs.toString().replaceAll("\\\\\n", " "));
-
-		// Recurse through the tree and build the partial assertions
-		return recurseStringTree(predicate, focusConcept, nounStrs, provenance);
 	}
 
 	private String disambiguateTree(Parse parse, String[] predicateStrs,
@@ -326,12 +129,25 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 
 				if (predicate == null)
 					continue;
+
+				// Return the possible noun strings
+				Collection<Tree<String>> nounStrs = composeAdjNounsTree(parse,
+						anchors);
+				logger_.trace("createAssertions: " + predicate.toString() + " "
+						+ nounStrs.toString().replaceAll("\\\\\n", " "));
+
+				// Recurse through the tree and build the partial assertions
 				HeuristicProvenance provenance = new HeuristicProvenance(
 						heuristic, predStr + "+" + text);
-				PartialAssertion currAssertions = createAssertions(predicate,
-						focusConcept, parse, anchors, wmi, cyc, provenance);
-				if (currAssertions != null && !results.contains(currAssertions))
-					results.add(currAssertions);
+				Collection<PartialAssertion> currAssertions = recurseStringTree(
+						predicate, focusConcept, nounStrs, provenance);
+
+				// Add the assertions
+				for (PartialAssertion pa : currAssertions)
+					if (!results.contains(pa)) {
+						results.add(pa);
+						canCreate = false;
+					}
 			}
 		}
 
@@ -339,6 +155,34 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 			return null;
 
 		return text;
+	}
+
+	/**
+	 * Extracts the anchors from the text and returns them in tree form.
+	 *
+	 * @param text
+	 *            The text to reinsert anchors into, then extract anchors from
+	 * @param anchors
+	 *            The reanchoring map.
+	 * @param anchorMap
+	 *            The map of anchors to add to.
+	 * @return A collection of extracted anchors.
+	 */
+	private Collection<Tree<String>> extractAnchors(String text,
+			SortedMap<String, String> anchors,
+			Map<String, Tree<String>> anchorMap) {
+		Collection<Tree<String>> anchorCol = new ArrayList<>();
+		// Reanchor the string and extract all anchors
+		String anchorText = reAnchorString(text, anchors);
+		Matcher m = WikiParser.ANCHOR_PARSER_ROUGH.matcher(anchorText);
+		while (m.find()) {
+			Tree<String> anchorTree = new Tree<String>(m.group());
+			// Split up anchor text
+			String anchor = (m.group(2) == null) ? m.group(1) : m.group(2);
+			anchorMap.put(anchor, anchorTree);
+			anchorCol.add(anchorTree);
+		}
+		return anchorCol;
 	}
 
 	/**
@@ -357,60 +201,79 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	}
 
 	/**
-	 * Creates a new tree, noting it under the anchor trees if it is a complete
-	 * anchor.
-	 * 
-	 * @param textFragment
-	 *            The text to add as a tree.
-	 * @param anchorMap
-	 *            A map between text and anchors.
-	 * @param results
-	 *            The collection of all results fragments.
-	 * @return A new tree representing the text.
+	 * Pairs the nouns and adjectives together to produce a number of result
+	 * text fragments to be resolved to concepts.
+	 *
+	 * @param parse
+	 *            The parse to process and pair.
+	 * @param anchors
+	 *            The anchor map.
+	 * @param existingAnchorTrees
+	 *            The anchor trees already added to the results (for reuse and
+	 *            subtree-ing)
+	 * @return A collection of possible mappable entities composed of at least
+	 *         one noun and possible adjectives (with sub-adjectives).
 	 */
-	private Tree<String> newTree(String textFragment,
-			Map<String, Tree<String>> anchorMap,
-			Tree<String> results) {
-		// If the string represents an anchor
-		if (anchorMap.containsKey(textFragment)) {
-			Tree<String> anchorTree = anchorMap.get(textFragment);
-			results.getSubTrees().remove(anchorTree);
-			return anchorTree;
-		} else {
-			String anchoredText = WikiParser.cleanAllMarkup(textFragment);
-			Tree<String> anchorTree = new Tree<String>(anchoredText);
-			return anchorTree;
-		}
-	}
+	private Collection<Tree<String>> pairNounAdjs(Parse parse,
+			SortedMap<String, String> anchors,
+			Map<String, Tree<String>> existingAnchorTrees) {
+		Collection<Tree<String>> results = new ArrayList<>();
+		boolean createNewNounSet = false;
+		ArrayList<String> nounPhrases = new ArrayList<>();
+		Parse[] children = parse.getChildren();
+		for (int i = children.length - 1; i >= 0; i--) {
+			String childType = children[i].getType();
+			String childText = children[i].getCoveredText();
+			if (childType.startsWith("NN") || childType.equals("NP")) {
+				// Note the noun, adding it to the front of the existing NP.
+				if (createNewNounSet)
+					nounPhrases.clear();
+				String existingNounPhrase = "";
+				if (!nounPhrases.isEmpty())
+					existingNounPhrase = nounPhrases
+							.get(nounPhrases.size() - 1);
+				String np = (childText + " " + existingNounPhrase).trim();
+				nounPhrases.add(np);
 
-	public static synchronized Parse parseLine(String cleanSentence) {
-		Parse parse = null;
-		while (parse == null) {
-			parse = OpenNLP.parseLine(cleanSentence);
-			// Could not parse
-			if (parse.getType().equals("INC")) {
-				try {
-					IOManager.getInstance().writeFirstSentence(-1,
-							cleanSentence);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				// Add to the tree (if not a pure anchor)
+				if (!anchors.containsKey(np))
+					results.add(new Tree<String>(reAnchorString(np, anchors)));
+			} else if (childType.startsWith("JJ") || childType.equals("ADJP")) {
+				// Only process if we have an NP
+				if (!nounPhrases.isEmpty()) {
+					// For every nounPhrase
+					StringBuilder adjective = new StringBuilder();
+					for (int j = i; children[j].getType().startsWith("JJ")
+							|| children[j].getType().equals("ADJP"); j++) {
+						// Build adjective combinations
+						if (adjective.length() != 0)
+							adjective.append(" ");
+						adjective.append(children[j].getCoveredText());
+						for (String np : nounPhrases) {
+							// Create the tree (with sub adjective tree)
+							String adjNP = adjective + " " + np;
+							Tree<String> adjP = null;
+							// Check for an existing anchor tree
+							if (existingAnchorTrees.containsKey(adjNP))
+								adjP = existingAnchorTrees.get(adjNP);
+							else
+								adjP = new Tree<String>(reAnchorString(adjNP,
+										anchors));
+							if (!anchors.containsKey(adjective.toString()))
+								adjP.addSubValue(reAnchorString(
+										adjective.toString(), anchors));
 
-				// Simplify the sentence
-				for (Pattern p : SENTENCE_SIMPLIFIER) {
-					String simplifiedSentence = p.matcher(cleanSentence)
-							.replaceFirst("");
-					// Replace the clean sentence
-					if (!simplifiedSentence.equals(cleanSentence)) {
-						cleanSentence = StringUtils
-								.capitalize(simplifiedSentence);
-						parse = null;
-						break;
+							// Add to the tree
+							results.add(adjP);
+						}
 					}
 				}
+				createNewNounSet = true;
+			} else {
+				createNewNounSet = true;
 			}
 		}
-		return parse;
+		return results;
 	}
 
 	/**
@@ -446,28 +309,56 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 *            The ontology access.
 	 * @return The results set to add to.
 	 */
-	private PartialAssertion recurseStringTree(OntologyConcept predicate,
-			MappableConcept focusConcept, Tree<String> nounStrs,
-			HeuristicProvenance provenance) {
-		// Build the assertion
-		PartialAssertion pa = null;
-		if (nounStrs.getValue() == null)
-			pa = new PartialAssertion();
-		else
-			pa = new PartialAssertion(predicate, provenance, focusConcept,
-					new TextMappedConcept(nounStrs.getValue(), false, false));
-
-		// Recurse lower and add as sub-assertions
-		for (Tree<String> subTree : nounStrs.getSubTrees())
-			pa.addSubAssertion(recurseStringTree(predicate, focusConcept,
-					subTree, provenance));
-		return pa;
+	private Collection<PartialAssertion> recurseStringTree(
+			OntologyConcept predicate, MappableConcept focusConcept,
+			Collection<Tree<String>> nounStrs, HeuristicProvenance provenance) {
+		Collection<PartialAssertion> assertions = new ArrayList<>();
+		for (Tree<String> t : nounStrs) {
+			PartialAssertion pa = new PartialAssertion(predicate, provenance,
+					focusConcept, new TextMappedConcept(t.getValue(), false,
+							false));
+			if (!t.getSubTrees().isEmpty())
+				for (PartialAssertion subPA : recurseStringTree(predicate,
+						focusConcept, t.getSubTrees(), provenance)) {
+					pa.addSubAssertion(subPA);
+				}
+			assertions.add(pa);
+		}
+		return assertions;
 	}
 
 	@Override
 	protected void setInformationTypes(boolean[] infoTypes) {
 		infoTypes[InformationType.RELATIONS.ordinal()] = true;
 		infoTypes[InformationType.PARENTAGE.ordinal()] = true;
+	}
+
+	/**
+	 * Compose the hierarchical set of noun-adjective combinations from the NP.
+	 * First gets all anchors, then processes each JJ and NN combination, adding
+	 * them directly or as subvalues of the anchors.
+	 * 
+	 * @param parse
+	 *            The parse to compose the strings from.
+	 * @param anchors
+	 *            The anchors to insert during composition.
+	 * @return A Hierarchical Weighted Set of strings representing the order of
+	 *         strings that should be attempted to assert.
+	 */
+	public Collection<Tree<String>> composeAdjNounsTree(Parse parse,
+			SortedMap<String, String> anchors) {
+		String text = parse.getCoveredText();
+		Collection<Tree<String>> results = new ArrayList<>();
+
+		// Add all visible anchors
+		// Keep track of which text is in what anchors
+		Map<String, Tree<String>> anchorMap = new HashMap<>();
+		results.addAll(extractAnchors(text, anchors, anchorMap));
+
+		// Work backwards through the children, adding nouns, then adjectives to
+		// the nouns
+		results.addAll(pairNounAdjs(parse, anchors, anchorMap));
+		return results;
 	}
 
 	/**
@@ -556,5 +447,35 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 					input, mappable, wmi, cyc, null);
 			System.out.println(assertions);
 		}
+	}
+
+	public static synchronized Parse parseLine(String cleanSentence) {
+		Parse parse = null;
+		while (parse == null) {
+			parse = OpenNLP.parseLine(cleanSentence);
+			// Could not parse
+			if (parse.getType().equals("INC")) {
+				try {
+					IOManager.getInstance().writeFirstSentence(-1,
+							cleanSentence);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+
+				// Simplify the sentence
+				for (Pattern p : SENTENCE_SIMPLIFIER) {
+					String simplifiedSentence = p.matcher(cleanSentence)
+							.replaceFirst("");
+					// Replace the clean sentence
+					if (!simplifiedSentence.equals(cleanSentence)) {
+						cleanSentence = StringUtils
+								.capitalize(simplifiedSentence);
+						parse = null;
+						break;
+					}
+				}
+			}
+		}
+		return parse;
 	}
 }

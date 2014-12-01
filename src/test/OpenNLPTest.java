@@ -25,7 +25,7 @@ import opennlp.tools.tokenize.Tokenizer;
 
 import org.junit.Test;
 
-import util.OpenNLP;
+import util.text.OpenNLP;
 import util.text.StanfordNLP;
 import edu.stanford.nlp.trees.GrammaticalStructure;
 
