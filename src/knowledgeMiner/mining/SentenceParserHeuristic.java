@@ -329,8 +329,8 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 
 	@Override
 	protected void setInformationTypes(boolean[] infoTypes) {
-		infoTypes[InformationType.RELATIONS.ordinal()] = true;
-		infoTypes[InformationType.PARENTAGE.ordinal()] = true;
+		infoTypes[InformationType.TAXONOMIC.ordinal()] = true;
+		infoTypes[InformationType.NON_TAXONOMIC.ordinal()] = true;
 	}
 
 	/**

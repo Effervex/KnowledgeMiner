@@ -144,9 +144,9 @@ public abstract class MinedAssertion extends WeightedInformation implements
 	@Override
 	protected InformationType getInfoType() {
 		if (isHierarchical_)
-			return InformationType.PARENTAGE;
+			return InformationType.TAXONOMIC;
 		else
-			return InformationType.RELATIONS;
+			return InformationType.NON_TAXONOMIC;
 	}
 
 	@Override

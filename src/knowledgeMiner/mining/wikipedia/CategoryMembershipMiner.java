@@ -139,7 +139,7 @@ public class CategoryMembershipMiner extends WikipediaArticleMiningHeuristic {
 
 	@Override
 	protected void setInformationTypes(boolean[] infoTypes) {
-		infoTypes[InformationType.PARENTAGE.ordinal()] = true;
+		infoTypes[InformationType.TAXONOMIC.ordinal()] = true;
 	}
 
 }

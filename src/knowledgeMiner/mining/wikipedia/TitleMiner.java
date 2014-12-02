@@ -34,9 +34,9 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 
 	@Override
 	protected void setInformationTypes(boolean[] informationProduced) {
-		informationProduced[InformationType.RELATIONS.ordinal()] = true;
+		informationProduced[InformationType.TAXONOMIC.ordinal()] = true;
 		informationProduced[InformationType.STANDING.ordinal()] = true;
-		informationProduced[InformationType.PARENTAGE.ordinal()] = true;
+		informationProduced[InformationType.SYNONYM.ordinal()] = true;
 	}
 
 	@Override
@@ -50,7 +50,7 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 
 		// Assert the title as a canonical synonym.
 		if (informationRequested(informationRequested,
-				InformationType.RELATIONS))
+				InformationType.SYNONYM))
 			info.addAssertion(new PartialAssertion(
 					CycConstants.SYNONYM_RELATION_CANONICAL.getConcept(),
 					basicProvenance_, info.getMappableSelfRef(),
@@ -83,7 +83,7 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 		// Perform parentage check via title.
 		// TODO Can do this, but needs weighting.
 		// if (informationRequested(informationRequested,
-		// InformationType.PARENTAGE)) {
+		// InformationType.TAXONOMIC)) {
 		// CycConcept parentTerm = info.getParentTerm();
 		// if (parentTerm != null
 		// && UtilityMethods.findSubString(parentTerm.getPlainName(),

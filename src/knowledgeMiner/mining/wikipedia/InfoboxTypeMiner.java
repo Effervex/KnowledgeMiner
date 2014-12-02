@@ -45,28 +45,22 @@ public class InfoboxTypeMiner extends InfoboxMiner {
 			int informationRequested, WMISocket wmi, OntologySocket cyc)
 			throws IOException {
 		// Cluster infobox types to assign parentage
-		if (informationRequested(informationRequested,
-				InformationType.PARENTAGE)
-				|| informationRequested(informationRequested,
-						InformationType.STANDING)) {
-			List<InfoboxData> infoboxData = wmi.getInfoboxData(info
-					.getArticle());
-			if (infoboxData.isEmpty())
-				return;
-
-			List<String> infoboxTypes = new ArrayList<>();
-			for (InfoboxData infobox : infoboxData) {
-				infoboxTypes.add(infobox.getInfoboxType());
-				try {
-					info.addStandingInformation(getStanding(infobox
-							.getInfoboxType()));
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-			info.setInfoboxTypes(infoboxTypes);
+		List<InfoboxData> infoboxData = wmi.getInfoboxData(info.getArticle());
+		if (infoboxData.isEmpty())
 			return;
+
+		List<String> infoboxTypes = new ArrayList<>();
+		for (InfoboxData infobox : infoboxData) {
+			infoboxTypes.add(infobox.getInfoboxType());
+			try {
+				info.addStandingInformation(getStanding(infobox
+						.getInfoboxType()));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
+		info.setInfoboxTypes(infoboxTypes);
+		return;
 	}
 
 	@Override
@@ -78,7 +72,7 @@ public class InfoboxTypeMiner extends InfoboxMiner {
 		super.setInformationTypes(informationProduced);
 		// While not necessarily always true, infoboxes can indirectly cluster
 		// to create parents.
-		informationProduced[InformationType.PARENTAGE.ordinal()] = true;
+		informationProduced[InformationType.TAXONOMIC.ordinal()] = true;
 		informationProduced[InformationType.STANDING.ordinal()] = true;
 	}
 

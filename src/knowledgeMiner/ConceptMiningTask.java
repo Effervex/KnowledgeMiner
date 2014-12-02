@@ -407,9 +407,7 @@ public class ConceptMiningTask implements Runnable {
 			switch (state) {
 			case UNMINED:
 				// If unmined: Mine article (except children)
-				int allButChildren = MinedInformation.ALL_TYPES
-						- (1 << InformationType.CHILD_ARTICLES.ordinal());
-				mineConcept(cm, allButChildren);
+				mineConcept(cm, MinedInformation.ALL_TYPES);
 				processables_.add(cm);
 				break;
 			case UNMAPPED:

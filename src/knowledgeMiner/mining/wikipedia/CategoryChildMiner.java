@@ -134,14 +134,14 @@ public class CategoryChildMiner extends WikipediaArticleMiningHeuristic {
 		// Change everything to a single case
 		String articleTitle = wmi.getPageTitle(article, false).toLowerCase();
 		if (informationRequested(informationRequested,
-				InformationType.CHILD_ARTICLES)) {
+				InformationType.TAXONOMIC)) {
 			findChildArticles(articleTitle, article, wmi, info);
 		}
 	}
 
 	@Override
 	protected void setInformationTypes(boolean[] infoTypes) {
-		infoTypes[InformationType.CHILD_ARTICLES.ordinal()] = true;
+		infoTypes[InformationType.TAXONOMIC.ordinal()] = true;
 	}
 
 	/**

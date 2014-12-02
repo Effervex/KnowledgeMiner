@@ -244,22 +244,21 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 			return;
 
 		// Check if the sentence matches any of the sentence patterns.
-		if (informationRequested(informationRequested, InformationType.STANDING)
-				|| informationRequested(informationRequested,
-						InformationType.PARENTAGE)) {
+		if (informationRequested(informationRequested, InformationType.STANDING)) {
 			regExpMatch(title, firstSentence, info, wmi);
 		}
 
 		// Extract synonyms
-		if (informationRequested(informationRequested,
-				InformationType.RELATIONS)) {
+		if (informationRequested(informationRequested, InformationType.SYNONYM)) {
 			ArrayList<String> synonyms = extractSynonyms(firstSentence);
 			for (String synonym : synonyms)
 				info.addAssertion(new PartialAssertion(
 						CycConstants.SYNONYM_RELATION.getConcept(),
 						basicProvenance_, info.getMappableSelfRef(),
 						new StringConcept(synonym)));
+		}
 
+		if (informationRequested(informationRequested, InformationType.COMMENT)) {
 			// Assert the sentence itself as a comment
 			String paragraph = wmi.getFirstParagraph(article);
 			if (!paragraph.isEmpty()) {
@@ -289,9 +288,9 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 
 	@Override
 	protected void setInformationTypes(boolean[] informationProduced) {
-		informationProduced[InformationType.RELATIONS.ordinal()] = true;
+		informationProduced[InformationType.SYNONYM.ordinal()] = true;
+		informationProduced[InformationType.COMMENT.ordinal()] = true;
 		informationProduced[InformationType.STANDING.ordinal()] = true;
-		informationProduced[InformationType.PARENTAGE.ordinal()] = true;
 	}
 
 	/**

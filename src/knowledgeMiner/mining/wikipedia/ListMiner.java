@@ -31,7 +31,8 @@ import util.wikipedia.WikiParser;
 
 /**
  * A mining heuristic purely for processing 'List of...' articles. This
- * heuristic produces standing and terms.
+ * heuristic produces standing and taxonomic assertions for the target of the
+ * list article.
  * 
  * @author Sam Sarjant
  */
@@ -74,7 +75,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 					basicProvenance_);
 		// Add children
 		if (informationRequested(informationRequested,
-				InformationType.CHILD_ARTICLES)) {
+				InformationType.TAXONOMIC)) {
 			String markup = wmi.getMarkup(listArticle);
 
 			// Parse the bullets from the list
@@ -160,8 +161,8 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 	@Override
 	protected void setInformationTypes(boolean[] informationProduced) {
 		informationProduced[InformationType.STANDING.ordinal()] = true;
-		informationProduced[InformationType.CHILD_ARTICLES.ordinal()] = true;
-		// informationProduced[InformationType.PARENTAGE.ordinal()] = true;
+		informationProduced[InformationType.TAXONOMIC.ordinal()] = true;
+		informationProduced[InformationType.NON_TAXONOMIC.ordinal()] = true;
 	}
 
 	public static void main(String[] args) throws IOException {
@@ -183,7 +184,9 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 				}
 
 				String title = wmi.getPageTitle(artId, true);
-				if (title.startsWith(LIST_OF)) {
+				if (title.startsWith(LIST_OF)
+						&& wmi.getPageType(artId)
+								.equals(WMISocket.TYPE_ARTICLE)) {
 					out.write(artId + "\t" + title + "\n");
 					System.out.println(title);
 					listCount++;

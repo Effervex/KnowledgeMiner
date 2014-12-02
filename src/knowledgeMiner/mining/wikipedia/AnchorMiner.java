@@ -58,7 +58,7 @@ public class AnchorMiner extends WikipediaArticleMiningHeuristic {
 
 	@Override
 	protected void setInformationTypes(boolean[] infoTypes) {
-		infoTypes[InformationType.RELATIONS.ordinal()] = true;
+		infoTypes[InformationType.SYNONYM.ordinal()] = true;
 	}
 
 }

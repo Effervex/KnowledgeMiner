@@ -119,9 +119,9 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 			mineArticleInternal(info, informationRequested, wmi, cyc);
 			if (info != null)
 				info.addMinedInfoType(informationRequested);
-			// Split child mined data into separate records
-			if (getInfoTypeWeight(InformationType.CHILD_ARTICLES) != 0)
-				splitChildMinedData(info);
+			// TODO Record mined info for all referenced article
+//			if (getInfoTypeWeight(InformationType.CHILD_ARTICLES) != 0)
+//				splitChildMinedData(info);
 
 			// Record the data
 			// System.out

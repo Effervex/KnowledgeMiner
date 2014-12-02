@@ -178,9 +178,10 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 	@Override
 	protected void setInformationTypes(boolean[] informationProduced) {
 		super.setInformationTypes(informationProduced);
-		informationProduced[InformationType.RELATIONS.ordinal()] = true;
+		informationProduced[InformationType.TAXONOMIC.ordinal()] = true;
 		informationProduced[InformationType.STANDING.ordinal()] = true;
-		informationProduced[InformationType.PARENTAGE.ordinal()] = true;
+		informationProduced[InformationType.NON_TAXONOMIC.ordinal()] = true;
+		informationProduced[InformationType.SYNONYM.ordinal()] = true;
 	}
 
 	@Override

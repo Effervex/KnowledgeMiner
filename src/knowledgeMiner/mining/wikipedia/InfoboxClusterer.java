@@ -48,7 +48,7 @@ public class InfoboxClusterer extends MiningHeuristic {
 
 	@Override
 	protected void setInformationTypes(boolean[] infoTypes) {
-		infoTypes[InformationType.PARENTAGE.ordinal()] = true;
+		infoTypes[InformationType.TAXONOMIC.ordinal()] = true;
 	}
 
 	/**

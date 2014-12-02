@@ -28,6 +28,7 @@ import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
+import opennlp.tools.stemmer.Stemmer;
 import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
@@ -73,9 +74,6 @@ public class OpenNLP {
 	}
 
 	public static Chunker getChunker() {
-		if (chunker_ == null) {
-
-		}
 		return chunker_;
 	}
 
