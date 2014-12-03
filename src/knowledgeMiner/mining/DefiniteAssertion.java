@@ -171,4 +171,23 @@ public class DefiniteAssertion extends MinedAssertion {
 		return new DefiniteAssertion(this);
 	}
 
+	@Override
+	public DefiniteAssertion replaceArg(AssertionArgument original,
+			AssertionArgument replacement) {
+		// Replacing the args
+		OntologyConcept[] replArgs = new OntologyConcept[args_.length];
+		for (int i = 0; i < args_.length; i++) {
+			if (args_[i].equals(original))
+				replArgs[i] = (OntologyConcept) replacement;
+			else
+				replArgs[i] = (OntologyConcept) args_[i];
+		}
+		// Replacing the relation
+		OntologyConcept replPredicate = (OntologyConcept) ((relation_
+				.equals(original)) ? replacement : relation_);
+		DefiniteAssertion replaced = new DefiniteAssertion(replPredicate,
+				microtheory_, getProvenance(), replArgs);
+		return replaced;
+	}
+
 }

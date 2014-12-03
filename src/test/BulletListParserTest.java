@@ -56,8 +56,12 @@ public class BulletListParserTest {
 	 */
 	@Test
 	public void testMineArticle() throws Exception {
+		MultiMap<String, String> points = BulletListParser
+				.parseBulletList("* [[Walt Disney Motion Pictures Group]]\n** [[Walt Disney Pictures]]\n** [[Touchstone Pictures]]\n");
+		assertEquals(points.sizeTotal(), 3);
+
 		int article = wmi_.getArticleByTitle("Collection");
-		MultiMap<String, String> points = BulletListParser.parseBulletList(wmi_
+		points = BulletListParser.parseBulletList(wmi_
 				.getMarkup(article));
 		assertEquals(points.size(), 4);
 		assertTrue(points.containsKey("Mathematics"));

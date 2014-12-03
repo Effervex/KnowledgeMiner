@@ -22,7 +22,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.MiningHeuristic;

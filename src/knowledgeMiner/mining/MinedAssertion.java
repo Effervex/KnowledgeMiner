@@ -255,4 +255,7 @@ public abstract class MinedAssertion extends WeightedInformation implements
 				return i;
 		return -1;
 	}
+
+	public abstract MinedAssertion replaceArg(AssertionArgument original,
+			AssertionArgument replacement);
 }

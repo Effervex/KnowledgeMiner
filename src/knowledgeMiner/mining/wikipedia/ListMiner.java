@@ -14,20 +14,26 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.CycMapper;
+import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
+import knowledgeMiner.mining.PartialAssertion;
 import util.UtilityMethods;
 import util.collection.MultiMap;
 import util.wikipedia.BulletListParser;
 import util.wikipedia.WikiParser;
+import cyc.AssertionArgument;
+import cyc.CycConstants;
 
 /**
  * A mining heuristic purely for processing 'List of...' articles. This
@@ -41,6 +47,8 @@ import util.wikipedia.WikiParser;
 public class ListMiner extends WikipediaArticleMiningHeuristic {
 	/** The List prefix. */
 	public static final String LIST_OF = "List of ";
+	private static final AssertionArgument LIST_ELEMENT = new TextMappedConcept(
+			"_LIST_ELEMENT_", false, false);
 
 	/**
 	 * Constructor for a new ListMiner.java
@@ -51,111 +59,187 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 		super(true, mapper, miner);
 	}
 
+	@Override
+	protected void mineArticleInternal(MinedInformation info,
+			int informationRequested, WMISocket wmi, OntologySocket cyc)
+			throws Exception {
+		int article = info.getArticle();
+		String title = wmi.getPageTitle(article, false);
+		HeuristicProvenance provenance = new HeuristicProvenance(this, title);
+
+		Collection<PartialAssertion> listAssertions = null;
+		int listArticle = -1;
+		boolean isList = title.startsWith(LIST_OF);
+		// If a list,
+		if (isList) {
+			// Attempt to find the corresponding article
+			listAssertions = searchFocusArticle(article, title, provenance, wmi);
+
+			listArticle = article;
+		} else {
+			// Search for list
+			listArticle = searchListArticle(article, title, wmi);
+
+			listAssertions = new ArrayList<>();
+			listAssertions.add(createTaxonomicArticleAssertion(article,
+					provenance));
+		}
+
+		// Cannot find list, cannot mine
+		if (listArticle == -1)
+			return;
+
+		// If standing is requested, and we know the focus article, set as
+		// collection
+		if (listAssertions.size() == 1
+				&& (listAssertions.iterator().next().getArgs()[2] instanceof WikipediaMappedConcept)
+				&& informationRequested(informationRequested,
+						InformationType.STANDING)) {
+			// TODO Add the appropriate standing information (make sure it's
+			// added to the focus article, not the list
+			// info.addStandingInformation(TermStanding.COLLECTION, 1,
+			// provenance);
+		}
+
+		// Parse the list items
+		if (informationRequested(informationRequested,
+				InformationType.TAXONOMIC)
+				|| informationRequested(informationRequested,
+						InformationType.NON_TAXONOMIC))
+			harvestChildren(listArticle, listAssertions, info, wmi);
+	}
+
 	/**
-	 * Harvests children from a List.
-	 * 
+	 * Parse the list, extract the child articles, and create as assertions to
+	 * the parent mappable concept.
+	 *
+	 * @param listArticle
+	 *            The article to parse.
+	 * @param listAssertions
 	 * @param info
 	 *            The info to add to.
-	 * @param informationRequested
-	 *            The information requested.
 	 * @param wmi
-	 *            The WMI access point.
-	 * @param title
-	 *            The title to add to "List of "
-	 * @param searched
-	 *            The searched Strings.
-	 * 
+	 *            The WMI access.
 	 * @throws Exception
 	 */
-	private void harvestChildren(int listArticle, MinedInformation info,
-			int informationRequested, WMISocket wmi) throws Exception {
-		// Add standing
-		if (informationRequested(informationRequested, InformationType.STANDING))
-			info.addStandingInformation(TermStanding.COLLECTION, getWeight(),
-					basicProvenance_);
-		// Add children
-		if (informationRequested(informationRequested,
-				InformationType.TAXONOMIC)) {
-			String markup = wmi.getMarkup(listArticle);
+	private void harvestChildren(int listArticle,
+			Collection<PartialAssertion> listAssertions, MinedInformation info,
+			WMISocket wmi) throws Exception {
+		MultiMap<String, String> listItems = BulletListParser
+				.parseBulletList(wmi.getMarkup(listArticle));
+		String listTitle = wmi.getPageTitle(listArticle, true);
+		// Iterate through the points
+		for (String context : listItems.keySet()) {
+			for (String point : listItems.get(context)) {
+				Matcher m = WikiParser.ANCHOR_PARSER_ROUGH.matcher(point);
+				// TODO Just parsing known anchors at the moment
+				if (m.find()) {
+					String artTitle = m.group(1);
+					int artID = wmi.getArticleByTitle(artTitle);
+					if (artID == -1)
+						continue;
 
-			// Parse the bullets from the list
-			MultiMap<String, String> bulletPoints = BulletListParser
-					.parseBulletList(markup);
-			Collection<String> items = new ArrayList<>(bulletPoints.sizeTotal());
-			for (String point : bulletPoints.values()) {
-				Matcher m = WikiParser.ANCHOR_PARSER.matcher(point);
-				if (m.find())
-					items.add(m.group(1));
+					WikipediaMappedConcept wmc = new WikipediaMappedConcept(
+							artID);
+					HeuristicProvenance provenance = new HeuristicProvenance(
+							this, listTitle + " " + artTitle + " (" + context
+									+ ")");
+					// Replace LIST_ELEMENT with the article
+					for (PartialAssertion pa : listAssertions) {
+						PartialAssertion newPA = pa.replaceArg(LIST_ELEMENT, wmc);
+						newPA.setProvenance(provenance);
+					}
+				}
+
 			}
-
-			Collection<Integer> childArts = wmi.getArticleByTitle(items
-					.toArray(new String[items.size()]));
-			HeuristicProvenance provenance = new HeuristicProvenance(this,
-					listArticle + "");
-			for (Integer childArt : childArts)
-				info.addChild(new WikipediaMappedConcept(childArt), provenance);
-
-			// TODO Parse the table elements from the list
 		}
 	}
 
 	/**
-	 * Creates a collection of possible article titles for lists if the target
-	 * article.
-	 * 
+	 * Search for a list for a given article. For example, article X will search
+	 * for 'List of Xs'.
+	 *
+	 * @param article
+	 *            The article to find a list for.
 	 * @param title
-	 *            The title of the target article.
-	 * @param synonyms
-	 *            Synonyms for the target.
-	 * @return A Collection of possible 'list of' article titles.
+	 *            The title of the article.
+	 * @param wmi
+	 *            The WMI access.
+	 * @return A list article for the input article or -1.
 	 */
-	private Collection<String> permutateSynonyms(String title,
-			Collection<String> synonyms) {
+	private int searchListArticle(int article, String title, WMISocket wmi) {
 		Set<String> potentialTitles = new HashSet<>();
-		// Title permutations
-		// TODO Perform better pluralisation of words
 		for (String permutation : UtilityMethods
 				.manipulateStringCapitalisation(title))
 			potentialTitles.add(LIST_OF + permutation);
 		for (String permutation : UtilityMethods
 				.manipulateStringCapitalisation(title + "s"))
 			potentialTitles.add(LIST_OF + permutation);
-
-		// Synonym permutations
-		for (String synonym : synonyms) {
-			for (String permutation : UtilityMethods
-					.manipulateStringCapitalisation(synonym))
-				potentialTitles.add(LIST_OF + permutation);
-			for (String permutation : UtilityMethods
-					.manipulateStringCapitalisation(synonym + "s"))
-				potentialTitles.add(LIST_OF + permutation);
+		try {
+			List<Integer> arts = wmi.getArticleByTitle(potentialTitles
+					.toArray(new String[potentialTitles.size()]));
+			UtilityMethods.removeNegOnes(arts);
+			if (arts.size() == 1)
+				return arts.get(0);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		return potentialTitles;
+		return -1;
 	}
 
-	@Override
-	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket cyc)
-			throws Exception {
-		int article = info.getArticle();
-
-		// Attempt to find a list version of the Cyc term
-		String title = wmi.getPageTitle(article, false);
-		// Already a list, use this
-		if (title.startsWith(LIST_OF)) {
-			harvestChildren(article, info, informationRequested, wmi);
-			return;
+	/**
+	 * Searches for an appropriate focus article for the list (i.e. the article
+	 * which the list is about).
+	 *
+	 * @param article
+	 *            The list article.
+	 * @param title
+	 *            The title of the list article.
+	 * @param provenance
+	 *            The provenance of the assertion.
+	 * @param wmi
+	 *            The WMI access.
+	 * @return A focus article mappable concept for the list article or a text
+	 *         mappable concept.
+	 */
+	private Collection<PartialAssertion> searchFocusArticle(int article,
+			String title, HeuristicProvenance provenance, WMISocket wmi) {
+		String plural = title.replace("List of ", "");
+		Collection<PartialAssertion> results = new ArrayList<>();
+		try {
+			int art = wmi.getArticleByTitle(plural);
+			if (art != -1
+					&& wmi.getPageType(art).equals(WMISocket.TYPE_ARTICLE)) {
+				results.add(createTaxonomicArticleAssertion(art, provenance));
+				return results;
+			}
+			// Stem the plural
+			// TODO Stem the plural
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		Collection<String> synonyms = new HashSet<>();
-		synonyms.add(title);
 
-		Collection<String> potentialLists = permutateSynonyms(title, synonyms);
-		Collection<Integer> listArticles = wmi.getArticleByTitle(potentialLists
-				.toArray(new String[potentialLists.size()]));
-		UtilityMethods.removeNegOnes(listArticles);
-		// For each list article
-		for (Integer listArt : listArticles)
-			harvestChildren(listArt, info, informationRequested, wmi);
+		// TODO Sentence parse the list title
+		// miner_.mineSentence("X is a ", info, heuristic, cyc, wmi);
+		return results;
+	}
+
+	/**
+	 * Creates a single assertion for a known article, using the List Element
+	 * constant as the subject and the article as the object.
+	 *
+	 * @param art
+	 *            The article to set as the object of the taxonomic assertion.
+	 * @param provenance
+	 *            TODO
+	 * @return The created taxonomic assertion
+	 */
+	private PartialAssertion createTaxonomicArticleAssertion(int art,
+			HeuristicProvenance provenance) {
+		PartialAssertion pa = new PartialAssertion(
+				CycConstants.ISA_GENLS.getConcept(), provenance,
+				ListMiner.LIST_ELEMENT, new WikipediaMappedConcept(art));
+		return pa;
 	}
 
 	@Override

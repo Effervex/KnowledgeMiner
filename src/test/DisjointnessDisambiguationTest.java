@@ -102,17 +102,17 @@ public class DisjointnessDisambiguationTest {
 		MinedInformation minedInfo = new MinedInformation(horrorArticle);
 		MappableConcept horrorMC = new WikipediaMappedConcept(horrorArticle);
 		// Adding an article link
-		minedInfo.addAssertion(new PartialAssertion(CycConstants.ISA_GENLS
-				.getConcept(), null, horrorMC, new WikipediaMappedConcept(wmi_
-				.getArticleByTitle("Film"))));
-		// Adding a text assertion (with anchor)
-		minedInfo.addAssertion(new PartialAssertion(CycConstants.ISA_GENLS
-				.getConcept(), null, horrorMC, new TextMappedConcept(
-				"[[Genre]]", false, false)));
-		// Adding a text assertion (without anchor)
-		minedInfo.addAssertion(new PartialAssertion(CycConstants.ISA_GENLS
-				.getConcept(), null, horrorMC, new TextMappedConcept(
-				"conceptual work", false, false)));
+//		minedInfo.addAssertion(new PartialAssertion(CycConstants.ISA_GENLS
+//				.getConcept(), null, horrorMC, new WikipediaMappedConcept(wmi_
+//				.getArticleByTitle("Film"))));
+//		// Adding a text assertion (with anchor)
+//		minedInfo.addAssertion(new PartialAssertion(CycConstants.ISA_GENLS
+//				.getConcept(), null, horrorMC, new TextMappedConcept(
+//				"[[Genre]]", false, false)));
+//		// Adding a text assertion (without anchor)
+//		minedInfo.addAssertion(new PartialAssertion(CycConstants.ISA_GENLS
+//				.getConcept(), null, horrorMC, new TextMappedConcept(
+//				"conceptual work", false, false)));
 		// Adding an incorrect assertion too.
 		minedInfo.addAssertion(new PartialAssertion(CycConstants.ISA_GENLS
 				.getConcept(), null, horrorMC, new WikipediaMappedConcept(wmi_

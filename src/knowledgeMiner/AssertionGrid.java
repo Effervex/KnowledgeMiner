@@ -403,6 +403,8 @@ public class AssertionGrid {
 		do {
 			// Seed a new case
 			double seedWeight = findAvailableSeed() * bestStanding;
+			if (seedWeight < 0 && cases_.isEmpty())
+				return null;
 
 			// Add a case for both individual and collection (if there is
 			// ambiguity), with standing weights

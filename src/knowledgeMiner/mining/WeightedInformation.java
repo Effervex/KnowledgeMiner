@@ -13,8 +13,7 @@ import util.Weighted;
  * 
  * @author Sam Sarjant
  */
-public abstract class WeightedInformation implements Weighted,
-		Serializable {
+public abstract class WeightedInformation implements Weighted, Serializable {
 	private static final long serialVersionUID = -4325745875771472944L;
 
 	/** The post-assertion status of the asserted information. */
@@ -36,6 +35,10 @@ public abstract class WeightedInformation implements Weighted,
 
 	public final HeuristicProvenance getProvenance() {
 		return heuristic_;
+	}
+
+	public void setProvenance(HeuristicProvenance provenance) {
+		heuristic_ = provenance;
 	}
 
 	public int getStatus() {
