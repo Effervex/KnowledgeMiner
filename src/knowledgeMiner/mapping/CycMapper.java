@@ -155,8 +155,8 @@ public class CycMapper {
 		// TODO Set this up as a config file.
 		// Initialise Cyc to Wiki heuristics
 		cycToWikiMapping_.addHeuristic(new CycToWiki_TitleMatching(this), this);
-//		cycToWikiMapping_.addHeuristic(new CycToWiki_CanonicalMatching(this),
-//				this);
+		// cycToWikiMapping_.addHeuristic(new CycToWiki_CanonicalMatching(this),
+		// this);
 		cycToWikiMapping_.addHeuristic(new CycToWiki_VoteSynonyms(this), this);
 		cycToWikiMapping_.addHeuristic(new CycToWiki_ContextRelatedSynonyms(
 				this), this);
@@ -180,8 +180,8 @@ public class CycMapper {
 		textToCycMapping_.addHeuristic(new TextToCyc_DateParse(this), this);
 		textToCycMapping_.addHeuristic(new TextToCyc_IntervalParse(this), this);
 		textToCycMapping_.addHeuristic(new TextToCyc_TextSearch(this), this);
-		textToCycMapping_.addHeuristic(new TextToCyc_WikiSenseSearch(this),
-				this);
+		// textToCycMapping_.addHeuristic(new TextToCyc_WikiSenseSearch(this),
+		// this);
 		// textToCycMapping_.addHeuristic(new TextToCyc_WikifySearch(this),
 		// this);
 		textToCycMapping_.addHeuristic(new TextToCyc_TimeContextParse(this),
