@@ -862,4 +862,8 @@ public class AssertionGrid {
 				return "I:" + allAssertions_.toString();
 		}
 	}
+
+	public boolean isEmpty() {
+		return assertionGrid_ == null;
+	}
 }

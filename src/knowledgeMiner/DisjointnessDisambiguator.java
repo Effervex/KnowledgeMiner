@@ -16,6 +16,7 @@ import io.resources.WMISocket;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
 import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.PartialAssertion;
@@ -153,6 +154,12 @@ public class DisjointnessDisambiguator {
 	@SuppressWarnings("unchecked")
 	public void findMaximalConjoint(ConceptModule conceptModule,
 			OntologySocket ontology) {
+		// Null grid check
+		if (coreAssertionGrid_.isEmpty()) {
+			caseNumber_ = -1;
+			return;
+		}
+		
 		Collection<DefiniteAssertion> existingAssertions = getExistingAssertions(
 				conceptModule, ontology);
 		currentAssertionGrid_ = integrateGroundTruths(conceptModule,
@@ -180,18 +187,26 @@ public class DisjointnessDisambiguator {
 	}
 
 	public double getConjointWeight() {
+		if (caseNumber_ == -1)
+			return 0;
 		return currentAssertionGrid_.getCaseWeight(caseNumber_);
 	}
 
 	public boolean isCollection() {
+		if (caseNumber_ == -1)
+			return false;
 		return currentAssertionGrid_.isCollection(caseNumber_);
 	}
 
 	public Collection<DefiniteAssertion> getConsistentAssertions() {
+		if (caseNumber_ == -1)
+			return Collections.EMPTY_LIST;
 		return consistentAssertions_;
 	}
 
 	public Collection<DefiniteAssertion> getRemovedAssertions() {
+		if (caseNumber_ == -1)
+			return Collections.EMPTY_LIST;
 		return removedAssertions_;
 	}
 
