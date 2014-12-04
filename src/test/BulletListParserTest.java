@@ -4,6 +4,7 @@
 package test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
@@ -61,8 +62,7 @@ public class BulletListParserTest {
 		assertEquals(points.sizeTotal(), 3);
 
 		int article = wmi_.getArticleByTitle("Collection");
-		points = BulletListParser.parseBulletList(wmi_
-				.getMarkup(article));
+		points = BulletListParser.parseBulletList(wmi_.getMarkup(article));
 		assertEquals(points.size(), 4);
 		assertTrue(points.containsKey("Mathematics"));
 		assertEquals(points.get("Mathematics").size(), 4);
@@ -87,5 +87,48 @@ public class BulletListParserTest {
 		assertEquals(points.get("Demos, singles, and DVDs").size(), 13);
 		assertTrue(points.containsKey("Best of compilation"));
 		assertEquals(points.get("Best of compilation").size(), 1);
+
+		article = wmi_.getArticleByTitle("List of assets owned by Disney");
+		points = BulletListParser.parseBulletList(wmi_.getMarkup(article));
+		assertEquals(points.size(), 17);
+		assertTrue(points
+				.containsKey("[[Walt Disney Studios (Burbank)|The Walt Disney Studios]]"));
+		assertEquals(
+				points.get(
+						"[[Walt Disney Studios (Burbank)|The Walt Disney Studios]]")
+						.size(), 29);
+		assertTrue(points.containsKey("[[Disney-ABC Television Group]]"));
+		assertEquals(points.get("[[Disney-ABC Television Group]]").size(), 67);
+		assertTrue(points.containsKey("[[ESPN|ESPN, Inc.]]"));
+		assertEquals(points.get("[[ESPN|ESPN, Inc.]]").size(), 25);
+		assertTrue(points.containsKey("[[Disney Interactive Media Group]]"));
+		assertEquals(points.get("[[Disney Interactive Media Group]]").size(), 37);
+		assertTrue(points.containsKey("[[Disney Consumer Products]]"));
+		assertEquals(points.get("[[Disney Consumer Products]]").size(), 34);
+		assertTrue(points.containsKey("[[Disneyland Resort]]"));
+		assertEquals(points.get("[[Disneyland Resort]]").size(), 7);
+		assertTrue(points.containsKey("[[Walt Disney World Resort]]"));
+		assertEquals(points.get("[[Walt Disney World Resort]]").size(), 31);
+		assertTrue(points.containsKey("[[Tokyo Disney Resort]]"));
+		assertEquals(points.get("[[Tokyo Disney Resort]]").size(), 7);
+		assertTrue(points.containsKey("[[Disneyland Paris]]"));
+		assertEquals(points.get("[[Disneyland Paris]]").size(), 12);
+		assertTrue(points.containsKey("[[Hong Kong Disneyland Resort]]"));
+		assertEquals(points.get("[[Hong Kong Disneyland Resort]]").size(), 6);
+		assertTrue(points.containsKey("[[Disney Cruise Line]]"));
+		assertEquals(points.get("[[Disney Cruise Line]]").size(), 5);
+		assertTrue(points.containsKey("[[Disney Vacation Club]]"));
+		assertEquals(points.get("[[Disney Vacation Club]]").size(), 10);
+		assertTrue(points.containsKey("Outreach Programs"));
+		assertEquals(points.get("Outreach Programs").size(), 8);
+		assertTrue(points.containsKey("Other Assets"));
+		assertEquals(points.get("Other Assets").size(), 12);
+		assertTrue(points.containsKey("Former Assets"));
+		assertEquals(points.get("Former Assets").size(), 3);
+		assertTrue(points.containsKey("Dormant or Shuttered Disney businesses"));
+		assertEquals(points.get("Dormant or Shuttered Disney businesses").size(), 17);
+		assertTrue(points.containsKey("References"));
+		assertEquals(points.get("References").size(), 3);
+		assertFalse(points.containsKey("See also"));
 	}
 }

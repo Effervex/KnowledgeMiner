@@ -61,7 +61,7 @@ public class InteractiveMode {
 
 		try {
 			String title = wmi.getPageTitle(mined.getArticle(), true);
-			out.println("'" + title + "' standing: " + mined.getStanding()
+			out.println("'" + title + "' standing: " + mined.getAllMinedStanding()
 					+ " [" + heuristic + "]");
 			Collection<PartialAssertion> assertions = mined.getAssertions();
 

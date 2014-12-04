@@ -1,13 +1,11 @@
 package test.mining;
 
-import static org.junit.Assert.fail;
-
-import java.io.IOException;
-
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
-import knowledgeMiner.ConceptModule;
+
+import java.io.IOException;
+
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.wikipedia.ListMiner;

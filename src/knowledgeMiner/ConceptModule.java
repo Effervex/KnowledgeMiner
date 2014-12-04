@@ -79,6 +79,9 @@ public class ConceptModule extends MinedInformation implements
 	/** The type of concept this module represents. */
 	private OntologyConcept type_ = null;
 
+	/** The weight of the mapping between the concept and article [0-1] */
+	protected double miningWeight_ = 1;
+
 	/**
 	 * Constructor for a new ConceptModule using just an article ID.
 	 * 
@@ -227,6 +230,19 @@ public class ConceptModule extends MinedInformation implements
 		return output + " (w=" + getModuleWeight() + ")";
 	}
 
+	private OntologyConcept determineType(OntologySocket ontology) {
+		if (ontology.evaluate(null, CommonConcepts.ISA.getID(),
+				concept_.getID(), CommonConcepts.FUNCTION.getID()))
+			return CycConstants.FUNCTION.getConcept();
+		if (ontology.evaluate(null, CommonConcepts.ISA.getID(),
+				concept_.getID(), CommonConcepts.PREDICATE.getID()))
+			return CycConstants.PREDICATE.getConcept();
+		if (ontology.evaluate(null, CommonConcepts.ISA.getID(),
+				concept_.getID(), CommonConcepts.COLLECTION.getID()))
+			return CycConstants.COLLECTION.getConcept();
+		return CycConstants.INDIVIDUAL.getConcept();
+	}
+
 	private boolean isChildOfParents(OntologySocket ontology) {
 		if (concept_.getID() < 0)
 			return true;
@@ -271,6 +287,82 @@ public class ConceptModule extends MinedInformation implements
 						articleID_ + "")).makeAssertion(concept_, ontology);
 	}
 
+	/**
+	 * Perform assertion addition, being careful not to change the type of the
+	 * concept.
+	 * 
+	 * @param ontology
+	 *            The ontology access.
+	 * @throws Exception
+	 *             Should something go awry...
+	 */
+	protected void performAssertionAdding(OntologySocket ontology)
+			throws Exception {
+		Collection<Integer> assertionIDs = new ArrayList<>();
+		for (DefiniteAssertion assertion : getConcreteAssertions()) {
+			int id = assertion.makeAssertion(concept_, ontology);
+			if (id != -1)
+				assertionIDs.add(id);
+		}
+
+		// Check type has not changed. If so, start again, checking after every
+		// step
+		if (determineType(ontology) != type_) {
+			for (Integer id : assertionIDs)
+				ontology.unassert(null, id);
+
+			for (DefiniteAssertion assertion : getConcreteAssertions()) {
+				int id = assertion.makeAssertion(concept_, ontology);
+				if (id != -1) {
+					if (determineType(ontology) != type_)
+						ontology.unassert(null, id);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Perform assertion removal.
+	 * 
+	 * @param ontology
+	 *            The ontology access.
+	 */
+	protected void performAssertionRemoval(OntologySocket ontology) {
+		for (DefiniteAssertion assertion : deletedAssertions_) {
+			int assertionID = ontology.findEdgeIDByArgs((Object[]) assertion
+					.asArgs());
+			if (ontology.unassert(null, assertionID)) {
+				LoggerFactory.getLogger(getClass()).info("UNASSERTED:\t{}",
+						assertion);
+			}
+		}
+	}
+
+	/**
+	 * Perform any auto-assertions defined by external factors.
+	 * 
+	 * @param ontology
+	 *            The ontology access.
+	 * @throws Exception
+	 *             Should something go awry...
+	 */
+	protected void performAutoAssertions(OntologySocket ontology)
+			throws Exception {
+		if (autoAssertions_ != null && parents_ != null
+				&& isChildOfParents(ontology)) {
+			Map<MappableConcept, OntologyConcept> substitutionMap = new HashMap<>();
+			substitutionMap.put(new WikipediaMappedConcept(articleID_),
+					concept_);
+			for (MinedAssertion assertion : autoAssertions_) {
+				if (assertion instanceof PartialAssertion)
+					assertion = ((PartialAssertion) assertion).instantiate(
+							getMappableSelfRef(), concept_);
+				((DefiniteAssertion) assertion).makeAssertion(concept_,
+						ontology);
+			}
+		}
+	}
+
 	public void addParentDetails(Collection<OntologyConcept> parents,
 			Collection<MinedAssertion> autoAssertions) {
 		if (parents != null && !parents.isEmpty())
@@ -292,6 +384,7 @@ public class ConceptModule extends MinedInformation implements
 		dd_ = null;
 		disambiguated_ = false;
 		mappingWeight_ = 1.0;
+		miningWeight_ = 1;
 	}
 
 	@Override
@@ -368,27 +461,6 @@ public class ConceptModule extends MinedInformation implements
 		return miningWeight_;
 	}
 
-	private OntologyConcept determineType(OntologySocket ontology) {
-		if (ontology.evaluate(null, CommonConcepts.ISA.getID(),
-				concept_.getID(), CommonConcepts.FUNCTION.getID()))
-			return CycConstants.FUNCTION.getConcept();
-		if (ontology.evaluate(null, CommonConcepts.ISA.getID(),
-				concept_.getID(), CommonConcepts.PREDICATE.getID()))
-			return CycConstants.PREDICATE.getConcept();
-		if (ontology.evaluate(null, CommonConcepts.ISA.getID(),
-				concept_.getID(), CommonConcepts.COLLECTION.getID()))
-			return CycConstants.COLLECTION.getConcept();
-		return CycConstants.INDIVIDUAL.getConcept();
-	}
-
-	public TermStanding getConceptStanding() {
-		if (type_ == CycConstants.COLLECTION.getConcept())
-			return TermStanding.COLLECTION;
-		if (type_ == CycConstants.INDIVIDUAL.getConcept())
-			return TermStanding.INDIVIDUAL;
-		return TermStanding.UNKNOWN;
-	}
-
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -427,6 +499,14 @@ public class ConceptModule extends MinedInformation implements
 
 	public OntologyConcept getConcept() {
 		return concept_;
+	}
+
+	public TermStanding getConceptStanding() {
+		if (type_ == CycConstants.COLLECTION.getConcept())
+			return TermStanding.COLLECTION;
+		if (type_ == CycConstants.INDIVIDUAL.getConcept())
+			return TermStanding.INDIVIDUAL;
+		return TermStanding.UNKNOWN;
 	}
 
 	/**
@@ -528,82 +608,6 @@ public class ConceptModule extends MinedInformation implements
 				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null,
 				concept_, new PrimitiveConcept(getModuleWeight()));
 		weightAssertion.makeAssertion(concept_, ontology);
-	}
-
-	/**
-	 * Perform any auto-assertions defined by external factors.
-	 * 
-	 * @param ontology
-	 *            The ontology access.
-	 * @throws Exception
-	 *             Should something go awry...
-	 */
-	protected void performAutoAssertions(OntologySocket ontology)
-			throws Exception {
-		if (autoAssertions_ != null && parents_ != null
-				&& isChildOfParents(ontology)) {
-			Map<MappableConcept, OntologyConcept> substitutionMap = new HashMap<>();
-			substitutionMap.put(new WikipediaMappedConcept(articleID_),
-					concept_);
-			for (MinedAssertion assertion : autoAssertions_) {
-				if (assertion instanceof PartialAssertion)
-					assertion = ((PartialAssertion) assertion).instantiate(
-							getMappableSelfRef(), concept_);
-				((DefiniteAssertion) assertion).makeAssertion(concept_,
-						ontology);
-			}
-		}
-	}
-
-	/**
-	 * Perform assertion addition, being careful not to change the type of the
-	 * concept.
-	 * 
-	 * @param ontology
-	 *            The ontology access.
-	 * @throws Exception
-	 *             Should something go awry...
-	 */
-	protected void performAssertionAdding(OntologySocket ontology)
-			throws Exception {
-		Collection<Integer> assertionIDs = new ArrayList<>();
-		for (DefiniteAssertion assertion : getConcreteAssertions()) {
-			int id = assertion.makeAssertion(concept_, ontology);
-			if (id != -1)
-				assertionIDs.add(id);
-		}
-
-		// Check type has not changed. If so, start again, checking after every
-		// step
-		if (determineType(ontology) != type_) {
-			for (Integer id : assertionIDs)
-				ontology.unassert(null, id);
-
-			for (DefiniteAssertion assertion : getConcreteAssertions()) {
-				int id = assertion.makeAssertion(concept_, ontology);
-				if (id != -1) {
-					if (determineType(ontology) != type_)
-						ontology.unassert(null, id);
-				}
-			}
-		}
-	}
-
-	/**
-	 * Perform assertion removal.
-	 * 
-	 * @param ontology
-	 *            The ontology access.
-	 */
-	protected void performAssertionRemoval(OntologySocket ontology) {
-		for (DefiniteAssertion assertion : deletedAssertions_) {
-			int assertionID = ontology.findEdgeIDByArgs((Object[]) assertion
-					.asArgs());
-			if (ontology.unassert(null, assertionID)) {
-				LoggerFactory.getLogger(getClass()).info("UNASSERTED:\t{}",
-						assertion);
-			}
-		}
 	}
 
 	@Override

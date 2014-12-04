@@ -17,9 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
@@ -69,9 +67,8 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 
 		Collection<PartialAssertion> listAssertions = null;
 		int listArticle = -1;
-		boolean isList = title.startsWith(LIST_OF);
 		// If a list,
-		if (isList) {
+		if (title.startsWith(LIST_OF)) {
 			// Attempt to find the corresponding article
 			listAssertions = searchFocusArticle(article, title, provenance, wmi);
 
@@ -92,7 +89,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 		// If standing is requested, and we know the focus article, set as
 		// collection
 		if (listAssertions.size() == 1
-				&& (listAssertions.iterator().next().getArgs()[2] instanceof WikipediaMappedConcept)
+				&& (listAssertions.iterator().next().getArgs()[1] instanceof WikipediaMappedConcept)
 				&& informationRequested(informationRequested,
 						InformationType.STANDING)) {
 			// TODO Add the appropriate standing information (make sure it's
@@ -132,7 +129,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 		for (String context : listItems.keySet()) {
 			for (String point : listItems.get(context)) {
 				Matcher m = WikiParser.ANCHOR_PARSER_ROUGH.matcher(point);
-				// TODO Just parsing known anchors at the moment
+				// TODO Just parsing anchors at the moment - not plain text
 				if (m.find()) {
 					String artTitle = m.group(1);
 					int artID = wmi.getArticleByTitle(artTitle);
@@ -142,15 +139,16 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 					WikipediaMappedConcept wmc = new WikipediaMappedConcept(
 							artID);
 					HeuristicProvenance provenance = new HeuristicProvenance(
-							this, listTitle + " " + artTitle + " (" + context
+							this, listTitle + ": " + artTitle + " (" + context
 									+ ")");
 					// Replace LIST_ELEMENT with the article
 					for (PartialAssertion pa : listAssertions) {
-						PartialAssertion newPA = pa.replaceArg(LIST_ELEMENT, wmc);
+						PartialAssertion newPA = pa.replaceArg(LIST_ELEMENT,
+								wmc);
 						newPA.setProvenance(provenance);
+						info.addAssertion(newPA);
 					}
 				}
-
 			}
 		}
 	}

@@ -7,6 +7,9 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.collections4.map.HashedMap;
 
 import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
@@ -60,11 +63,8 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 	/** The type of infobox this article contains (if any). */
 	protected List<String> infoboxType_ = null;
 
-	/** The weight of the mapping between the concept and article [0-1] */
-	protected double miningWeight_ = 1;
-
-	/** The inferred standing of the article. */
-	protected WeightedStanding standing_ = new WeightedStanding();
+	/** The extracted standing for articles. */
+	protected Map<Integer, WeightedStanding> standing_ = new HashedMap<>();
 
 	/**
 	 * Constructor for a new MinedInformation
@@ -191,24 +191,39 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 		hasParentageAssertions_ = true;
 	}
 
-	public void addStandingInformation(TermStanding standing, double weight,
-			HeuristicProvenance provenance) {
-		standing_.addStanding(provenance, standing, weight);
+	public void addStandingInformation(TermStanding standing, int article,
+			double weight, HeuristicProvenance provenance) {
+		WeightedStanding ws = getArticleStanding(article);
+		ws.addStanding(provenance, standing, weight);
 	}
 
-	public void addStandingInformation(WeightedStanding standing)
+	public void addStandingInformation(TermStanding standing, double weight,
+			HeuristicProvenance provenance) {
+		addStandingInformation(standing, articleID_, weight, provenance);
+	}
+
+	public WeightedStanding getArticleStanding(int article) {
+		WeightedStanding ws = standing_.get(article);
+		if (ws == null) {
+			ws = new WeightedStanding();
+			standing_.put(article, ws);
+		}
+		return ws;
+	}
+
+	public void addStandingInformation(WeightedStanding standing, int article)
 			throws Exception {
-		standing_.mergeInformation(standing);
+		WeightedStanding ws = getArticleStanding(article);
+		ws.mergeInformation(standing);
 	}
 
 	public void clearInformation() {
 		assertions_.clear();
-		standing_ = new WeightedStanding();
+		standing_ = new HashedMap<>();
 		infoboxType_ = null;
 		concreteAssertions_.clear();
 		concreteParentageAssertions_.clear();
 		minedTypes_ = -1;
-		miningWeight_ = 1;
 	}
 
 	@Override
@@ -238,9 +253,6 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 		} else if (!infoboxType_.equals(other.infoboxType_))
 			return false;
 		if (minedTypes_ != other.minedTypes_)
-			return false;
-		if (Double.doubleToLongBits(miningWeight_) != Double
-				.doubleToLongBits(other.miningWeight_))
 			return false;
 		if (standing_ == null) {
 			if (other.standing_ != null)
@@ -285,8 +297,12 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 		return minedTypes_;
 	}
 
-	public WeightedStanding getStanding() {
+	public Map<Integer, WeightedStanding> getAllMinedStanding() {
 		return standing_;
+	}
+
+	public WeightedStanding getStanding() {
+		return getArticleStanding(articleID_);
 	}
 
 	/**
@@ -315,9 +331,6 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 		result = prime * result
 				+ ((infoboxType_ == null) ? 0 : infoboxType_.hashCode());
 		result = prime * result + minedTypes_;
-		long temp;
-		temp = Double.doubleToLongBits(miningWeight_);
-		result = prime * result + (int) (temp ^ (temp >>> 32));
 		result = prime * result
 				+ ((standing_ == null) ? 0 : standing_.hashCode());
 		return result;
@@ -378,7 +391,8 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 			minedTypes_ &= otherInfo.minedTypes_;
 
 		// Resolve standing
-		standing_.mergeInformation(otherInfo.standing_);
+		for (Integer art : otherInfo.standing_.keySet())
+			addStandingInformation(otherInfo.getArticleStanding(art), art);
 		return true;
 	}
 
@@ -407,11 +421,6 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 		if (!concreteAssertions_.isEmpty())
 			buffer.append("\nConcrete parentage assertions: "
 					+ concreteParentageAssertions_);
-		if (miningWeight_ == -1) {
-			// Relations
-			if (!assertions_.isEmpty())
-				buffer.append("\nDisambiguatable assertions: " + assertions_);
-		}
 		return buffer.toString();
 	}
 }

@@ -154,7 +154,7 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 
 			for (String relation : infoboxRelations.keySet()) {
 				// Determine the standing.
-				info.addStandingInformation(getStanding(relation));
+				info.addStandingInformation(getStanding(relation), article);
 
 				// Extract info from the relation
 				PartialAssertion assertion = parseRelation(relation,
@@ -253,9 +253,10 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 
 		HeuristicProvenance provenance = new HeuristicProvenance(this,
 				originalRelation + "=" + value);
-		return new PartialAssertion(new TextMappedConcept(relation, true, true),
-				provenance, info.getMappableSelfRef(), new TextMappedConcept(
-						value, true, false));
+		return new PartialAssertion(
+				new TextMappedConcept(relation, true, true), provenance,
+				info.getMappableSelfRef(), new TextMappedConcept(value, true,
+						false));
 	}
 
 	@Override

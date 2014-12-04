@@ -43,14 +43,14 @@ public class BulletListParser {
 			else
 				contextTitle = NO_CONTEXT;
 
-			// Parse each point out.
-			String bulletMarkup = m.group();
-			String[] split = bulletMarkup.split("\\n");
-			for (String point : split) {
-				String lowercase = contextTitle.toLowerCase();
-				if (!lowercase.equals("see also")
-						&& !lowercase.equals("external links")) {
-					// If useful, record the point.
+			// If useful, record the points.
+			if (!contextTitle.equalsIgnoreCase("see also")
+					&& !contextTitle.equalsIgnoreCase("external links")) {
+
+				// Parse each point out.
+				String bulletMarkup = m.group();
+				String[] split = bulletMarkup.split("\\n");
+				for (String point : split) {
 					String niceString = point.replaceFirst("\\*+\\s*", "");
 					niceString = WikiParser.cleanupUselessMarkup(niceString);
 					niceString = WikiParser

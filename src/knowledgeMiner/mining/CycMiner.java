@@ -26,6 +26,7 @@ import knowledgeMiner.mining.wikipedia.FirstSentenceParserMiner;
 import knowledgeMiner.mining.wikipedia.InfoboxClusterer;
 import knowledgeMiner.mining.wikipedia.InfoboxRelationMiner;
 import knowledgeMiner.mining.wikipedia.InfoboxTypeMiner;
+import knowledgeMiner.mining.wikipedia.ListMiner;
 import knowledgeMiner.mining.wikipedia.TitleMiner;
 
 import org.apache.commons.collections4.map.HashedMap;
@@ -70,7 +71,7 @@ public class CycMiner {
 		miningHeuristics_.add(new InfoboxTypeMiner(mapper, this));
 		miningHeuristics_.add(new InfoboxRelationMiner(mapper, this));
 //		miningHeuristics_.add(new CategoryChildMiner(mapper, this));
-//		miningHeuristics_.add(new ListMiner(mapper, this));
+		miningHeuristics_.add(new ListMiner(mapper, this));
 //		miningHeuristics_.add(new SubCategoryMiner(mapper, this));
 		// miningHeuristics_.add(new CategoryMembershipMiner(mapper, this));
 		if (knowledgeMiner != null)
