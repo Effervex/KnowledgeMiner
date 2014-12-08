@@ -54,8 +54,7 @@ public class InfoboxTypeMiner extends InfoboxMiner {
 			infoboxTypes.add(infobox.getInfoboxType());
 			try {
 				info.addStandingInformation(
-						getStanding(infobox.getInfoboxType()),
-						info.getArticle());
+						getStanding(infobox.getInfoboxType()));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

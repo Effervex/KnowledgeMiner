@@ -7,14 +7,12 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
-
-import org.apache.commons.collections4.map.HashedMap;
-
 import tools.TripleDisambiguator;
 import util.Pair;
 import util.collection.WeightedSet;
@@ -30,7 +28,7 @@ import cyc.OntologyConcept;
  */
 public class DisambiguatedTopic {
 	/** The uniquely keyed instances. */
-	private static Map<String, DisambiguatedTopic> instanceMap_ = new HashedMap<>();
+	private static Map<String, DisambiguatedTopic> instanceMap_ = new HashMap<>();
 
 	private static final byte TYPE_WEIGHTED_ARTICLES = 2;
 

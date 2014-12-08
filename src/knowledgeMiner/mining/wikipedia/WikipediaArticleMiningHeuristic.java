@@ -8,6 +8,7 @@ import io.resources.WMISocket;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -22,12 +23,7 @@ import knowledgeMiner.mining.MiningHeuristic;
 import knowledgeMiner.mining.PartialAssertion;
 import knowledgeMiner.mining.WeightedStanding;
 import knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor;
-
-import org.apache.commons.collections4.map.HashedMap;
-
-import util.collection.MultiMap;
 import cyc.AssertionArgument;
-import cyc.CycConstants;
 
 /**
  * An abstract class representing a mining technique for extracting new
@@ -115,6 +111,7 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 				&& (informationRequested & info.getMinedInformation()) == informationRequested) {
 			// System.out.println(getHeuristicName() + " (Pre): "
 			// + info.getAssertions());
+			info.setModified(true);
 			return info;
 		}
 
@@ -155,13 +152,13 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 		if (!info.isModified() || !partitionInformation)
 			return info;
 
-		Map<Integer, MinedInformation> partitions = new HashedMap<>();
-		// Separate the standing
-		Map<Integer, WeightedStanding> standing = info.getAllMinedStanding();
-		for (Integer art : standing.keySet()) {
-			MinedInformation artInfo = getInfo(art, partitions);
-			artInfo.addStandingInformation(standing.get(art), art);
-		}
+		Map<Integer, MinedInformation> partitions = new HashMap<>();
+		// TODO Separate the standing
+//		Map<Integer, WeightedStanding> standing = info.getStanding();
+//		for (Integer art : standing.keySet()) {
+//			MinedInformation artInfo = getInfo(art, partitions);
+//			artInfo.addStandingInformation(standing.get(art));
+//		}
 
 		// Separate the assertions
 		for (PartialAssertion assertion : info.getAssertions()) {

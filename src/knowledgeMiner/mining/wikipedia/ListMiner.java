@@ -145,6 +145,9 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 				return results;
 			}
 		} catch (Exception e) {
+			System.err
+					.println("Exception while searching for focus article for: "
+							+ article);
 			e.printStackTrace();
 		}
 
@@ -294,8 +297,9 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 						InformationType.STANDING)) {
 			int focusArticle = ((WikipediaMappedConcept) listAssertions
 					.iterator().next().getArgs()[1]).getArticle();
-			info.addStandingInformation(TermStanding.COLLECTION, focusArticle,
-					1, provenance);
+			// TODO Fix this up
+//			info.addStandingInformation(TermStanding.COLLECTION, focusArticle,
+//					1, provenance);
 		}
 
 		// Parse the list items

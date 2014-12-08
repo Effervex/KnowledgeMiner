@@ -154,7 +154,7 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 
 			for (String relation : infoboxRelations.keySet()) {
 				// Determine the standing.
-				info.addStandingInformation(getStanding(relation), article);
+				info.addStandingInformation(getStanding(relation));
 
 				// Extract info from the relation
 				PartialAssertion assertion = parseRelation(relation,

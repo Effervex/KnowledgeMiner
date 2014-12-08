@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -22,7 +23,6 @@ import java.util.regex.Pattern;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
 
-import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.StringUtils;
 
 import tools.util.ArticleMetrics;
@@ -61,7 +61,7 @@ public class TextProcessScript {
 
 		if (wikify) {
 			try {
-				wikifyMap_ = new HashedMap<>();
+				wikifyMap_ = new HashMap<>();
 				SortedSet<WikiAnnotation> topics = wmi_.getTopics(wmi_
 						.getMarkup(INTELLIGENT_AGENT_ART));
 				for (WikiAnnotation topic : topics) {
@@ -225,7 +225,7 @@ public class TextProcessScript {
 	protected void printTopXSamples(Object[][] metrics, BufferedWriter out)
 			throws IOException {
 		// Print out top threes
-		Map<String, Object[]> samples = new HashedMap<>();
+		Map<String, Object[]> samples = new HashMap<>();
 		for (sortIndex_ = NUM_TEXT_FIELDS; sortIndex_ < ArticleMetrics.values().length; sortIndex_++) {
 			Arrays.sort(metrics, new Comparator<Object[]>() {
 				@Override

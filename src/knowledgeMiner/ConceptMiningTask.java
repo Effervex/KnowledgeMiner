@@ -891,7 +891,7 @@ public class ConceptMiningTask implements Runnable {
 		cmt.processables_.add(cm);
 		cmt.mineConcept(cm, MinedInformation.ALL_TYPES);
 		System.out.println(cm.getAssertions());
-		System.out.println(cm.getAllMinedStanding());
+		System.out.println(cm.getStanding());
 
 		// Disambiguate?
 		do {

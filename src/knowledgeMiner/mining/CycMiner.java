@@ -11,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,15 +22,9 @@ import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.meta.ImpliedStandingMiner;
 import knowledgeMiner.mining.meta.MetaMiningHeuristic;
-import knowledgeMiner.mining.wikipedia.FirstSentenceMiner;
-import knowledgeMiner.mining.wikipedia.FirstSentenceParserMiner;
 import knowledgeMiner.mining.wikipedia.InfoboxClusterer;
-import knowledgeMiner.mining.wikipedia.InfoboxRelationMiner;
-import knowledgeMiner.mining.wikipedia.InfoboxTypeMiner;
 import knowledgeMiner.mining.wikipedia.ListMiner;
-import knowledgeMiner.mining.wikipedia.TitleMiner;
 
-import org.apache.commons.collections4.map.HashedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,14 +60,14 @@ public class CycMiner {
 		sentenceParser_ = new SentenceParserHeuristic(mapper, this);
 
 		miningHeuristics_ = new ArrayList<>();
-		miningHeuristics_.add(new TitleMiner(mapper, this));
-		miningHeuristics_.add(new FirstSentenceMiner(mapper, this));
-		miningHeuristics_.add(new FirstSentenceParserMiner(mapper, this));
-		miningHeuristics_.add(new InfoboxTypeMiner(mapper, this));
-		miningHeuristics_.add(new InfoboxRelationMiner(mapper, this));
-//		miningHeuristics_.add(new CategoryChildMiner(mapper, this));
+		// miningHeuristics_.add(new TitleMiner(mapper, this));
+		// miningHeuristics_.add(new FirstSentenceMiner(mapper, this));
+		// miningHeuristics_.add(new FirstSentenceParserMiner(mapper, this));
+		// miningHeuristics_.add(new InfoboxTypeMiner(mapper, this));
+		// miningHeuristics_.add(new InfoboxRelationMiner(mapper, this));
+		// miningHeuristics_.add(new CategoryChildMiner(mapper, this));
 		miningHeuristics_.add(new ListMiner(mapper, this));
-//		miningHeuristics_.add(new SubCategoryMiner(mapper, this));
+		// miningHeuristics_.add(new SubCategoryMiner(mapper, this));
 		// miningHeuristics_.add(new CategoryMembershipMiner(mapper, this));
 		if (knowledgeMiner != null)
 			for (MiningHeuristic heuristic : miningHeuristics_)
@@ -100,7 +95,7 @@ public class CycMiner {
 		return miningHeuristics_;
 	}
 
-	public Map<MiningHeuristic, Long> heuristicTime = new HashedMap<>();
+	public Map<MiningHeuristic, Long> heuristicTime = new HashMap<>();
 
 	/**
 	 * The base method for mining information from an Article as well as using
@@ -120,13 +115,10 @@ public class CycMiner {
 	public void mineArticle(ConceptModule conceptModule,
 			int informationRequested, WMISocket wmi, OntologySocket ontology)
 			throws Exception {
-		int article = conceptModule.getArticle();
-
 		// Apply every mining heuristic to extracting information from the
 		// article.
-		MinedInformation info = new MinedInformation(article);
 		for (MiningHeuristic mh : miningHeuristics_) {
-			logger_.info("Mining {} with {}", info, mh.toString());
+			logger_.info("Mining {} with {}", conceptModule, mh.toString());
 			MinedInformation mined = mh.mineArticle(
 					conceptModule,
 					informationRequested
@@ -134,9 +126,8 @@ public class CycMiner {
 					ontology);
 			ConceptMiningTask.interactiveInterface_.interactiveMining(mined,
 					mh, wmi, ontology);
-			info.mergeInformation(mined);
+			conceptModule.mergeInformation(mined);
 		}
-		conceptModule.mergeInformation(info);
 		conceptModule.addMinedInfoType(informationRequested);
 	}
 

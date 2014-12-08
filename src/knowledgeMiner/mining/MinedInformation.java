@@ -7,14 +7,10 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.wikipedia.WikipediaArticleMiningHeuristic;
-
-import org.apache.commons.collections4.map.HashedMap;
-
 import util.Mergeable;
 import cyc.AssertionArgument;
 import cyc.MappableConcept;
@@ -66,7 +62,7 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 	protected List<String> infoboxType_ = null;
 
 	/** The extracted standing for articles. */
-	protected Map<Integer, WeightedStanding> standing_ = new HashedMap<>();
+	protected WeightedStanding standing_ = new WeightedStanding();
 
 	/**
 	 * Constructor for a new MinedInformation
@@ -167,26 +163,19 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 
 	public void addStandingInformation(TermStanding standing, double weight,
 			HeuristicProvenance provenance) {
-		addStandingInformation(standing, articleID_, weight, provenance);
-	}
-
-	public void addStandingInformation(TermStanding standing, int article,
-			double weight, HeuristicProvenance provenance) {
-		WeightedStanding ws = getArticleStanding(article);
-		ws.addStanding(provenance, standing, weight);
+		standing_.addStanding(provenance, standing, weight);
 		isModified_ = true;
 	}
 
-	public void addStandingInformation(WeightedStanding standing, int article)
+	public void addStandingInformation(WeightedStanding standing)
 			throws Exception {
-		WeightedStanding ws = getArticleStanding(article);
-		ws.mergeInformation(standing);
+		standing_.mergeInformation(standing);
 		isModified_ = true;
 	}
 
 	public void clearInformation() {
 		assertions_.clear();
-		standing_ = new HashedMap<>();
+		standing_ = new WeightedStanding();
 		infoboxType_ = null;
 		concreteAssertions_.clear();
 		concreteParentageAssertions_.clear();
@@ -230,21 +219,12 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 		return true;
 	}
 
-	public Map<Integer, WeightedStanding> getAllMinedStanding() {
-		return standing_;
-	}
-
 	public Integer getArticle() {
 		return articleID_;
 	}
 
 	public WeightedStanding getArticleStanding(int article) {
-		WeightedStanding ws = standing_.get(article);
-		if (ws == null) {
-			ws = new WeightedStanding();
-			standing_.put(article, ws);
-		}
-		return ws;
+		return standing_;
 	}
 
 	/**
@@ -373,8 +353,7 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 			minedTypes_ &= otherInfo.minedTypes_;
 
 		// Resolve standing
-		for (Integer art : otherInfo.standing_.keySet())
-			addStandingInformation(otherInfo.getArticleStanding(art), art);
+		addStandingInformation(otherInfo.standing_);
 		return true;
 	}
 
@@ -405,5 +384,9 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 			buffer.append("\nConcrete parentage assertions: "
 					+ concreteParentageAssertions_);
 		return buffer.toString();
+	}
+
+	public void setModified(boolean b) {
+		isModified_ = true;
 	}
 }

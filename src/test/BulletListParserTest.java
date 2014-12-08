@@ -90,7 +90,7 @@ public class BulletListParserTest {
 
 		article = wmi_.getArticleByTitle("List of assets owned by Disney");
 		points = BulletListParser.parseBulletList(wmi_.getMarkup(article));
-		assertEquals(points.size(), 17);
+		assertEquals(points.size(), 16);
 		assertTrue(points
 				.containsKey("[[Walt Disney Studios (Burbank)|The Walt Disney Studios]]"));
 		assertEquals(
@@ -102,7 +102,8 @@ public class BulletListParserTest {
 		assertTrue(points.containsKey("[[ESPN|ESPN, Inc.]]"));
 		assertEquals(points.get("[[ESPN|ESPN, Inc.]]").size(), 25);
 		assertTrue(points.containsKey("[[Disney Interactive Media Group]]"));
-		assertEquals(points.get("[[Disney Interactive Media Group]]").size(), 37);
+		assertEquals(points.get("[[Disney Interactive Media Group]]").size(),
+				37);
 		assertTrue(points.containsKey("[[Disney Consumer Products]]"));
 		assertEquals(points.get("[[Disney Consumer Products]]").size(), 34);
 		assertTrue(points.containsKey("[[Disneyland Resort]]"));
@@ -126,9 +127,14 @@ public class BulletListParserTest {
 		assertTrue(points.containsKey("Former Assets"));
 		assertEquals(points.get("Former Assets").size(), 3);
 		assertTrue(points.containsKey("Dormant or Shuttered Disney businesses"));
-		assertEquals(points.get("Dormant or Shuttered Disney businesses").size(), 17);
-		assertTrue(points.containsKey("References"));
-		assertEquals(points.get("References").size(), 3);
+		assertEquals(points.get("Dormant or Shuttered Disney businesses")
+				.size(), 17);
+		assertFalse(points.containsKey("References"));
 		assertFalse(points.containsKey("See also"));
+
+		points = BulletListParser
+				.parseBulletList("===[[Hong Kong Disneyland Resort]]===\n\n* [[Hong Kong International Theme Parks]]\n[[Penny's Bay]], [[Lantau Island]], [[Hong Kong]] (Disney 48%, Hong Kong Government 52%)\n** [[Hong Kong Disneyland]] - 2005\n** [[Inspiration Lake]] - 2005\n** Resorts:\n*** [[Disneyland Hotel (Hong Kong)|Hong Kong Disneyland Hotel]]\n*** [[Disney's Hollywood Hotel]]\n");
+		assertTrue(points.containsKey("[[Hong Kong Disneyland Resort]]"));
+		assertEquals(points.get("[[Hong Kong Disneyland Resort]]").size(), 6);
 	}
 }

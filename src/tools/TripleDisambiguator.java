@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -26,7 +27,6 @@ import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
 
@@ -363,7 +363,7 @@ public class TripleDisambiguator {
 	public Collection<DisambiguatedTriple> disambiguateTriples(
 			Collection<DisambiguatedTriple> triples, File termFile)
 			throws Exception {
-		textToArticleMappings_ = new HashedMap<>();
+		textToArticleMappings_ = new HashMap<>();
 		if (PRIMARY_TERMWEIGHT.equals(TermWeight.WIKIFICATION)) {
 			// TODO If using WIKIFICATION, use that instead
 			readWikificationMappings();
