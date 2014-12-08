@@ -53,6 +53,8 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	private static final Pattern[] SENTENCE_SIMPLIFIER = {
 			Pattern.compile("^In [^,.]+, "),
 			Pattern.compile("(?<=[^,.]+), [^,.]+,(?= (is|was|are|were))") };
+	/** If the text should be wikified first. */
+	public static boolean wikifyText_ = true;
 
 	public SentenceParserHeuristic(CycMapper mapper, CycMiner miner) {
 		super(false, mapper, miner);
@@ -382,6 +384,9 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 			MappableConcept focusConcept, WMISocket wmi, OntologySocket cyc,
 			MiningHeuristic heuristic) throws Exception {
 		logger_.trace("mineSentence: " + sentence);
+		if (wikifyText_)
+			sentence = wmi.annotate(sentence);
+
 		SortedMap<String, String> anchors = locateAnchors(sentence);
 		sentence = sentence.replaceAll("'{3,}.+?'{3,}", "THING");
 		sentence = sentence.replaceAll("\\?{2,}", "");

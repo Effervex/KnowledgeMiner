@@ -22,9 +22,6 @@ import util.wikipedia.WikiParser;
  * @author Sam Sarjant
  */
 public class FirstSentenceParserMiner extends WikipediaArticleMiningHeuristic {
-	/** If the text should be wikified first. */
-	public static boolean wikifyText_ = true;
-
 	/**
 	 * Constructor for a new FirstSentenceParserMiner
 	 * 
@@ -50,9 +47,6 @@ public class FirstSentenceParserMiner extends WikipediaArticleMiningHeuristic {
 		if (firstSentence == null || firstSentence.isEmpty())
 			return;
 		firstSentence = NLPToSyntaxModule.convertToAscii(firstSentence);
-
-		if (wikifyText_)
-			firstSentence = wmi.annotate(firstSentence);
 
 		miner_.mineSentence(firstSentence, info, this, ontology, wmi);
 	}

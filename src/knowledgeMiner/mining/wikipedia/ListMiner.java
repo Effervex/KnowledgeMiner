@@ -18,8 +18,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 
-import org.apache.commons.lang3.StringUtils;
-
 import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
@@ -29,6 +27,9 @@ import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
+
+import org.apache.commons.lang3.StringUtils;
+
 import util.UtilityMethods;
 import util.collection.MultiMap;
 import util.text.OpenNLP;
@@ -148,7 +149,8 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 
 		// Sentence parse the list title
 		MinedInformation tempInfo = new MinedInformation(article);
-		miner_.mineSentence("X is a " + plural, tempInfo, this, ontology, wmi);
+		String sentence = "_TOPIC_ is a " + plural + ".";
+		miner_.mineSentence(sentence, tempInfo, this, ontology, wmi);
 		for (PartialAssertion pa : tempInfo.getAssertions())
 			results.add(pa.replaceArg(tempInfo.getMappableSelfRef(),
 					LIST_ELEMENT));
@@ -199,14 +201,15 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 	 *            The info to add to.
 	 * @param wmi
 	 *            The WMI access.
+	 * @param listTitle
+	 *            The list title.
 	 * @throws Exception
 	 */
-	protected void extractBulletInformation(int listArticle, String markup,
-			Collection<PartialAssertion> listAssertions, MinedInformation info,
-			WMISocket wmi) throws Exception {
+	protected void extractBulletInformation(int listArticle, String listTitle,
+			String markup, Collection<PartialAssertion> listAssertions,
+			MinedInformation info, WMISocket wmi) throws Exception {
 		MultiMap<String, String> listItems = BulletListParser
 				.parseBulletList(markup);
-		String listTitle = wmi.getPageTitle(listArticle, true);
 		// Iterate through the points
 		for (String context : listItems.keySet()) {
 			if (context.equalsIgnoreCase("references"))
@@ -299,10 +302,11 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 				|| informationRequested(informationRequested,
 						InformationType.NON_TAXONOMIC)) {
 			String markup = wmi.getMarkup(listArticle);
-			extractBulletInformation(listArticle, markup, listAssertions, info,
-					wmi);
-//			extractTableInformation(listArticle, title, markup, listAssertions,
-//					info, wmi);
+			extractBulletInformation(listArticle, title, markup,
+					listAssertions, info, wmi);
+			// extractTableInformation(listArticle, title, markup,
+			// listAssertions,
+			// info, wmi);
 		}
 	}
 

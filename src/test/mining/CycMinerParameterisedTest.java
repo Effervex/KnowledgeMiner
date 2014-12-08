@@ -20,6 +20,7 @@ import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.WeightedHeuristic;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.mining.SentenceParserHeuristic;
 import knowledgeMiner.mining.wikipedia.CategoryChildMiner;
 import knowledgeMiner.mining.wikipedia.CategoryMembershipMiner;
 import knowledgeMiner.mining.wikipedia.FirstSentenceMiner;
@@ -30,7 +31,6 @@ import knowledgeMiner.mining.wikipedia.ListMiner;
 import knowledgeMiner.mining.wikipedia.SubCategoryMiner;
 import knowledgeMiner.mining.wikipedia.TitleMiner;
 import knowledgeMiner.mining.wikipedia.WikipediaArticleMiningHeuristic;
-
 import util.UtilityMethods;
 import util.collection.MultiMap;
 import static org.junit.Assert.*;
@@ -127,7 +127,7 @@ public class CycMinerParameterisedTest {
 
 	@Test
 	public void testFirstSentenceParserMiner() throws Exception {
-		FirstSentenceParserMiner.wikifyText_ = true;
+		SentenceParserHeuristic.wikifyText_ = true;
 		String heurName = WeightedHeuristic
 				.generateHeuristicName(FirstSentenceParserMiner.class);
 		testMiner(heurName);

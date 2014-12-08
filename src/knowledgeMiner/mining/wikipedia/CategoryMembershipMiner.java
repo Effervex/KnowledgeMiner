@@ -73,9 +73,7 @@ public class CategoryMembershipMiner extends WikipediaArticleMiningHeuristic {
 				continue;
 
 			// Treat the category as a chunk of text to be parsed
-			String sentence = "ART is a " + categoryTitle + ".";
-			if (wikifyText_)
-				sentence = wmi.annotate(sentence);
+			String sentence = "_TOPIC_ is a " + categoryTitle + ".";
 			miner_.mineSentence(sentence, info, this,
 					ontology, wmi);
 		}
