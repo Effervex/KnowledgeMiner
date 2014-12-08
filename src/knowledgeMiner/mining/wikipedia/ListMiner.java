@@ -18,6 +18,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 
+import org.apache.commons.lang3.StringUtils;
+
+import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
@@ -28,8 +31,11 @@ import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
 import util.UtilityMethods;
 import util.collection.MultiMap;
+import util.text.OpenNLP;
 import util.wikipedia.BulletListParser;
+import util.wikipedia.TableMiner;
 import util.wikipedia.WikiParser;
+import util.wikipedia.WikiTable;
 import cyc.AssertionArgument;
 import cyc.CycConstants;
 
@@ -40,13 +46,11 @@ import cyc.CycConstants;
  * 
  * @author Sam Sarjant
  */
-// TODO This entire heuristic needs to be modified to just directly process list
-// articles.
 public class ListMiner extends WikipediaArticleMiningHeuristic {
-	/** The List prefix. */
-	public static final String LIST_OF = "List of ";
 	private static final AssertionArgument LIST_ELEMENT = new TextMappedConcept(
 			"_LIST_ELEMENT_", false, false);
+	private static final String LIST_OF = "List of ";
+	private static final String LIST_OF_REGEX = "Lists? of ";
 
 	/**
 	 * Constructor for a new ListMiner.java
@@ -57,100 +61,99 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 		super(true, mapper, miner);
 	}
 
-	@Override
-	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket cyc)
-			throws Exception {
-		int article = info.getArticle();
-		String title = wmi.getPageTitle(article, false);
-		HeuristicProvenance provenance = new HeuristicProvenance(this, title);
-
-		Collection<PartialAssertion> listAssertions = null;
-		int listArticle = -1;
-		// If a list,
-		if (title.startsWith(LIST_OF)) {
-			// Attempt to find the corresponding article
-			listAssertions = searchFocusArticle(article, title, provenance, wmi);
-
-			listArticle = article;
-		} else {
-			// Search for list
-			listArticle = searchListArticle(article, title, wmi);
-
-			listAssertions = new ArrayList<>();
-			listAssertions.add(createTaxonomicArticleAssertion(article,
-					provenance));
-		}
-
-		// Cannot find list, cannot mine
-		if (listArticle == -1)
+	private void assignDataToAssertions(String focusString, String context,
+			String listTitle, Collection<PartialAssertion> listAssertions,
+			MinedInformation info, WMISocket wmi) throws IOException {
+		if (focusString.isEmpty())
 			return;
+		Matcher m = WikiParser.ANCHOR_PARSER_ROUGH.matcher(focusString);
+		// TODO Just parsing anchors at the moment - not plain text
+		if (m.find()) {
+			String artTitle = m.group(1);
+			int artID = wmi.getArticleByTitle(artTitle);
+			if (artID == -1)
+				return;
 
-		// If standing is requested, and we know the focus article, set as
-		// collection
-		if (listAssertions.size() == 1
-				&& (listAssertions.iterator().next().getArgs()[1] instanceof WikipediaMappedConcept)
-				&& informationRequested(informationRequested,
-						InformationType.STANDING)) {
-			// TODO Add the appropriate standing information (make sure it's
-			// added to the focus article, not the list
-			// info.addStandingInformation(TermStanding.COLLECTION, 1,
-			// provenance);
+			WikipediaMappedConcept wmc = new WikipediaMappedConcept(artID);
+			HeuristicProvenance provenance = new HeuristicProvenance(this,
+					listTitle + ": " + artTitle + " (" + context + ")");
+			// Replace LIST_ELEMENT with the article
+			for (PartialAssertion pa : listAssertions) {
+				PartialAssertion newPA = pa.replaceArg(LIST_ELEMENT, wmc);
+				newPA.setProvenance(provenance);
+				info.addAssertion(newPA);
+			}
 		}
-
-		// Parse the list items
-		if (informationRequested(informationRequested,
-				InformationType.TAXONOMIC)
-				|| informationRequested(informationRequested,
-						InformationType.NON_TAXONOMIC))
-			harvestChildren(listArticle, listAssertions, info, wmi);
 	}
 
 	/**
-	 * Parse the list, extract the child articles, and create as assertions to
-	 * the parent mappable concept.
+	 * Creates a single assertion for a known article, using the List Element
+	 * constant as the subject and the article as the object.
 	 *
-	 * @param listArticle
-	 *            The article to parse.
-	 * @param listAssertions
-	 * @param info
-	 *            The info to add to.
+	 * @param art
+	 *            The article to set as the object of the taxonomic assertion.
+	 * @param provenance
+	 *            The provenance to use.
+	 * @return The created taxonomic assertion
+	 */
+	private PartialAssertion createTaxonomicArticleAssertion(int art,
+			HeuristicProvenance provenance) {
+		PartialAssertion pa = new PartialAssertion(
+				CycConstants.ISA_GENLS.getConcept(), provenance,
+				ListMiner.LIST_ELEMENT, new WikipediaMappedConcept(art));
+		return pa;
+	}
+
+	/**
+	 * Searches for an appropriate focus article for the list (i.e. the article
+	 * which the list is about).
+	 *
+	 * @param article
+	 *            The list article.
+	 * @param title
+	 *            The title of the list article.
+	 * @param provenance
+	 *            The provenance of the assertion.
 	 * @param wmi
 	 *            The WMI access.
-	 * @throws Exception
+	 * @param ontology
+	 *            The ontology access.
+	 * @return A focus article mappable concept for the list article or a text
+	 *         mappable concept.
 	 */
-	private void harvestChildren(int listArticle,
-			Collection<PartialAssertion> listAssertions, MinedInformation info,
-			WMISocket wmi) throws Exception {
-		MultiMap<String, String> listItems = BulletListParser
-				.parseBulletList(wmi.getMarkup(listArticle));
-		String listTitle = wmi.getPageTitle(listArticle, true);
-		// Iterate through the points
-		for (String context : listItems.keySet()) {
-			for (String point : listItems.get(context)) {
-				Matcher m = WikiParser.ANCHOR_PARSER_ROUGH.matcher(point);
-				// TODO Just parsing anchors at the moment - not plain text
-				if (m.find()) {
-					String artTitle = m.group(1);
-					int artID = wmi.getArticleByTitle(artTitle);
-					if (artID == -1)
-						continue;
-
-					WikipediaMappedConcept wmc = new WikipediaMappedConcept(
-							artID);
-					HeuristicProvenance provenance = new HeuristicProvenance(
-							this, listTitle + ": " + artTitle + " (" + context
-									+ ")");
-					// Replace LIST_ELEMENT with the article
-					for (PartialAssertion pa : listAssertions) {
-						PartialAssertion newPA = pa.replaceArg(LIST_ELEMENT,
-								wmc);
-						newPA.setProvenance(provenance);
-						info.addAssertion(newPA);
-					}
-				}
+	private Collection<PartialAssertion> searchFocusArticle(int article,
+			String title, HeuristicProvenance provenance, WMISocket wmi,
+			OntologySocket ontology) {
+		String plural = title.replaceAll(LIST_OF_REGEX, "");
+		Collection<PartialAssertion> results = new ArrayList<>();
+		try {
+			int art = wmi.getArticleByTitle(plural);
+			if (art != -1 && art != article
+					&& wmi.getPageType(art).equals(WMISocket.TYPE_ARTICLE)) {
+				results.add(createTaxonomicArticleAssertion(art, provenance));
+				return results;
 			}
+
+			// Stem the plural
+			String stemmed = OpenNLP.stem(plural);
+			art = wmi.getArticleByTitle(stemmed);
+			if (art != -1 && art != article
+					&& wmi.getPageType(art).equals(WMISocket.TYPE_ARTICLE)) {
+				results.add(createTaxonomicArticleAssertion(art, provenance));
+				return results;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
+
+		// Sentence parse the list title
+		MinedInformation tempInfo = new MinedInformation(article);
+		miner_.mineSentence("X is a " + plural, tempInfo, this, ontology, wmi);
+		for (PartialAssertion pa : tempInfo.getAssertions())
+			results.add(pa.replaceArg(tempInfo.getMappableSelfRef(),
+					LIST_ELEMENT));
+
+		return results;
 	}
 
 	/**
@@ -186,58 +189,121 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 	}
 
 	/**
-	 * Searches for an appropriate focus article for the list (i.e. the article
-	 * which the list is about).
+	 * Parses any bulleted lists in the list article, extract the child
+	 * articles, and create as assertions to the parent mappable concept.
 	 *
-	 * @param article
-	 *            The list article.
-	 * @param title
-	 *            The title of the list article.
-	 * @param provenance
-	 *            The provenance of the assertion.
+	 * @param listArticle
+	 *            The article to parse.
+	 * @param listAssertions
+	 * @param info
+	 *            The info to add to.
 	 * @param wmi
 	 *            The WMI access.
-	 * @return A focus article mappable concept for the list article or a text
-	 *         mappable concept.
+	 * @throws Exception
 	 */
-	private Collection<PartialAssertion> searchFocusArticle(int article,
-			String title, HeuristicProvenance provenance, WMISocket wmi) {
-		String plural = title.replace("List of ", "");
-		Collection<PartialAssertion> results = new ArrayList<>();
-		try {
-			int art = wmi.getArticleByTitle(plural);
-			if (art != -1
-					&& wmi.getPageType(art).equals(WMISocket.TYPE_ARTICLE)) {
-				results.add(createTaxonomicArticleAssertion(art, provenance));
-				return results;
+	protected void extractBulletInformation(int listArticle, String markup,
+			Collection<PartialAssertion> listAssertions, MinedInformation info,
+			WMISocket wmi) throws Exception {
+		MultiMap<String, String> listItems = BulletListParser
+				.parseBulletList(markup);
+		String listTitle = wmi.getPageTitle(listArticle, true);
+		// Iterate through the points
+		for (String context : listItems.keySet()) {
+			if (context.equalsIgnoreCase("references"))
+				continue;
+			for (String point : listItems.get(context)) {
+				assignDataToAssertions(point, context, listTitle,
+						listAssertions, info, wmi);
 			}
-			// Stem the plural
-			// TODO Stem the plural
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
-
-		// TODO Sentence parse the list title
-		// miner_.mineSentence("X is a ", info, heuristic, cyc, wmi);
-		return results;
 	}
 
 	/**
-	 * Creates a single assertion for a known article, using the List Element
-	 * constant as the subject and the article as the object.
+	 * Parses any tables in the article, identifies the focus column of the
+	 * table, adds it to the list assertions, and extracts additional assertions
+	 * from the table.
 	 *
-	 * @param art
-	 *            The article to set as the object of the taxonomic assertion.
-	 * @param provenance
-	 *            TODO
-	 * @return The created taxonomic assertion
+	 * @param listArticle
+	 *            The list article to parse.
+	 * @param markup
+	 * @param listAssertions
+	 *            The assertions to add the focus elements to.
+	 * @param info
+	 *            The info to add the information to.
+	 * @param wmi
+	 *            The WMI access.
+	 * @throws IOException
 	 */
-	private PartialAssertion createTaxonomicArticleAssertion(int art,
-			HeuristicProvenance provenance) {
-		PartialAssertion pa = new PartialAssertion(
-				CycConstants.ISA_GENLS.getConcept(), provenance,
-				ListMiner.LIST_ELEMENT, new WikipediaMappedConcept(art));
-		return pa;
+	protected void extractTableInformation(int listArticle, String title,
+			String markup, Collection<PartialAssertion> listAssertions,
+			MinedInformation info, WMISocket wmi) throws IOException {
+		Collection<WikiTable> tables = TableMiner.parseTable(markup);
+		for (WikiTable table : tables) {
+			MultiMap<String, String> colData = table.getTableData();
+
+			// Identify which column is the focus column
+			String focusColumn = findFocusColumn(colData, title);
+			Collection<String> focusConcepts = colData.get(focusColumn);
+			for (String focusConcept : focusConcepts) {
+				assignDataToAssertions(focusConcept, focusColumn, title,
+						listAssertions, info, wmi);
+			}
+		}
+	}
+
+	@Override
+	protected void mineArticleInternal(MinedInformation info,
+			int informationRequested, WMISocket wmi, OntologySocket cyc)
+			throws Exception {
+		int article = info.getArticle();
+		String title = wmi.getPageTitle(article, false);
+		HeuristicProvenance provenance = new HeuristicProvenance(this, title);
+
+		Collection<PartialAssertion> listAssertions = null;
+		int listArticle = -1;
+		// If a list,
+		if (WikiParser.isAListOf(title)) {
+			// Attempt to find the corresponding article
+			listAssertions = searchFocusArticle(article, title, provenance,
+					wmi, cyc);
+
+			listArticle = article;
+		} else {
+			// Search for list
+			listArticle = searchListArticle(article, title, wmi);
+
+			listAssertions = new ArrayList<>();
+			listAssertions.add(createTaxonomicArticleAssertion(article,
+					provenance));
+		}
+
+		// Cannot find list, cannot mine
+		if (listArticle == -1)
+			return;
+
+		// If standing is requested, and we know the focus article, set as
+		// collection for the appropriate focus article.
+		if (listAssertions.size() == 1
+				&& (listAssertions.iterator().next().getArgs()[1] instanceof WikipediaMappedConcept)
+				&& informationRequested(informationRequested,
+						InformationType.STANDING)) {
+			int focusArticle = ((WikipediaMappedConcept) listAssertions
+					.iterator().next().getArgs()[1]).getArticle();
+			info.addStandingInformation(TermStanding.COLLECTION, focusArticle,
+					1, provenance);
+		}
+
+		// Parse the list items
+		if (informationRequested(informationRequested,
+				InformationType.TAXONOMIC)
+				|| informationRequested(informationRequested,
+						InformationType.NON_TAXONOMIC)) {
+			String markup = wmi.getMarkup(listArticle);
+			extractBulletInformation(listArticle, markup, listAssertions, info,
+					wmi);
+//			extractTableInformation(listArticle, title, markup, listAssertions,
+//					info, wmi);
+		}
 	}
 
 	@Override
@@ -247,12 +313,65 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 		informationProduced[InformationType.NON_TAXONOMIC.ordinal()] = true;
 	}
 
+	/**
+	 * Finds the focus column (the column containing the data of the list).
+	 * 
+	 * TODO This could be more hypothesis driven (i.e. test the data before
+	 * committing).
+	 *
+	 * @param colData
+	 *            The column data.
+	 * @return The most likely focus column.
+	 */
+	public String findFocusColumn(MultiMap<String, String> colData,
+			String listTitle) {
+		String stem = OpenNLP.stem(listTitle.replaceAll(LIST_OF_REGEX, ""))
+				.toLowerCase();
+
+		// Search for columns with the word 'name' in it.
+		// Alternatively search for mentions of the word in the title.
+		// Finally, use Levenshtein dist
+		int singleNamed = -1;
+		int singleContained = -1;
+		int bestDist = Integer.MAX_VALUE;
+		int distIndex = 0;
+		String[] keys = colData.keySet().toArray(new String[colData.size()]);
+		for (int i = 0; i < keys.length; i++) {
+			String colTitle = WikiParser.cleanAllMarkup(keys[i]).toLowerCase();
+			if (keys[i].toLowerCase().contains("name")) {
+				if (singleNamed == -1)
+					singleNamed = i;
+				else
+					singleNamed = -2;
+			}
+			String stemCol = OpenNLP.stem(colTitle);
+			if (stem.contains(stemCol)) {
+				if (singleContained == -1)
+					singleContained = i;
+				else
+					singleContained = -2;
+			}
+			int dist = StringUtils.getLevenshteinDistance(stemCol, stem);
+			if (dist < bestDist) {
+				bestDist = dist;
+				distIndex = i;
+			}
+		}
+
+		if (singleNamed > 0)
+			return keys[singleNamed];
+		else if (singleContained > 0)
+			return keys[singleContained];
+		else
+			return null;
+	}
+
 	public static void main(String[] args) throws IOException {
 		ResourceAccess.newInstance();
 		WMISocket wmi = ResourceAccess.requestWMISocket();
 
 		BufferedWriter out = new BufferedWriter(new FileWriter(new File(
-				"listfile.csv")));
+				"listfile.txt")));
 
 		int artId = -1;
 		int listCount = 0;
@@ -266,7 +385,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 				}
 
 				String title = wmi.getPageTitle(artId, true);
-				if (title.startsWith(LIST_OF)
+				if (WikiParser.isAListOf(title)
 						&& wmi.getPageType(artId)
 								.equals(WMISocket.TYPE_ARTICLE)) {
 					out.write(artId + "\t" + title + "\n");

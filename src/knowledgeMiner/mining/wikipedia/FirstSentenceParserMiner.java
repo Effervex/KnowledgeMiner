@@ -13,6 +13,8 @@ import knowledgeMiner.mining.MinedInformation;
 
 import org.slf4j.LoggerFactory;
 
+import util.wikipedia.WikiParser;
+
 /**
  * This class uses the Stanford Parser to deconstruct a sentence and infer
  * meaning from it.
@@ -42,7 +44,7 @@ public class FirstSentenceParserMiner extends WikipediaArticleMiningHeuristic {
 		int article = info.getArticle();
 		String title = wmi.getPageTitle(article, false);
 		// Do not mine lists
-		if (title.startsWith(ListMiner.LIST_OF))
+		if (WikiParser.isAListOf(title))
 			return;
 		String firstSentence = wmi.getFirstSentence(article);
 		if (firstSentence == null || firstSentence.isEmpty())

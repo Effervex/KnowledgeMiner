@@ -9,14 +9,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.collections4.map.HashedMap;
-
 import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.wikipedia.WikipediaArticleMiningHeuristic;
+
+import org.apache.commons.collections4.map.HashedMap;
+
 import util.Mergeable;
 import cyc.AssertionArgument;
-import cyc.CycConstants;
 import cyc.MappableConcept;
 import cyc.OntologyConcept;
 
@@ -50,6 +50,8 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 	 * assertions.
 	 */
 	private boolean hasParentageAssertions_ = false;
+
+	private transient boolean isModified_ = false;
 
 	/** The bitwise representation of the mined information. */
 	private int minedTypes_ = -1;
@@ -103,6 +105,7 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 			if (singleAssertion.isHierarchical())
 				hasParentageAssertions_ = true;
 		}
+		isModified_ = true;
 	}
 
 	/**
@@ -138,20 +141,6 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 	}
 
 	/**
-	 * Adds a child article of this article to the information.
-	 * 
-	 * @param childArt
-	 *            The child article to add.
-	 * @param provenance
-	 *            The source of the assertion.
-	 */
-	public void addChild(MappableConcept childArt,
-			HeuristicProvenance provenance) {
-		addAssertion(CycConstants.ISA_GENLS.getConcept(), provenance, childArt,
-				selfRef_);
-	}
-
-	/**
 	 * Adds a mined information type to the mined types this object has used.
 	 * 
 	 * @param infoType
@@ -176,45 +165,23 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 		minedTypes_ |= infoType;
 	}
 
-	/**
-	 * Adds a parent article of this article to the information.
-	 * 
-	 * @param parentArt
-	 *            The parent article to add.
-	 * @param provenance
-	 *            The source of the assertion.
-	 */
-	public void addParent(MappableConcept parentArt,
+	public void addStandingInformation(TermStanding standing, double weight,
 			HeuristicProvenance provenance) {
-		addAssertion(CycConstants.ISA_GENLS.getConcept(), provenance, selfRef_,
-				parentArt);
-		hasParentageAssertions_ = true;
+		addStandingInformation(standing, articleID_, weight, provenance);
 	}
 
 	public void addStandingInformation(TermStanding standing, int article,
 			double weight, HeuristicProvenance provenance) {
 		WeightedStanding ws = getArticleStanding(article);
 		ws.addStanding(provenance, standing, weight);
-	}
-
-	public void addStandingInformation(TermStanding standing, double weight,
-			HeuristicProvenance provenance) {
-		addStandingInformation(standing, articleID_, weight, provenance);
-	}
-
-	public WeightedStanding getArticleStanding(int article) {
-		WeightedStanding ws = standing_.get(article);
-		if (ws == null) {
-			ws = new WeightedStanding();
-			standing_.put(article, ws);
-		}
-		return ws;
+		isModified_ = true;
 	}
 
 	public void addStandingInformation(WeightedStanding standing, int article)
 			throws Exception {
 		WeightedStanding ws = getArticleStanding(article);
 		ws.mergeInformation(standing);
+		isModified_ = true;
 	}
 
 	public void clearInformation() {
@@ -224,6 +191,7 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 		concreteAssertions_.clear();
 		concreteParentageAssertions_.clear();
 		minedTypes_ = -1;
+		isModified_ = false;
 	}
 
 	@Override
@@ -262,8 +230,21 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 		return true;
 	}
 
+	public Map<Integer, WeightedStanding> getAllMinedStanding() {
+		return standing_;
+	}
+
 	public Integer getArticle() {
 		return articleID_;
+	}
+
+	public WeightedStanding getArticleStanding(int article) {
+		WeightedStanding ws = standing_.get(article);
+		if (ws == null) {
+			ws = new WeightedStanding();
+			standing_.put(article, ws);
+		}
+		return ws;
 	}
 
 	/**
@@ -295,10 +276,6 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 		if (minedTypes_ == -1)
 			return 0;
 		return minedTypes_;
-	}
-
-	public Map<Integer, WeightedStanding> getAllMinedStanding() {
-		return standing_;
 	}
 
 	public WeightedStanding getStanding() {
@@ -344,6 +321,10 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 		return minedTypes_ >= 0;
 	}
 
+	public boolean isModified() {
+		return isModified_;
+	}
+
 	@Override
 	public boolean mergeInformation(MinedInformation otherInfo)
 			throws Exception {
@@ -364,8 +345,9 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 	public boolean mergeInformation(MinedInformation otherInfo,
 			boolean recreateInternals) throws Exception {
 		// No info, do nothing.
-		if (otherInfo == null)
+		if (otherInfo == null || !otherInfo.isModified_)
 			return true;
+		isModified_ = true;
 
 		// Non-matching information!
 		if (articleID_ != otherInfo.articleID_)
@@ -398,6 +380,7 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 
 	public void setInfoboxTypes(List<String> infoboxTypes) {
 		infoboxType_ = infoboxTypes;
+		isModified_ = true;
 	}
 
 	/**

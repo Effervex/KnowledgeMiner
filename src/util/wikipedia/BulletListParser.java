@@ -20,6 +20,8 @@ public class BulletListParser {
 			.compile("(?:\\*+\\s*.+?\\n)+");
 	/** The key to use for no context bullet points. */
 	public static final String NO_CONTEXT = "NO_CONTEXT";
+	public static final String[] USELESS_CONTEXTS = { "see also", "references",
+			"external links" };
 
 	/**
 	 * Parses the elements of a bulleted list from an article, indexed by their
@@ -44,9 +46,14 @@ public class BulletListParser {
 				contextTitle = NO_CONTEXT;
 
 			// If useful, record the points.
-			if (!contextTitle.equalsIgnoreCase("see also")
-					&& !contextTitle.equalsIgnoreCase("external links")) {
-
+			String lowerContext = contextTitle.toLowerCase();
+			boolean skip = false;
+			for (String useless : USELESS_CONTEXTS)
+				if (lowerContext.contains(useless)) {
+					skip = true;
+					break;
+				}
+			if (!skip) {
 				// Parse each point out.
 				String bulletMarkup = m.group();
 				String[] split = bulletMarkup.split("\\n");

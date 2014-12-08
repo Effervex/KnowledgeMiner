@@ -28,11 +28,14 @@ import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
-import opennlp.tools.stemmer.Stemmer;
 import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
 import opennlp.tools.util.Span;
+
+import org.apache.commons.lang3.StringUtils;
+import org.tartarus.snowball.SnowballStemmer;
+import org.tartarus.snowball.ext.englishStemmer;
 
 public class OpenNLP {
 	private static Chunker chunker_;
@@ -46,6 +49,8 @@ public class OpenNLP {
 	private static Tokenizer tokenizer_;
 
 	private static Parser parser_;
+
+	private static SnowballStemmer stemmer_;
 
 	static {
 		try {
@@ -68,6 +73,8 @@ public class OpenNLP {
 			ParserModel parserModel = new ParserModel(new File(MODELS_DIR
 					+ File.separator + "chunker/en-parser-chunking.bin"));
 			parser_ = ParserFactory.create(parserModel);
+
+			stemmer_ = new englishStemmer();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -91,6 +98,17 @@ public class OpenNLP {
 
 	public static Parser getParser() {
 		return parser_;
+	}
+
+	public static String stem(String text) {
+		// Break the text up
+		String[] split = text.split("\\s");
+		for (int i = 0; i < split.length; i++) {
+			stemmer_.setCurrent(split[i]);
+			stemmer_.stem();
+			split[i] = stemmer_.getCurrent();
+		}
+		return StringUtils.join(split, ' ');
 	}
 
 	public static Parse parseLine(String text) {

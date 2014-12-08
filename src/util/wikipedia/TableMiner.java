@@ -215,7 +215,7 @@ public class TableMiner {
 					else if (!table.recordRow(rowData, header))
 						break;
 					continue;
-				} else if (line.startsWith("|+") || line.startsWith("{|"))
+				} else if (line.startsWith("|+") || line.startsWith("{|") || line.isEmpty())
 					continue;
 				else {
 					// If header tag, reset the headers

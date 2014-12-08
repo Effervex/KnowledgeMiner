@@ -12,10 +12,7 @@ import io.resources.WMISocket;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
-import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
@@ -24,7 +21,6 @@ import knowledgeMiner.mining.PartialAssertion;
 import org.slf4j.LoggerFactory;
 
 import cyc.CycConstants;
-import cyc.MappableConcept;
 import cyc.OntologyConcept;
 import cyc.PrimitiveConcept;
 import cyc.StringConcept;
@@ -350,9 +346,6 @@ public class ConceptModule extends MinedInformation implements
 			throws Exception {
 		if (autoAssertions_ != null && parents_ != null
 				&& isChildOfParents(ontology)) {
-			Map<MappableConcept, OntologyConcept> substitutionMap = new HashMap<>();
-			substitutionMap.put(new WikipediaMappedConcept(articleID_),
-					concept_);
 			for (MinedAssertion assertion : autoAssertions_) {
 				if (assertion instanceof PartialAssertion)
 					assertion = ((PartialAssertion) assertion).instantiate(

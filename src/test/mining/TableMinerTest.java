@@ -3,8 +3,7 @@
  ******************************************************************************/
 package test.mining;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
@@ -110,4 +109,18 @@ public class TableMinerTest {
 		assertTrue(tableContents.containsKey("Result"));
 	}
 
+	@Test
+	public void testBatchLists() throws IOException {
+		for (String list : ListMinerTest.testLists_) {
+			String markup = wmi_.getMarkup(wmi_.getArticleByTitle(list));
+			Collection<WikiTable> tables = TableMiner.parseTable(markup);
+			for (WikiTable table : tables) {
+				// Can't assert too much, other than basic reqs.
+				MultiMap<String, String> tableData = table.getTableData();
+				assertTrue(list + ": " + tableData.keySet(), tableData.size() > 1);
+				for (String key : tableData.keySet())
+					assertFalse(list + ": " + key, tableData.get(key).isEmpty());
+			}
+		}
+	}
 }

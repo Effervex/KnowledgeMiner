@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import util.collection.WeightedSet;
+import util.wikipedia.WikiParser;
 import cyc.OntologyConcept;
 
 /**
@@ -349,8 +350,7 @@ public class ConceptMiningTask implements Runnable {
 		// Remove list articles
 		try {
 			if (concept.getArticle() != -1
-					&& wmi_.getPageTitle(concept.getArticle(), true)
-							.startsWith(ListMiner.LIST_OF))
+					&& WikiParser.isAListOf(wmi_.getPageTitle(concept.getArticle(), true)))
 				return true;
 		} catch (IOException e) {
 			e.printStackTrace();

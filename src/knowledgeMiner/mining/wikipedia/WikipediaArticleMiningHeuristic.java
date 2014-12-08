@@ -9,22 +9,25 @@ import io.resources.WMISocket;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
-
-import util.collection.MultiMap;
-
-import cyc.AssertionArgument;
-import cyc.CycConstants;
+import java.util.Map;
 
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.CycMiner;
-import knowledgeMiner.mining.InformationType;
+import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.MiningHeuristic;
 import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.mining.WeightedStanding;
 import knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor;
+
+import org.apache.commons.collections4.map.HashedMap;
+
+import util.collection.MultiMap;
+import cyc.AssertionArgument;
+import cyc.CycConstants;
 
 /**
  * An abstract class representing a mining technique for extracting new
@@ -35,6 +38,7 @@ import knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor;
  * @author Sam Sarjant
  */
 public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
+	public static boolean partitionInformation = true;
 
 	/**
 	 * Constructor for a new WikipediaArticleMiningHeuristic
@@ -114,22 +118,16 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 			return info;
 		}
 
+		// If not precomputed yet, compute it, and split it up if saving
+		// precomputed
 		try {
 			info = new MinedInformation(minedInformation.getArticle());
 			mineArticleInternal(info, informationRequested, wmi, cyc);
 			if (info != null)
 				info.addMinedInfoType(informationRequested);
-			// TODO Record mined info for all referenced article
-//			if (getInfoTypeWeight(InformationType.CHILD_ARTICLES) != 0)
-//				splitChildMinedData(info);
 
-			// Record the data
-			// System.out
-			// .println(getHeuristicName() + " (Mined): " +
-			// info.getAssertions());
-			if (isPrecomputed())
-				KnowledgeMinerPreprocessor.getInstance().recordData(
-						getHeuristicName(), article, info);
+			// Split the data up and save it
+			info = partitionInformation(info, article);
 			return info;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -138,46 +136,82 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 	}
 
 	/**
-	 * Splits mined data containing child-mined information into different info
-	 * chunks related to the child articles, rather than the parent.
-	 * 
+	 * Partitions the mined information into separate parts, such that the only
+	 * infromation returned is that which concerns the current article. Also, if
+	 * performing precomputation, all partitioned information is added to its
+	 * respective article.
+	 *
 	 * @param info
-	 *            The info that was mined.
+	 *            The information to partition up.
+	 * @param article
+	 *            The current article to partition to.
+	 * @return All information concerning the current article from info. Should
+	 *         be all of it, but some cases might split it.
+	 * @throws Exception
 	 */
-	private void splitChildMinedData(MinedInformation info) {
-		Collection<PartialAssertion> assertions = info.getAssertions();
-		Iterator<PartialAssertion> iter = assertions.iterator();
-		MultiMap<AssertionArgument, PartialAssertion> childMap = MultiMap
-				.createListMultiMap();
-		while (iter.hasNext()) {
-			PartialAssertion assertion = iter.next();
-			AssertionArgument[] args = assertion.getArgs();
-			if (assertion.getRelation().equals(
-					CycConstants.ISA_GENLS.getConcept())
-					&& !args[0].equals(info.getMappableSelfRef())) {
-				// Add to child collection
-				childMap.put(args[0], assertion);
-				iter.remove();
+	private MinedInformation partitionInformation(MinedInformation info,
+			Integer article) throws Exception {
+		// No data? No need to partition
+		if (!info.isModified() || !partitionInformation)
+			return info;
+
+		Map<Integer, MinedInformation> partitions = new HashedMap<>();
+		// Separate the standing
+		Map<Integer, WeightedStanding> standing = info.getAllMinedStanding();
+		for (Integer art : standing.keySet()) {
+			MinedInformation artInfo = getInfo(art, partitions);
+			artInfo.addStandingInformation(standing.get(art), art);
+		}
+
+		// Separate the assertions
+		for (PartialAssertion assertion : info.getAssertions()) {
+			// Split by each arg
+			for (int i = 0; i < assertion.getArgs().length; i++) {
+				AssertionArgument aa = assertion.getArgs()[i];
+				if (aa instanceof WikipediaMappedConcept) {
+					WikipediaMappedConcept wmc = (WikipediaMappedConcept) aa;
+					MinedInformation artInfo = getInfo(wmc.getArticle(),
+							partitions);
+					artInfo.addAssertion(assertion);
+				}
 			}
 		}
 
-		// For every child map, load up the child results and add them
-		for (AssertionArgument child : childMap.keySet()) {
-			// Get the child mined information
-			int childArt = ((WikipediaMappedConcept) child).getArticle();
-			MinedInformation childInfo = (MinedInformation) KnowledgeMiner
-					.getInstance().getHeuristicResult(childArt, this);
-			if (childInfo == null)
-				childInfo = new MinedInformation(childArt);
+		// Add other info to the core article
+		MinedInformation coreInfo = partitions.get(article);
+		if (coreInfo == null)
+			coreInfo = new MinedInformation(article);
+		for (DefiniteAssertion concrete : info.getConcreteAssertions())
+			coreInfo.addAssertion(concrete);
+		coreInfo.setInfoboxTypes(info.getInfoboxTypes());
+		coreInfo.addMinedInfoType(info.getMinedInformation());
+		// Exit now with the core info if no precomputation
+		if (!isPrecomputed())
+			return coreInfo;
 
-			// Add the child information to the info
-			for (PartialAssertion pa : childMap.get(child))
-				childInfo.addAssertion(pa);
+		// Record mined info for all referenced article
+		for (Integer art : partitions.keySet()) {
+			MinedInformation artInfo = partitions.get(art);
+			// Adding last info
+			artInfo.addMinedInfoType(info.getMinedInformation());
 
-			// Record it
-			if (isPrecomputed())
-				KnowledgeMinerPreprocessor.getInstance().recordData(
-						getHeuristicName(), childArt, childInfo);
+			KnowledgeMinerPreprocessor.getInstance().recordData(
+					getHeuristicName(), art, artInfo);
 		}
+		return coreInfo;
+	}
+
+	private MinedInformation getInfo(int article,
+			Map<Integer, MinedInformation> partitions) {
+		MinedInformation info = partitions.get(article);
+		if (info == null) {
+			// Load up the information, if it exists
+			info = (MinedInformation) KnowledgeMinerPreprocessor.getInstance()
+					.getLoadHeuristicResult(getHeuristicName(), article);
+			if (info == null)
+				info = new MinedInformation(article);
+			partitions.put(article, info);
+		}
+		return info;
 	}
 }

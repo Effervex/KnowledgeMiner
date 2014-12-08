@@ -12,7 +12,6 @@ import java.util.Collection;
 import java.util.List;
 
 import knowledgeMiner.mapping.CycMapper;
-import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.InformationType;
@@ -89,8 +88,9 @@ public class CategoryChildMiner extends WikipediaArticleMiningHeuristic {
 		HeuristicProvenance provenance = new HeuristicProvenance(this,
 				categoryID + "");
 		// Add every child as an assertion, with the category as provenance
-		for (Integer childArt : childArts)
-			info.addChild(new WikipediaMappedConcept(childArt), provenance);
+		// TODO Modify this to add children through SentenceParser
+//		for (Integer childArt : childArts)
+//			info.addChild(new WikipediaMappedConcept(childArt), provenance);
 	}
 
 	/**

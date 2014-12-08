@@ -237,7 +237,7 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 		int article = info.getArticle();
 		String title = wmi.getPageTitle(article, false);
 		// Do not mine lists
-		if (title.startsWith(ListMiner.LIST_OF))
+		if (WikiParser.isAListOf(title))
 			return;
 		String firstSentence = wmi.getFirstSentence(article);
 		if (firstSentence == null)
