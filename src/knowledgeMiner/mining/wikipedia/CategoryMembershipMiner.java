@@ -24,6 +24,7 @@ import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.mining.SentenceParserHeuristic;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -73,7 +74,7 @@ public class CategoryMembershipMiner extends WikipediaArticleMiningHeuristic {
 				continue;
 
 			// Treat the category as a chunk of text to be parsed
-			String sentence = "_TOPIC_ is a " + categoryTitle + ".";
+			String sentence = SentenceParserHeuristic.SENTENCE_PREFIX + categoryTitle + ".";
 			miner_.mineSentence(sentence, info, this,
 					ontology, wmi);
 		}

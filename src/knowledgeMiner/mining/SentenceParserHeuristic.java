@@ -53,6 +53,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	private static final Pattern[] SENTENCE_SIMPLIFIER = {
 			Pattern.compile("^In [^,.]+, "),
 			Pattern.compile("(?<=[^,.]+), [^,.]+,(?= (is|was|are|were))") };
+	public static final String SENTENCE_PREFIX = "TOPICS is a ";
 	/** If the text should be wikified first. */
 	public static boolean wikifyText_ = true;
 

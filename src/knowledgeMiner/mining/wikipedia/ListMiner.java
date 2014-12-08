@@ -27,6 +27,7 @@ import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.mining.SentenceParserHeuristic;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -149,7 +150,8 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 
 		// Sentence parse the list title
 		MinedInformation tempInfo = new MinedInformation(article);
-		String sentence = "_TOPIC_ is a " + plural + ".";
+		String sentence = SentenceParserHeuristic.SENTENCE_PREFIX + plural
+				+ ".";
 		miner_.mineSentence(sentence, tempInfo, this, ontology, wmi);
 		for (PartialAssertion pa : tempInfo.getAssertions())
 			results.add(pa.replaceArg(tempInfo.getMappableSelfRef(),
