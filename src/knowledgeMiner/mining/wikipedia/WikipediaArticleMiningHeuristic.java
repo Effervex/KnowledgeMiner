@@ -7,9 +7,7 @@ import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import knowledgeMiner.ConceptModule;
@@ -21,7 +19,6 @@ import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.MiningHeuristic;
 import knowledgeMiner.mining.PartialAssertion;
-import knowledgeMiner.mining.WeightedStanding;
 import knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor;
 import cyc.AssertionArgument;
 
@@ -152,23 +149,19 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 		if (!info.isModified() || !partitionInformation)
 			return info;
 
-		Map<Integer, MinedInformation> partitions = new HashMap<>();
-		// TODO Separate the standing
-//		Map<Integer, WeightedStanding> standing = info.getStanding();
-//		for (Integer art : standing.keySet()) {
-//			MinedInformation artInfo = getInfo(art, partitions);
-//			artInfo.addStandingInformation(standing.get(art));
-//		}
-
 		// Separate the assertions
+		Map<Integer, MinedInformation> partitions = new HashMap<>();
 		for (PartialAssertion assertion : info.getAssertions()) {
 			// Split by each arg
 			for (int i = 0; i < assertion.getArgs().length; i++) {
 				AssertionArgument aa = assertion.getArgs()[i];
 				if (aa instanceof WikipediaMappedConcept) {
 					WikipediaMappedConcept wmc = (WikipediaMappedConcept) aa;
-					MinedInformation artInfo = getInfo(wmc.getArticle(),
-							partitions);
+					MinedInformation artInfo = partitions.get(wmc.getArticle());
+					if (artInfo == null) {
+						artInfo = getInfo(wmc.getArticle());
+						partitions.put(wmc.getArticle(), artInfo);
+					}
 					artInfo.addAssertion(assertion);
 				}
 			}
@@ -178,6 +171,7 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 		MinedInformation coreInfo = partitions.get(article);
 		if (coreInfo == null)
 			coreInfo = new MinedInformation(article);
+		coreInfo.addStandingInformation(info.getStanding());
 		for (DefiniteAssertion concrete : info.getConcreteAssertions())
 			coreInfo.addAssertion(concrete);
 		coreInfo.setInfoboxTypes(info.getInfoboxTypes());
@@ -189,26 +183,30 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 		// Record mined info for all referenced article
 		for (Integer art : partitions.keySet()) {
 			MinedInformation artInfo = partitions.get(art);
-			// Adding last info
-			artInfo.addMinedInfoType(info.getMinedInformation());
-
-			KnowledgeMinerPreprocessor.getInstance().recordData(
-					getHeuristicName(), art, artInfo);
+			artInfo.addMinedInfoType( info.getMinedInformation());
+			writeInfo(artInfo);
 		}
 		return coreInfo;
 	}
 
-	private MinedInformation getInfo(int article,
-			Map<Integer, MinedInformation> partitions) {
-		MinedInformation info = partitions.get(article);
-		if (info == null) {
-			// Load up the information, if it exists
-			info = (MinedInformation) KnowledgeMinerPreprocessor.getInstance()
-					.getLoadHeuristicResult(getHeuristicName(), article);
-			if (info == null)
-				info = new MinedInformation(article);
-			partitions.put(article, info);
-		}
+	/**
+	 * Writes the info to file (if preprocessing).
+	 *
+	 * @param artInfo
+	 *            The info to write.
+	 */
+	protected void writeInfo(MinedInformation artInfo) {
+		KnowledgeMinerPreprocessor.getInstance().recordData(getHeuristicName(),
+				artInfo.getArticle(), artInfo);
+	}
+
+	protected MinedInformation getInfo(int article) {
+		// Load up the information, if it exists
+		MinedInformation info = (MinedInformation) KnowledgeMinerPreprocessor
+				.getInstance().getLoadHeuristicResult(getHeuristicName(),
+						article);
+		if (info == null)
+			info = new MinedInformation(article);
 		return info;
 	}
 }

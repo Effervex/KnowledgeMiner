@@ -297,9 +297,11 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 						InformationType.STANDING)) {
 			int focusArticle = ((WikipediaMappedConcept) listAssertions
 					.iterator().next().getArgs()[1]).getArticle();
-			// TODO Fix this up
-//			info.addStandingInformation(TermStanding.COLLECTION, focusArticle,
-//					1, provenance);
+			MinedInformation focusInfo = getInfo(focusArticle);
+			focusInfo.addStandingInformation(TermStanding.COLLECTION, 1,
+					provenance);
+			focusInfo.addMinedInfoType(InformationType.STANDING);
+			writeInfo(focusInfo);
 		}
 
 		// Parse the list items
