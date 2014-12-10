@@ -297,11 +297,19 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 						InformationType.STANDING)) {
 			int focusArticle = ((WikipediaMappedConcept) listAssertions
 					.iterator().next().getArgs()[1]).getArticle();
-			MinedInformation focusInfo = getInfo(focusArticle);
-			focusInfo.addStandingInformation(TermStanding.COLLECTION, 1,
-					provenance);
-			focusInfo.addMinedInfoType(InformationType.STANDING);
-			writeInfo(focusInfo);
+			try {
+
+				MinedInformation focusInfo = getInfo(focusArticle);
+				focusInfo.addStandingInformation(TermStanding.COLLECTION, 1,
+						provenance);
+				focusInfo.addMinedInfoType(InformationType.STANDING);
+				writeInfo(focusInfo);
+			} catch (Exception e) {
+				System.err
+						.println("Exception recording standing information for "
+								+ focusArticle + " for list " + listArticle);
+				e.printStackTrace();
+			}
 		}
 
 		// Parse the list items

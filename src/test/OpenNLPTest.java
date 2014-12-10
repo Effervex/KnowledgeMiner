@@ -108,4 +108,9 @@ public class OpenNLPTest {
 		}
 		System.out.println("STN: " + (System.currentTimeMillis() - start));
 	}
+	
+	@Test
+	public void testStem() {
+		OpenNLP.stem("NATO reporting names for air-to-air missiles");
+	}
 }

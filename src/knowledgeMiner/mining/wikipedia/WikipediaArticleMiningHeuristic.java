@@ -47,89 +47,6 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 	}
 
 	/**
-	 * The actual mining method. This method extracts and processes information
-	 * from an article which is accessible through get methods.
-	 * 
-	 * @param info
-	 *            The mined information to add to (contains skeletal
-	 *            information).
-	 * @param informationRequested
-	 *            The information requested of this heuristic (bitwise).
-	 * @param wmi
-	 *            The WMI access point.
-	 * @param ontology
-	 *            The ontology access.
-	 * @throws IOException
-	 *             Should something go awry...
-	 */
-	protected abstract void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket ontology)
-			throws Exception;
-
-	public static WikipediaMappedConcept createSelfRefConcept(Object minedObject) {
-		return new WikipediaMappedConcept((int) minedObject);
-	}
-
-	/**
-	 * An alternative accessor for mining Wikipedia articles. Not recommended.
-	 * Primarily for tests and debugging.
-	 * 
-	 * @param article
-	 *            The article being mined.
-	 * @param informationRequested
-	 *            The information requested for this mining operation.
-	 * @param wmi
-	 *            The WMI access.
-	 * @param cyc
-	 *            The Cyc access.
-	 * @return The information mined from the article.
-	 */
-	public final MinedInformation mineArticle(int article,
-			int informationRequested, WMISocket wmi, OntologySocket cyc) {
-		return mineArticle(new ConceptModule(article), informationRequested,
-				wmi, cyc);
-	}
-
-	@Override
-	public final MinedInformation mineArticle(ConceptModule minedInformation,
-			int informationRequested, WMISocket wmi, OntologySocket cyc) {
-		if (super.mineArticle(minedInformation, informationRequested, wmi, cyc) == null)
-			return null;
-
-		// No null articles allowed!
-		Integer article = minedInformation.getArticle();
-		if (article == null || article == -1)
-			return null;
-
-		// Get precomputed info.
-		MinedInformation info = (MinedInformation) KnowledgeMiner.getInstance()
-				.getHeuristicResult(article, this);
-		if (info != null
-				&& (informationRequested & info.getMinedInformation()) == informationRequested) {
-			// System.out.println(getHeuristicName() + " (Pre): "
-			// + info.getAssertions());
-			info.setModified(true);
-			return info;
-		}
-
-		// If not precomputed yet, compute it, and split it up if saving
-		// precomputed
-		try {
-			info = new MinedInformation(minedInformation.getArticle());
-			mineArticleInternal(info, informationRequested, wmi, cyc);
-			if (info != null)
-				info.addMinedInfoType(informationRequested);
-
-			// Split the data up and save it
-			info = partitionInformation(info, article);
-			return info;
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-	/**
 	 * Partitions the mined information into separate parts, such that the only
 	 * infromation returned is that which concerns the current article. Also, if
 	 * performing precomputation, all partitioned information is added to its
@@ -183,11 +100,50 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 		// Record mined info for all referenced article
 		for (Integer art : partitions.keySet()) {
 			MinedInformation artInfo = partitions.get(art);
-			artInfo.addMinedInfoType( info.getMinedInformation());
+			artInfo.addMinedInfoType(info.getMinedInformation());
 			writeInfo(artInfo);
 		}
 		return coreInfo;
 	}
+
+	protected synchronized MinedInformation getInfo(int article) {
+		// Load up the information, if it exists
+		MinedInformation info = null;
+		try {
+			info = (MinedInformation) KnowledgeMinerPreprocessor.getInstance()
+					.getLoadHeuristicResult(getHeuristicName(), article);
+		} catch (Exception e) {
+			System.err.println("Error while deserialising " + article);
+			e.printStackTrace();
+		}
+		if (info == null) {
+			info = new MinedInformation(article);
+			KnowledgeMinerPreprocessor.getInstance().recordData(
+					getHeuristicName(), article, info);
+		}
+
+		return info;
+	}
+
+	/**
+	 * The actual mining method. This method extracts and processes information
+	 * from an article which is accessible through get methods.
+	 * 
+	 * @param info
+	 *            The mined information to add to (contains skeletal
+	 *            information).
+	 * @param informationRequested
+	 *            The information requested of this heuristic (bitwise).
+	 * @param wmi
+	 *            The WMI access point.
+	 * @param ontology
+	 *            The ontology access.
+	 * @throws IOException
+	 *             Should something go awry...
+	 */
+	protected abstract void mineArticleInternal(MinedInformation info,
+			int informationRequested, WMISocket wmi, OntologySocket ontology)
+			throws Exception;
 
 	/**
 	 * Writes the info to file (if preprocessing).
@@ -196,17 +152,76 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 	 *            The info to write.
 	 */
 	protected void writeInfo(MinedInformation artInfo) {
-		KnowledgeMinerPreprocessor.getInstance().recordData(getHeuristicName(),
-				artInfo.getArticle(), artInfo);
+		try {
+			KnowledgeMinerPreprocessor.getInstance().recordData(
+					getHeuristicName(), artInfo.getArticle(), artInfo);
+		} catch (Exception e) {
+			System.err.println("Error while serialising "
+					+ artInfo.getArticle());
+			e.printStackTrace();
+		}
 	}
 
-	protected MinedInformation getInfo(int article) {
-		// Load up the information, if it exists
-		MinedInformation info = (MinedInformation) KnowledgeMinerPreprocessor
-				.getInstance().getLoadHeuristicResult(getHeuristicName(),
-						article);
-		if (info == null)
-			info = new MinedInformation(article);
-		return info;
+	@Override
+	public final MinedInformation mineArticle(ConceptModule minedInformation,
+			int informationRequested, WMISocket wmi, OntologySocket cyc) {
+		if (super.mineArticle(minedInformation, informationRequested, wmi, cyc) == null)
+			return null;
+
+		// No null articles allowed!
+		Integer article = minedInformation.getArticle();
+		if (article == null || article == -1)
+			return null;
+
+		// Get precomputed info.
+		MinedInformation info = (MinedInformation) KnowledgeMiner.getInstance()
+				.getHeuristicResult(article, this);
+		if (info != null
+				&& (informationRequested & info.getMinedInformation()) == informationRequested) {
+			// System.out.println(getHeuristicName() + " (Pre): "
+			// + info.getAssertions());
+			info.setModified(true);
+			return info;
+		}
+
+		// If not precomputed yet, compute it, and split it up if saving
+		// precomputed
+		try {
+			info = new MinedInformation(minedInformation.getArticle());
+			mineArticleInternal(info, informationRequested, wmi, cyc);
+			if (info != null)
+				info.addMinedInfoType(informationRequested);
+
+			// Split the data up and save it
+			info = partitionInformation(info, article);
+			return info;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	 * An alternative accessor for mining Wikipedia articles. Not recommended.
+	 * Primarily for tests and debugging.
+	 * 
+	 * @param article
+	 *            The article being mined.
+	 * @param informationRequested
+	 *            The information requested for this mining operation.
+	 * @param wmi
+	 *            The WMI access.
+	 * @param cyc
+	 *            The Cyc access.
+	 * @return The information mined from the article.
+	 */
+	public final MinedInformation mineArticle(int article,
+			int informationRequested, WMISocket wmi, OntologySocket cyc) {
+		return mineArticle(new ConceptModule(article), informationRequested,
+				wmi, cyc);
+	}
+
+	public static WikipediaMappedConcept createSelfRefConcept(Object minedObject) {
+		return new WikipediaMappedConcept((int) minedObject);
 	}
 }

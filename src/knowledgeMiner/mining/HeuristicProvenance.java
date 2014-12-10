@@ -15,8 +15,6 @@ import graph.module.NLPToSyntaxModule;
 import java.io.Serializable;
 import java.util.Collection;
 
-import de.ruedigermoeller.serialization.annotations.Compress;
-
 /**
  * Heuristic provenance keeps track of where information came from, and passes
  * this onto the assertion itself.
@@ -30,7 +28,6 @@ public class HeuristicProvenance implements Serializable {
 	private String heuristicStr_;
 
 	/** Any provenance details to be recorded with the heuristic. */
-	@Compress
 	private String details_;
 
 	public HeuristicProvenance(MiningHeuristic heuristic, String details) {

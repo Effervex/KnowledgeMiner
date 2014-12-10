@@ -12,7 +12,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import util.UniqueID;
 import util.UtilityMethods;
-import de.ruedigermoeller.serialization.annotations.Compress;
 
 public class OntologyConcept extends AssertionArgument implements Serializable,
 		UniqueID {
@@ -20,7 +19,6 @@ public class OntologyConcept extends AssertionArgument implements Serializable,
 	public static boolean parsingArgs_ = false;
 	// public static final OntologyConcept PLACEHOLDER = new OntologyConcept(
 	// "-PLACEHOLDER-75839-");
-	@Compress
 	protected String constant_;
 	protected String[] funcArgs_;
 	protected transient int id_;

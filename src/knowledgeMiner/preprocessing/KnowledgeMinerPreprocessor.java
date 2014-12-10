@@ -224,9 +224,6 @@ public class KnowledgeMinerPreprocessor {
 	 */
 	protected void writeMinedData(ConceptModule article, MinedInformation info,
 			MiningHeuristic heuristic) {
-		// TODO Split the MinedInformation into assertion-relative chunks
-		
-		
 		recordData(heuristic.getHeuristicName(), article.getArticle(), info);
 	}
 

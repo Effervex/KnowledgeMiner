@@ -132,6 +132,10 @@ public class ListMinerTest {
 
 		article = wmi_.getArticleByTitle("List of empires");
 		sut_.mineArticle(article, MinedInformation.ALL_TYPES, wmi_, ontology_);
+		
+		// Exception article
+		article = wmi_.getArticleByTitle("List of NATO reporting names for surface-to-air missiles");
+		sut_.mineArticle(article, MinedInformation.ALL_TYPES, wmi_, ontology_);
 	}
 
 	@Test
