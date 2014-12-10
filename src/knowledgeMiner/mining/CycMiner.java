@@ -22,8 +22,13 @@ import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.meta.ImpliedStandingMiner;
 import knowledgeMiner.mining.meta.MetaMiningHeuristic;
+import knowledgeMiner.mining.wikipedia.FirstSentenceMiner;
+import knowledgeMiner.mining.wikipedia.FirstSentenceParserMiner;
 import knowledgeMiner.mining.wikipedia.InfoboxClusterer;
+import knowledgeMiner.mining.wikipedia.InfoboxRelationMiner;
+import knowledgeMiner.mining.wikipedia.InfoboxTypeMiner;
 import knowledgeMiner.mining.wikipedia.ListMiner;
+import knowledgeMiner.mining.wikipedia.TitleMiner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,11 +65,11 @@ public class CycMiner {
 		sentenceParser_ = new SentenceParserHeuristic(mapper, this);
 
 		miningHeuristics_ = new ArrayList<>();
-		// miningHeuristics_.add(new TitleMiner(mapper, this));
-		// miningHeuristics_.add(new FirstSentenceMiner(mapper, this));
-		// miningHeuristics_.add(new FirstSentenceParserMiner(mapper, this));
-		// miningHeuristics_.add(new InfoboxTypeMiner(mapper, this));
-		// miningHeuristics_.add(new InfoboxRelationMiner(mapper, this));
+		miningHeuristics_.add(new TitleMiner(mapper, this));
+		miningHeuristics_.add(new FirstSentenceMiner(mapper, this));
+		miningHeuristics_.add(new FirstSentenceParserMiner(mapper, this));
+		miningHeuristics_.add(new InfoboxTypeMiner(mapper, this));
+		miningHeuristics_.add(new InfoboxRelationMiner(mapper, this));
 		// miningHeuristics_.add(new CategoryChildMiner(mapper, this));
 		miningHeuristics_.add(new ListMiner(mapper, this));
 		// miningHeuristics_.add(new SubCategoryMiner(mapper, this));
