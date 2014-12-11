@@ -1,16 +1,16 @@
 package test;
 
-import java.io.IOException;
-
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
+
+import java.io.IOException;
+
+import knowledgeMiner.ConceptMiningTask;
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.TermStanding;
-import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
-import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
 import knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor;
@@ -21,7 +21,6 @@ import org.junit.Test;
 import cyc.CycConstants;
 import cyc.MappableConcept;
 import cyc.OntologyConcept;
-import cyc.StringConcept;
 
 public class DisjointnessDisambiguationTest {
 	private static WMISocket wmi_;
@@ -72,29 +71,18 @@ public class DisjointnessDisambiguationTest {
 		// Movie
 		OntologyConcept concept = new OntologyConcept("Movie-CW");
 		int article = wmi_.getArticleByTitle("Film");
-		int result = new DefiniteAssertion(
-				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getConcept(),
-				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null,
-				concept, CycConstants.WIKI_VERSION, new StringConcept(article
-						+ "")).makeAssertion(concept, cyc_);
+		
+		int result = ConceptMiningTask.addMapping(article, concept, cyc_);
 
 		// Genre
 		concept = new OntologyConcept("MovieTypeByGenre");
 		article = wmi_.getArticleByTitle("Genre");
-		result = new DefiniteAssertion(
-				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getConcept(),
-				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null,
-				concept, CycConstants.WIKI_VERSION, new StringConcept(article
-						+ "")).makeAssertion(concept, cyc_);
+		result = ConceptMiningTask.addMapping(article, concept, cyc_);
 
 		// Cat
 		concept = new OntologyConcept("Cat");
 		article = wmi_.getArticleByTitle("Cat");
-		result = new DefiniteAssertion(
-				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getConcept(),
-				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null,
-				concept, CycConstants.WIKI_VERSION, new StringConcept(article
-						+ "")).makeAssertion(concept, cyc_);
+		result = ConceptMiningTask.addMapping(article, concept, cyc_);
 	}
 
 	public MinedInformation createMinedInfo(int horrorArticle)

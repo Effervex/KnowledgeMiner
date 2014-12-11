@@ -34,11 +34,6 @@ public class WikiToCyc_VoteSynonyms extends
 			WMISocket wmi, OntologySocket cyc) throws Exception {
 		WeightedSet<OntologyConcept> possibleTerms = new WeightedSet<>();
 
-		// If the id represents a non-article
-		// TODO Too restrictive
-//		 if (!wmi.getPageType(articleID).equals(WMISocket.TYPE_ARTICLE))
-		// return possibleTerms;
-
 		// Find the anchor synonyms
 		WeightedSet<String> weightedLabels = wmi.getLabels(articleID);
 		// Clone, but in all lowercase with summed counts

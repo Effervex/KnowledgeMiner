@@ -83,7 +83,7 @@ public class PartialAssertion extends MinedAssertion {
 						aq, ontology);
 		}
 
-		// TODO Deal with sub-relations
+		// Deal with sub-relations
 		if (expandedRelation instanceof HierarchicalWeightedSet) {
 			Collection<WeightedSet<OntologyConcept>> subRelations = ((HierarchicalWeightedSet<OntologyConcept>) expandedRelation)
 					.getSubSets();
@@ -261,7 +261,6 @@ public class PartialAssertion extends MinedAssertion {
 	 */
 	public AssertionQueue expand(Collection<MappableConcept> excluded,
 			CycMapper mapper, OntologySocket ontology, WMISocket wmi) {
-		// TODO Expand isaGenls to an isa and genls
 		AssertionQueue aq = expandInternal(excluded, mapper, ontology, wmi);
 
 		// Recurse through sub-assertions

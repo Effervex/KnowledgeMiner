@@ -34,16 +34,6 @@ public class WikiToCyc_TitleMatching extends
 			WMISocket wmi, OntologySocket ontology) throws Exception {
 		WeightedSet<OntologyConcept> weightedResults = new WeightedSet<>();
 
-		// If the id represents a non-article
-		// try {
-		// // TODO Too restrictive
-//		 if (!wmi.getPageType(articleID).equals(WMISocket.TYPE_ARTICLE))
-		// return weightedResults;
-		// } catch (Exception e) {
-		// e.printStackTrace();
-		// System.err.println("ID: " + articleID + ", WMI: " + wmi);
-		// }
-
 		// Attempt a 1-1 mapping
 		String pageTitle = wmi.getPageTitle(articleID, true);
 		String pageTitleNoContext = WMISocket.singular(wmi.getPageTitle(false,

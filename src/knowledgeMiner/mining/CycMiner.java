@@ -8,11 +8,13 @@ import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import knowledgeMiner.ConceptMiningTask;
@@ -20,15 +22,7 @@ import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
-import knowledgeMiner.mining.meta.ImpliedStandingMiner;
-import knowledgeMiner.mining.meta.MetaMiningHeuristic;
-import knowledgeMiner.mining.wikipedia.FirstSentenceMiner;
-import knowledgeMiner.mining.wikipedia.FirstSentenceParserMiner;
 import knowledgeMiner.mining.wikipedia.InfoboxClusterer;
-import knowledgeMiner.mining.wikipedia.InfoboxRelationMiner;
-import knowledgeMiner.mining.wikipedia.InfoboxTypeMiner;
-import knowledgeMiner.mining.wikipedia.ListMiner;
-import knowledgeMiner.mining.wikipedia.TitleMiner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,11 +40,11 @@ public class CycMiner {
 	private final static Logger logger_ = LoggerFactory
 			.getLogger(CycMiner.class);
 
+	private static final File MINING_CONFIG_FILE = new File(
+			"miningHeuristics.config");
+
 	/** A special case miner. */
 	private InfoboxClusterer infoboxClusterer_;
-
-	/** The meta-mining heuristics. */
-	private List<MetaMiningHeuristic> metaMiningHeuristics_;
 
 	/** The heuristics used for mining information from articles. */
 	private ArrayList<MiningHeuristic> miningHeuristics_;
@@ -58,30 +52,43 @@ public class CycMiner {
 	/** The sentence parser. */
 	private SentenceParserHeuristic sentenceParser_;
 
+	public Map<MiningHeuristic, Long> heuristicTime = new HashMap<>();
+
 	/**
 	 * An initialisation constructor for the mining aspect of KnowledgeMiner.
 	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public CycMiner(KnowledgeMiner knowledgeMiner, CycMapper mapper) {
 		sentenceParser_ = new SentenceParserHeuristic(mapper, this);
 
 		miningHeuristics_ = new ArrayList<>();
-		miningHeuristics_.add(new TitleMiner(mapper, this));
-		miningHeuristics_.add(new FirstSentenceMiner(mapper, this));
-		miningHeuristics_.add(new FirstSentenceParserMiner(mapper, this));
-		miningHeuristics_.add(new InfoboxTypeMiner(mapper, this));
-		miningHeuristics_.add(new InfoboxRelationMiner(mapper, this));
-		// miningHeuristics_.add(new CategoryChildMiner(mapper, this));
-		miningHeuristics_.add(new ListMiner(mapper, this));
-		// miningHeuristics_.add(new SubCategoryMiner(mapper, this));
-		// miningHeuristics_.add(new CategoryMembershipMiner(mapper, this));
+		try {
+			if (!MINING_CONFIG_FILE.exists()) {
+				MINING_CONFIG_FILE.createNewFile();
+				System.err.println("No config file exists! Please fill it in.");
+				System.exit(1);
+			}
+
+			BufferedReader reader = new BufferedReader(new FileReader(
+					MINING_CONFIG_FILE));
+			String input = null;
+			while ((input = reader.readLine()) != null) {
+				if (input.startsWith("%") || input.isEmpty())
+					continue;
+				Class clazz = Class.forName(input);
+				Constructor ctor = clazz.getConstructor(CycMapper.class,
+						this.getClass());
+				miningHeuristics_.add((MiningHeuristic) ctor.newInstance(
+						mapper, this));
+			}
+			reader.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		// Register the heuristics with KnowledgeMiner for lookup
 		if (knowledgeMiner != null)
 			for (MiningHeuristic heuristic : miningHeuristics_)
-				knowledgeMiner.registerHeuristic(heuristic);
-
-		metaMiningHeuristics_ = new ArrayList<>();
-		metaMiningHeuristics_.add(new ImpliedStandingMiner(mapper, this));
-		if (knowledgeMiner != null)
-			for (MiningHeuristic heuristic : metaMiningHeuristics_)
 				knowledgeMiner.registerHeuristic(heuristic);
 
 		infoboxClusterer_ = new InfoboxClusterer(mapper, this);
@@ -99,8 +106,6 @@ public class CycMiner {
 	public Collection<MiningHeuristic> getMiningHeuristics() {
 		return miningHeuristics_;
 	}
-
-	public Map<MiningHeuristic, Long> heuristicTime = new HashMap<>();
 
 	/**
 	 * The base method for mining information from an Article as well as using
@@ -124,11 +129,8 @@ public class CycMiner {
 		// article.
 		for (MiningHeuristic mh : miningHeuristics_) {
 			logger_.info("Mining {} with {}", conceptModule, mh.toString());
-			MinedInformation mined = mh.mineArticle(
-					conceptModule,
-					informationRequested
-							& conceptModule.getUnminedInformation(), wmi,
-					ontology);
+			MinedInformation mined = mh.mineArticle(conceptModule,
+					informationRequested, wmi, ontology);
 			ConceptMiningTask.interactiveInterface_.interactiveMining(mined,
 					mh, wmi, ontology);
 			conceptModule.mergeInformation(mined);

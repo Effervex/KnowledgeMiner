@@ -86,7 +86,9 @@ public class WMISocket extends KMSocket {
 
 	public static final String TYPE_ARTICLE = "article";
 
-	private static final String TYPE_CATEGORY = "category";
+	public static final String TYPE_CATEGORY = "category";
+
+	public static final String TYPE_REDIRECT = "redirect";
 
 	public WMISocket(WMIAccess access) {
 		super(access);

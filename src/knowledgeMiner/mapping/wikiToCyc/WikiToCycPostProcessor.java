@@ -19,13 +19,6 @@ import cyc.OntologyConcept;
 public class WikiToCycPostProcessor extends
 		MappingPostProcessor<OntologyConcept> {
 
-	/**
-	 * Constructor for a new WikiToCycPostProcessor
-	 */
-	public WikiToCycPostProcessor() {
-		super();
-	}
-
 	@Override
 	public WeightedSet<OntologyConcept> process(
 			WeightedSet<OntologyConcept> collection, WMISocket wmi,

@@ -230,7 +230,8 @@ public class KnowledgeMinerPreprocessor {
 	/**
 	 * Writes the Wikipedia mapped data to file for the given heuristic.
 	 * 
-	 * @param article The article to write about.
+	 * @param article
+	 *            The article to write about.
 	 * @param mappings
 	 *            The mapping data to write.
 	 * @param heuristic
@@ -301,7 +302,7 @@ public class KnowledgeMinerPreprocessor {
 	 * @param heuristics
 	 *            The heuristics to mine with (if null, use all).
 	 * @param reverseOrder
-	 *            TODO
+	 *            If the data should be precomputed in reverse order.
 	 * @param The
 	 *            task type to perform.
 	 */

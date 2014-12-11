@@ -22,11 +22,11 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.MiningHeuristic;
 import knowledgeMiner.mining.wikipedia.FirstSentenceMiner;
-import knowledgeMiner.mining.wikipedia.ListMiner;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
@@ -34,7 +34,9 @@ import org.slf4j.LoggerFactory;
 
 import util.collection.WeightedSet;
 import util.wikipedia.WikiParser;
+import cyc.CycConstants;
 import cyc.OntologyConcept;
+import cyc.StringConcept;
 
 /**
  * The concept mining task controls the concept mapping and mining flow of the
@@ -286,7 +288,7 @@ public class ConceptMiningTask implements Runnable {
 		Integer article = cm.getArticle();
 		try {
 			// TODO Identify some collection sense
-			// TODO Use the possible parentage, perhaps? Might have to be after
+			// Use the possible parentage, perhaps? Might have to be after
 			// disambiguation though.
 			OntologyConcept newConcept = createNewCycTermName(
 					wmi_.getPageTitle(article, true), null, ontology_);
@@ -350,7 +352,8 @@ public class ConceptMiningTask implements Runnable {
 		// Remove list articles
 		try {
 			if (concept.getArticle() != -1
-					&& WikiParser.isAListOf(wmi_.getPageTitle(concept.getArticle(), true)))
+					&& WikiParser.isAListOf(wmi_.getPageTitle(
+							concept.getArticle(), true)))
 				return true;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -484,8 +487,8 @@ public class ConceptMiningTask implements Runnable {
 					}
 				} else if (concept.getConcept().getID() < 0) {
 					// No unreifiable mappings
-					setArticleState(concept.getArticle(),
-							UNMAPPABLE_CURRENT, pendingArts);
+					setArticleState(concept.getArticle(), UNMAPPABLE_CURRENT,
+							pendingArts);
 					return false;
 				}
 
@@ -544,7 +547,6 @@ public class ConceptMiningTask implements Runnable {
 			boolean reversedOrder) {
 		SortedSet<ConceptModule> mapped = new TreeSet<>();
 		try {
-			// TODO Deal with this. If ID == -1,
 			// If the concept is newly created or has -1 ID, just automap.
 			if (concept.isCreatedConcept()
 					|| (concept.getConcept() != null && concept.getConcept()
@@ -814,11 +816,18 @@ public class ConceptMiningTask implements Runnable {
 			String map = in.readLine().trim();
 			staticReverseMap(cmt, map);
 		} else if (input.equals("3")) {
-			System.out.println("Enter article to mine '<article>'.");
+			System.out.println("Enter article to mine '<article>':");
 			String map = in.readLine().trim();
 			staticMine(cmt, in, map);
+		} else if (input.equals("5")) {
+			System.out.println("Enter article to create mapping for:");
+			String art = in.readLine().trim();
+			System.out.println("Enter concept to create mapping for:");
+			String concept = in.readLine().trim();
+			OntologyConcept concept2 = new OntologyConcept(concept);
+			addMapping(cmt.wmi_.getArticleByTitle(art), concept2, cmt.ontology_);
 		} else if (InteractiveMode.interactiveMode_ || input.equals("4")
-				|| input.equals("7")) {
+				|| input.equals("6")) {
 			InteractiveMode.interactiveMode_ |= input.equals("7");
 			System.out
 					.println("Enter term/article to process '#$<termname>' or '<article>'.");
@@ -832,14 +841,40 @@ public class ConceptMiningTask implements Runnable {
 			} else {
 				System.err.println("Could not parse term.");
 			}
-		} else if (input.equals("6")) {
-			System.out.println("Enter collection article.");
-			String map = in.readLine().trim();
-			staticProcessCollection(cmt, map, in);
 		} else if (input.contains("=>"))
 			staticReverseMap(cmt, input);
 		else if (!input.equals("exit"))
 			staticMap(cmt, input);
+	}
+
+	/**
+	 * Adds a mapping between an article and concept, such that lookup calls
+	 * will find the mapping for the given article.
+	 *
+	 * @param article
+	 *            The article to map.
+	 * @param concept
+	 *            The concept to map the article to.
+	 * @return The ID of the assertion or -1.
+	 */
+	public static int addMapping(int article, OntologyConcept concept,
+			OntologySocket ontology) {
+		try {
+			// No concept or no article
+			if (concept == null || !ontology.inOntology(concept)
+					|| article == -1)
+				return -1;
+
+			DefiniteAssertion assertion = new DefiniteAssertion(
+					CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getConcept(),
+					CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(),
+					null, concept, CycConstants.WIKI_VERSION,
+					new StringConcept(article + ""));
+			return assertion.makeAssertion(concept, ontology);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return -1;
 	}
 
 	/**
@@ -914,75 +949,6 @@ public class ConceptMiningTask implements Runnable {
 					+ cm2.getConcreteAssertions().size() + ": "
 					+ cm2.getConcreteAssertions());
 		} while (true);
-	}
-
-	/**
-	 * Statically processes an article for its children, applying assertions to
-	 * the valid children found.
-	 * 
-	 * @param cmt
-	 *            The concept mining task.
-	 * @param parentArticle
-	 *            The parent article.
-	 * @param in
-	 *            The input stream for prompting queries.
-	 * @throws Exception
-	 *             Should something go awry...
-	 */
-	private static void staticProcessCollection(ConceptMiningTask cmt,
-			String parentArticle, BufferedReader in) throws Exception {
-		// First mine the children
-		// TODO
-		// ConceptModule parentCM = new ConceptModule(
-		// cmt.wmi_.getArticleByTitle(parentArticle));
-		// cmt.mineConcept(parentCM,
-		// (1 << InformationType.CHILD_ARTICLES.ordinal()));
-		// Collection<Integer> children = null;// parentCM.getChildArticles();
-		//
-		// // Ask for parent
-		// Collection<OntologyConcept> parents = new ArrayList<>();
-		// System.out.println("Input comma separated parent(s)");
-		// String parentsStr = in.readLine();
-		// for (String parent : parentsStr.split(","))
-		// parents.addAll(cmt.ontology_.findConceptByName(parent.trim(), true,
-		// true, false));
-		//
-		// // Ask for assertion
-		// Collection<MinedAssertion> autoAssertions = new ArrayList<>();
-		// System.out
-		// .println("Input binary auto-assertions in bracketed format, one-per-line, "
-		// + "using '?X' to denote the mined concept. Use "
-		// + "non-bracketed to stop assertion input.");
-		// String input = null;
-		// while ((input = in.readLine()).startsWith("(")) {
-		// if (!input.endsWith(")"))
-		// break;
-		// ArrayList<String> args = UtilityMethods.split(
-		// UtilityMethods.shrinkString(input, 1), ' ');
-		// if (args.size() != 3) {
-		// System.out.println("Non-binary predicate! Try again.");
-		// continue;
-		// }
-		// OntologyConcept[] concepts = new OntologyConcept[3];
-		// for (int i = 0; i < args.size(); i++) {
-		// String arg = args.get(i);
-		// if (arg.equals("?X"))
-		// concepts[i] = new WikipediaMappedConcept(article);
-		// else {
-		// concepts[i] = cmt.ontology_
-		// .findConceptByName(arg, true, true, false)
-		// .iterator().next();
-		// if (concepts[i] == null)
-		// concepts[i] = new OntologyConcept(arg, -1);
-		// }
-		// }
-		// MinedAssertion ma = new DefiniteAssertion(concepts[0],
-		// CycConstants.DATA_MICROTHEORY.getConceptName(), null,
-		// concepts[1], concepts[2]);
-		// autoAssertions.add(ma);
-		// }
-		//
-		// cmt.processCollection(children, parents, autoAssertions);
 	}
 
 	/**
@@ -1144,9 +1110,8 @@ public class ConceptMiningTask implements Runnable {
 					System.out
 							.println("Select an option:\n\t'1' (map), '2' (reverseMap), "
 									+ "'3' (mine), '4' (full process), "
-									+ "'5' (sorted children subset), "
-									+ "'6' (process children), "
-									+ "'7' (interactive mode)\n"
+									+ "'5' (add mapping), "
+									+ "'6' (interactive mode)\n"
 									+ "\tEnter mapping ('X', '#$Y', or 'X => Y'),\n"
 									+ "\t'wmi <command> for WMI commands,\n"
 									+ "\tOr 'exit'");

@@ -10,7 +10,10 @@ import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -18,30 +21,8 @@ import java.util.List;
 
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.WeightedHeuristic;
-import knowledgeMiner.mapping.cycToWiki.CycToWikiPostProcessor;
-import knowledgeMiner.mapping.cycToWiki.CycToWiki_ContextRelatedSynonyms;
-import knowledgeMiner.mapping.cycToWiki.CycToWiki_TitleMatching;
-import knowledgeMiner.mapping.cycToWiki.CycToWiki_VoteSynonyms;
-import knowledgeMiner.mapping.textToCyc.CleanJunkPreProcessor;
-import knowledgeMiner.mapping.textToCyc.JoinNewLinePreProcessor;
-import knowledgeMiner.mapping.textToCyc.RemoveAnchorPreProcessor;
-import knowledgeMiner.mapping.textToCyc.RemoveBracketsPreProcessor;
-import knowledgeMiner.mapping.textToCyc.RemoveSentencePunctuationPreProcessor;
-import knowledgeMiner.mapping.textToCyc.RemoveSpacesPreProcessor;
-import knowledgeMiner.mapping.textToCyc.ReplaceUnderscorePreProcessor;
-import knowledgeMiner.mapping.textToCyc.SplitCommaPreProcessor;
-import knowledgeMiner.mapping.textToCyc.SplitNewLinePreProcessor;
-import knowledgeMiner.mapping.textToCyc.TextToCyc_AnchorMap;
 import knowledgeMiner.mapping.textToCyc.TextToCyc_BasicString;
-import knowledgeMiner.mapping.textToCyc.TextToCyc_DateParse;
-import knowledgeMiner.mapping.textToCyc.TextToCyc_IntervalParse;
-import knowledgeMiner.mapping.textToCyc.TextToCyc_NumericParse;
 import knowledgeMiner.mapping.textToCyc.TextToCyc_TextSearch;
-import knowledgeMiner.mapping.textToCyc.TextToCyc_TimeContextParse;
-import knowledgeMiner.mapping.textToCyc.TextToCyc_WikiSenseSearch;
-import knowledgeMiner.mapping.wikiToCyc.WikiToCycPostProcessor;
-import knowledgeMiner.mapping.wikiToCyc.WikiToCyc_TitleMatching;
-import knowledgeMiner.mapping.wikiToCyc.WikiToCyc_VoteSynonyms;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -80,6 +61,9 @@ public class CycMapper {
 	/** The number of anchors to use when searching for synonyms. */
 	public static final int NUM_RELEVANT_ANCHORS = 6;
 
+	public static final File MAPPING_CONFIG_FILE = new File(
+			"mappingHeuristics.config");
+
 	/** The mapping heuristics for Cyc concept to Wiki article. */
 	private MappingSuite<OntologyConcept, Integer> cycToWikiMapping_;
 
@@ -100,7 +84,11 @@ public class CycMapper {
 		wikiToCycMapping_ = new MappingSuite<>();
 		textToCycMapping_ = new MappingSuite<>();
 
-		initialiseHeuristics(knowledgeMiner);
+		try {
+			initialiseHeuristics(knowledgeMiner);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -150,52 +138,58 @@ public class CycMapper {
 		return mappings;
 	}
 
-	@SuppressWarnings("rawtypes")
-	private void initialiseHeuristics(KnowledgeMiner knowledgeMiner) {
-		// TODO Set this up as a config file.
-		// Initialise Cyc to Wiki heuristics
-		cycToWikiMapping_.addHeuristic(new CycToWiki_TitleMatching(this), this);
-		// cycToWikiMapping_.addHeuristic(new CycToWiki_CanonicalMatching(this),
-		// this);
-		cycToWikiMapping_.addHeuristic(new CycToWiki_VoteSynonyms(this), this);
-		cycToWikiMapping_.addHeuristic(new CycToWiki_ContextRelatedSynonyms(
-				this), this);
-		cycToWikiMapping_.addPostProcessor(new CycToWikiPostProcessor());
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private void initialiseHeuristics(KnowledgeMiner knowledgeMiner)
+			throws Exception {
+		if (!MAPPING_CONFIG_FILE.exists()) {
+			MAPPING_CONFIG_FILE.createNewFile();
+			System.err.println("No config file exists! Please fill it in.");
+			System.exit(1);
+		}
+
+		BufferedReader reader = new BufferedReader(new FileReader(
+				MAPPING_CONFIG_FILE));
+		String input = null;
+		while ((input = reader.readLine()) != null) {
+			if (input.startsWith("%") || input.isEmpty())
+				continue;
+			Class clazz = Class.forName(input);
+			MappingSuite mh = null;
+			if (clazz.getPackage().getName()
+					.equals("knowledgeMiner.mapping.cycToWiki"))
+				mh = cycToWikiMapping_;
+			else if (clazz.getPackage().getName()
+					.equals("knowledgeMiner.mapping.wikiToCyc"))
+				mh = wikiToCycMapping_;
+			else if (clazz.getPackage().getName()
+					.equals("knowledgeMiner.mapping.textToCyc"))
+				mh = textToCycMapping_;
+
+			// Mappers
+			if (MappingHeuristic.class.isAssignableFrom(clazz)) {
+				Constructor ctor = clazz.getConstructor(this.getClass());
+				mh.addHeuristic((MappingHeuristic) ctor.newInstance(this), this);
+			}
+			// PostProcessors
+			else if (MappingPostProcessor.class.isAssignableFrom(clazz)) {
+				Constructor ctor = clazz.getConstructor();
+				mh.addPostProcessor((MappingPostProcessor) ctor.newInstance());
+			}
+			// PreProcessors
+			else if (MappingPreProcessor.class.isAssignableFrom(clazz)) {
+				Constructor ctor = clazz.getConstructor();
+				mh.addPreProcessor((MappingPreProcessor) ctor.newInstance());
+			}
+		}
+		reader.close();
+
+		// Register the heuristics
 		if (knowledgeMiner != null)
 			for (MappingHeuristic mh : cycToWikiMapping_.getHeuristics())
 				knowledgeMiner.registerHeuristic(mh);
-
-		// Initialise Wiki to Cyc heuristics
-		wikiToCycMapping_.addHeuristic(new WikiToCyc_TitleMatching(this), this);
-		wikiToCycMapping_.addHeuristic(new WikiToCyc_VoteSynonyms(this), this);
-		wikiToCycMapping_.addPostProcessor(new WikiToCycPostProcessor());
 		if (knowledgeMiner != null)
 			for (MappingHeuristic mh : wikiToCycMapping_.getHeuristics())
 				knowledgeMiner.registerHeuristic(mh);
-
-		// The various text mapping heuristics
-		textToCycMapping_.addHeuristic(new TextToCyc_BasicString(this), this);
-		textToCycMapping_.addHeuristic(new TextToCyc_NumericParse(this), this);
-		textToCycMapping_.addHeuristic(new TextToCyc_AnchorMap(this), this);
-		textToCycMapping_.addHeuristic(new TextToCyc_DateParse(this), this);
-		textToCycMapping_.addHeuristic(new TextToCyc_IntervalParse(this), this);
-		textToCycMapping_.addHeuristic(new TextToCyc_TextSearch(this), this);
-		// textToCycMapping_.addHeuristic(new TextToCyc_WikiSenseSearch(this),
-		// this);
-		// textToCycMapping_.addHeuristic(new TextToCyc_WikifySearch(this),
-		// this);
-		textToCycMapping_.addHeuristic(new TextToCyc_TimeContextParse(this),
-				this);
-		textToCycMapping_.addPreProcessor(new CleanJunkPreProcessor());
-		textToCycMapping_.addPreProcessor(new ReplaceUnderscorePreProcessor());
-		textToCycMapping_.addPreProcessor(new SplitNewLinePreProcessor());
-		textToCycMapping_.addPreProcessor(new JoinNewLinePreProcessor());
-		textToCycMapping_.addPreProcessor(new SplitCommaPreProcessor());
-		textToCycMapping_.addPreProcessor(new RemoveBracketsPreProcessor());
-		textToCycMapping_.addPreProcessor(new RemoveSpacesPreProcessor());
-		textToCycMapping_.addPreProcessor(new RemoveAnchorPreProcessor());
-		textToCycMapping_
-				.addPreProcessor(new RemoveSentencePunctuationPreProcessor());
 		textToCycMapping_.setPreProcessFilter(new Predicate<String>() {
 			@Override
 			public boolean apply(String target) {

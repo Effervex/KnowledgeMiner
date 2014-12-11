@@ -649,7 +649,6 @@ public class AssertionGrid {
 			if (assertion.isHierarchical()) {
 				// Check collection first
 				boolean asserted = false;
-				// TODO Figure out how to disallow genls for individual
 				if (isaCollection_
 						&& !isDisjoint(assertion.getArgs()[1], genlsTruth_,
 								ontology)) {

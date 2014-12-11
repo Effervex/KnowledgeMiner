@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mining.CycMiner;
@@ -22,6 +23,7 @@ import knowledgeMiner.mining.PartialAssertion;
 import util.UtilityMethods;
 import util.wikipedia.WikiParser;
 import cyc.CycConstants;
+import cyc.OntologyConcept;
 import cyc.StringConcept;
 
 /**
@@ -58,7 +60,8 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 	 *            The miner.
 	 */
 	public FirstSentenceMiner(CycMapper mapper, CycMiner miner) {
-		super(true, mapper, miner);
+		// Cannot precompute due to ontolinks in comments
+		super(false, mapper, miner);
 
 		initialiseRegExps();
 	}
@@ -262,10 +265,12 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 			// Assert the sentence itself as a comment
 			String paragraph = wmi.getFirstParagraph(article);
 			if (!paragraph.isEmpty()) {
-				// TODO Replace anchors with ontolinks
-				paragraph = replaceAnchorsWithOntolinks(paragraph);
+				// Replace anchors with ontolinks
+				paragraph = WikiParser.cleanupUselessMarkup(paragraph);
+				paragraph = WikiParser
+						.cleanupExternalLinksAndStyling(paragraph);
+				paragraph = replaceAnchorsWithOntolinks(paragraph, wmi, cyc);
 
-				paragraph = WikiParser.cleanAllMarkup(paragraph);
 				paragraph = NLPToSyntaxModule.convertToAscii(paragraph);
 				paragraph = paragraph.replaceAll("\n+", "<p>");
 				info.addAssertion(new PartialAssertion(
@@ -276,14 +281,55 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 		}
 	}
 
-	private String replaceAnchorsWithOntolinks(String paragraph) {
-		// TODO Find anchors
+	/**
+	 * Replaces the anchors with dynamic links to concepts.
+	 *
+	 * @param paragraph
+	 *            The text to replace anchors in.
+	 * @param wmi
+	 *            The WMI access.
+	 * @param ontology
+	 *            The ontology access.
+	 * @return The same text with all anchors replaced by dynamic links to
+	 *         concepts (with plain text annotations).
+	 */
+	private String replaceAnchorsWithOntolinks(String paragraph, WMISocket wmi,
+			OntologySocket ontology) {
+		// Find anchors
+		int start = 0;
+		StringBuilder builder = new StringBuilder();
+		Matcher m = WikiParser.ANCHOR_PARSER.matcher(paragraph);
+		while (m.find()) {
+			try {
+				builder.append(paragraph.substring(start, m.start()));
 
-		// Check if anchors are mapped
+				int article = wmi.getArticleByTitle(m.group(1));
+				// Replace anchors with ontolinks
+				boolean knownConcept = false;
+				if (article != -1) {
+					OntologyConcept concept = KnowledgeMiner.getKnownMapping(
+							article, ontology);
+					if (concept != null) {
+						builder.append("[[" + concept.getConceptName() + "|");
+						knownConcept = true;
+					}
+					// TODO Could add a synonym here for the linked article
+				}
 
-		// Replace anchors with ontolinks
-
-		return paragraph;
+				if (m.group(2) != null)
+					builder.append(m.group(2));
+				else
+					builder.append(m.group(1));
+				if (knownConcept && article != -1)
+					builder.append("]]");
+				start = m.end();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		if (start != paragraph.length())
+			builder.append(paragraph.substring(start, paragraph.length()));
+		return builder.toString();
 	}
 
 	@Override
