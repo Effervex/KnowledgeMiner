@@ -100,6 +100,13 @@ public class TextToCyc_FunctionParser extends
 				.findFilteredConceptByName(possibleFunction, false, true, true,
 						isaFunction);
 
+		// Also check "'s" pattern
+		possibleFunction = possibleFunction.replaceAll(FUNCTION_STRING,
+				FUNCTION_STRING + "'s");
+		functionConcepts.addAll(ontology
+				.findFilteredConceptByName(possibleFunction, false, true, true,
+						isaFunction));
+
 		// Process the remaining text
 		String remText = null;
 		if (prefixText)

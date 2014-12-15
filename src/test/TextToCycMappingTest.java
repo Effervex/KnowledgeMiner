@@ -483,6 +483,8 @@ public class TextToCycMappingTest {
 				new OntologyConcept("Horse"), cyc_);
 		ConceptMiningTask.addMapping(wmi_.getArticleByTitle("Lamivudine"),
 				new OntologyConcept("Lamivudine"), cyc_);
+		ConceptMiningTask.addMapping(wmi_.getArticleByTitle("New Zealand"),
+				new OntologyConcept("NewZealand"), cyc_);
 
 		TextToCyc_FunctionParser mapper = new TextToCyc_FunctionParser(
 				mappingRoot_);
@@ -502,6 +504,13 @@ public class TextToCycMappingTest {
 				wmi_, cyc_);
 		assertTrue(results.contains(OntologyConcept
 				.parseArgument("(SideEffectsOfUsingDrugTypeFn Lamivudine)")));
+		assertEquals(results.size(), 1);
+
+		// Function with "'s"
+		results = mapper.mapSourceToTarget("[[New Zealand]]'s government",
+				wmi_, cyc_);
+		assertTrue(results.contains(OntologyConcept
+				.parseArgument("(GovernmentFn NewZealand)")));
 		assertEquals(results.size(), 1);
 	}
 }
