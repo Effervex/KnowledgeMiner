@@ -40,9 +40,9 @@ import org.slf4j.LoggerFactory;
 import util.Tree;
 import util.text.OpenNLP;
 import util.wikipedia.WikiParser;
+import cyc.AssertionArgument;
 import cyc.CycConstants;
 import cyc.MappableConcept;
-import cyc.OntologyConcept;
 
 public class SentenceParserHeuristic extends MiningHeuristic {
 	private static final String[] COPULAS = { "is", "are", "was", "were", "be",
@@ -118,16 +118,14 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 		// Can create and we have a target and predicate(s)
 		if (canCreate && type.equals("NP") && !predicateStrs[0].isEmpty()) {
 			for (String predStr : predicateStrs) {
-				OntologyConcept predicate = null;
+				AssertionArgument predicate = null;
 				if (isCopula(predStr)) {
 					predicate = CycConstants.ISA_GENLS.getConcept();
 				} else {
 					// TODO Figure out a safe way to parse predicates. Probably
 					// need to look at the parse code again.
-					// predStr = reAnchorString(predStr, anchors);
-					// predicateSet = mapper_.mapRelationToPredicate(predStr,
-					// wmi,
-					// cyc);
+					predStr = reAnchorString(predStr, anchors);
+					predicate = new TextMappedConcept(predStr, true, true);
 				}
 
 				if (predicate == null)
@@ -313,7 +311,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 * @return The results set to add to.
 	 */
 	private Collection<PartialAssertion> recurseStringTree(
-			OntologyConcept predicate, MappableConcept focusConcept,
+			AssertionArgument predicate, MappableConcept focusConcept,
 			Collection<Tree<String>> nounStrs, HeuristicProvenance provenance) {
 		Collection<PartialAssertion> assertions = new ArrayList<>();
 		for (Tree<String> t : nounStrs) {

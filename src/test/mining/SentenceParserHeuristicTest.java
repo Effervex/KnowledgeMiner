@@ -8,7 +8,6 @@ import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -110,8 +109,7 @@ public class SentenceParserHeuristicTest {
 				buildPartial(focusConcept, "professional", null))));
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"[[American football|football]]", null)));
-		assertTrue(output.contains(buildPartial(focusConcept,
-				"coach", null)));
+		assertTrue(output.contains(buildPartial(focusConcept, "coach", null)));
 		assertEquals(output.size(), 6);
 
 		// Three JJs + 2 NNs
@@ -206,6 +204,16 @@ public class SentenceParserHeuristicTest {
 		if (subAssertion != null)
 			pa.addSubAssertion(subAssertion);
 		return pa;
+	}
+
+	@Test
+	public void testNonTaxonomic() throws Exception {
+		String sentence = "Aim toothpaste is made in Australia by Pental Limited, Australia's largest soap manufacturer, with production facilities in Shepparton, Victoria.";
+		MappableConcept focusConcept = new TextMappedConcept("Test", false,
+				false);
+		Collection<PartialAssertion> output = sut_.extractAssertions(sentence,
+				focusConcept, wmi_, ontology_, null);
+		System.out.println(output);
 	}
 
 	@Test
