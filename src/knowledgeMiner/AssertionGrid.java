@@ -476,14 +476,18 @@ public class AssertionGrid {
 		return disjointCases_[caseNum].getAssertions();
 	}
 
-	public boolean isCollection(int caseNum) {
-		return disjointCases_[caseNum].isaCollection_;
-	}
-
 	public double getCaseWeight(int caseNum) {
 		if (disjointCases_[caseNum] == null)
 			return -1;
 		return Math.min(disjointCases_[caseNum].getPotentialWeight(), 1);
+	}
+
+	public boolean isCollection(int caseNum) {
+		return disjointCases_[caseNum].isaCollection_;
+	}
+
+	public boolean isEmpty() {
+		return assertionGrid_ == null;
 	}
 
 	@Override
@@ -862,9 +866,5 @@ public class AssertionGrid {
 			else
 				return "I:" + allAssertions_.toString();
 		}
-	}
-
-	public boolean isEmpty() {
-		return assertionGrid_ == null;
 	}
 }

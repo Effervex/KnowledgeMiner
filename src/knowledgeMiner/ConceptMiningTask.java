@@ -58,26 +58,27 @@ public class ConceptMiningTask implements Runnable {
 	private final static Logger logger_ = LoggerFactory
 			.getLogger(ConceptMiningTask.class);
 
-	/** The frequency at which the output files are updated. */
-	public static final int UPDATE_INTERVAL = 100;
-
+	/** Mappings from an indexed concept (ID) to a given article. */
+	private static byte[] ontologyStates_ = new byte[BIG_ENOUGH];
+	
+	/** Mappings from an indexed article to a given ontology (ID). */
+	private static byte[] artStates_ = new byte[BIG_ENOUGH];
+	
 	static final byte MAPPED_CURRENT = 2;
 	static final byte PENDING = 1;
 	static final byte UNKNOWN = 0;
-	static final byte UNMAPPABLE_PRIOR = -1;
 	static final byte UNMAPPABLE_CURRENT = -2;
 
-	/** Mappings from an indexed article to a given ontology (ID). */
-	private static byte[] artStates_ = new byte[BIG_ENOUGH];
-
-	/** Mappings from an indexed concept (ID) to a given article. */
-	private static byte[] ontologyStates_ = new byte[BIG_ENOUGH];
+	static final byte UNMAPPABLE_PRIOR = -1;
 
 	/** The number of asserted concepts. */
 	public static int assertedCount_ = 0;
 
 	/** The interactive interface for interactive mode. */
 	public static InteractiveMode interactiveInterface_ = new InteractiveMode();
+
+	/** The frequency at which the output files are updated. */
+	public static final int UPDATE_INTERVAL = 100;
 
 	/** A collection for keeping track of all asserted conceptModules. */
 	private Collection<ConceptModule> assertedConcepts_;
@@ -90,10 +91,10 @@ public class ConceptMiningTask implements Runnable {
 	/** The data to process, in weighted order. */
 	private SortedSet<ConceptModule> processables_;
 
+	private boolean trackAsserted_ = false;
+
 	/** The WMI access for this threaded task. */
 	private WMISocket wmi_;
-
-	private boolean trackAsserted_ = false;
 
 	/**
 	 * Constructor for a new ConceptMiningTask
@@ -272,11 +273,6 @@ public class ConceptMiningTask implements Runnable {
 		return false;
 	}
 
-	private boolean isProcessed(Integer index, byte[] stateArray) {
-		return getState(index, stateArray) == MAPPED_CURRENT
-				|| getState(index, stateArray) == UNMAPPABLE_CURRENT;
-	}
-
 	/**
 	 * Creates a new concept module linking to a newly created concept.
 	 * 
@@ -305,6 +301,11 @@ public class ConceptMiningTask implements Runnable {
 		return null;
 	}
 
+	private boolean isProcessed(Integer index, byte[] stateArray) {
+		return getState(index, stateArray) == MAPPED_CURRENT
+				|| getState(index, stateArray) == UNMAPPABLE_CURRENT;
+	}
+
 	/**
 	 * If this asserted concept is for the original concept.
 	 * 
@@ -319,70 +320,6 @@ public class ConceptMiningTask implements Runnable {
 			ConceptModule original) {
 		return concept.getArticle().equals(original.getArticle())
 				|| concept.getConcept().equals(original.getConcept());
-	}
-
-	/**
-	 * Checks if a mapping has already been processed.
-	 * 
-	 * @param concept
-	 *            The concept to check.
-	 * @param onlyKeepOriginal
-	 *            If only mappings containing the original concept are to be
-	 *            used.
-	 * @param original
-	 *            The original concept that started this.
-	 * @return True if the concept module should be skipped.
-	 */
-	private boolean shouldSkipConceptModule(ConceptModule concept,
-			boolean onlyKeepOriginal, ConceptModule original) {
-		// If only original concepts allowed, remove any non-originals
-		if (onlyKeepOriginal) {
-			try {
-				if (concept.getConcept() != null
-						&& !ontology_.inOntology(concept.getConcept()))
-					return true;
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			if (concept.isCreatedConcept())
-				return true;
-			return !originalConcept(concept, original);
-		}
-
-		// Remove list articles
-		try {
-			if (concept.getArticle() != -1
-					&& WikiParser.isAListOf(wmi_.getPageTitle(
-							concept.getArticle(), true)))
-				return true;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		// Stop on completed articles/concepts (from this run)
-		if (concept.getArticle() != -1
-				&& isProcessed(concept.getArticle(), artStates_)) {
-			// If the concept produced the article, it has already mapped and
-			// should be skipped
-			// if (concept.isCycToWiki() && concept.isMapped())
-			return true;
-			// concept.removeArticle();
-		}
-		if (concept.getConcept() != null
-				&& isProcessed(concept.getConcept().getID(), ontologyStates_)) {
-			// If the article produced the concept, it has already mapped and
-			// should be skipped
-			// if (!concept.isCycToWiki() && concept.isMapped())
-			return true;
-			// concept.removeConcept();
-		}
-
-		// If neither article nor concept, remove this
-		if (concept.getArticle() == -1
-				&& (concept.getConcept() == null || concept.isCreatedConcept()))
-			return true;
-
-		return false;
 	}
 
 	/**
@@ -451,6 +388,70 @@ public class ConceptMiningTask implements Runnable {
 			ontology_ = ResourceAccess.requestOntologySocket();
 		}
 
+	}
+
+	/**
+	 * Checks if a mapping has already been processed.
+	 * 
+	 * @param concept
+	 *            The concept to check.
+	 * @param onlyKeepOriginal
+	 *            If only mappings containing the original concept are to be
+	 *            used.
+	 * @param original
+	 *            The original concept that started this.
+	 * @return True if the concept module should be skipped.
+	 */
+	private boolean shouldSkipConceptModule(ConceptModule concept,
+			boolean onlyKeepOriginal, ConceptModule original) {
+		// If only original concepts allowed, remove any non-originals
+		if (onlyKeepOriginal) {
+			try {
+				if (concept.getConcept() != null
+						&& !ontology_.inOntology(concept.getConcept()))
+					return true;
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			if (concept.isCreatedConcept())
+				return true;
+			return !originalConcept(concept, original);
+		}
+
+		// Remove list articles
+		try {
+			if (concept.getArticle() != -1
+					&& WikiParser.isAListOf(wmi_.getPageTitle(
+							concept.getArticle(), true)))
+				return true;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		// Stop on completed articles/concepts (from this run)
+		if (concept.getArticle() != -1
+				&& isProcessed(concept.getArticle(), artStates_)) {
+			// If the concept produced the article, it has already mapped and
+			// should be skipped
+			// if (concept.isCycToWiki() && concept.isMapped())
+			return true;
+			// concept.removeArticle();
+		}
+		if (concept.getConcept() != null
+				&& isProcessed(concept.getConcept().getID(), ontologyStates_)) {
+			// If the article produced the concept, it has already mapped and
+			// should be skipped
+			// if (!concept.isCycToWiki() && concept.isMapped())
+			return true;
+			// concept.removeConcept();
+		}
+
+		// If neither article nor concept, remove this
+		if (concept.getArticle() == -1
+				&& (concept.getConcept() == null || concept.isCreatedConcept()))
+			return true;
+
+		return false;
 	}
 
 	/**
@@ -848,36 +849,6 @@ public class ConceptMiningTask implements Runnable {
 	}
 
 	/**
-	 * Adds a mapping between an article and concept, such that lookup calls
-	 * will find the mapping for the given article.
-	 *
-	 * @param article
-	 *            The article to map.
-	 * @param concept
-	 *            The concept to map the article to.
-	 * @return The ID of the assertion or -1.
-	 */
-	public static int addMapping(int article, OntologyConcept concept,
-			OntologySocket ontology) {
-		try {
-			// No concept or no article
-			if (concept == null || !ontology.inOntology(concept)
-					|| article == -1)
-				return -1;
-
-			DefiniteAssertion assertion = new DefiniteAssertion(
-					CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getConcept(),
-					CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(),
-					null, concept, CycConstants.WIKI_VERSION,
-					new StringConcept(article + ""));
-			return assertion.makeAssertion(concept, ontology);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return -1;
-	}
-
-	/**
 	 * Performs mapping on a single term/article.
 	 * 
 	 * @param cmt
@@ -992,6 +963,36 @@ public class ConceptMiningTask implements Runnable {
 	}
 
 	/**
+	 * Adds a mapping between an article and concept, such that lookup calls
+	 * will find the mapping for the given article.
+	 *
+	 * @param article
+	 *            The article to map.
+	 * @param concept
+	 *            The concept to map the article to.
+	 * @return The ID of the assertion or -1.
+	 */
+	public static int addMapping(int article, OntologyConcept concept,
+			OntologySocket ontology) {
+		try {
+			// No concept or no article
+			if (concept == null || !ontology.inOntology(concept)
+					|| article == -1)
+				return -1;
+
+			DefiniteAssertion assertion = new DefiniteAssertion(
+					CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getConcept(),
+					CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(),
+					null, concept, CycConstants.WIKI_VERSION,
+					new StringConcept(article + ""));
+			return assertion.makeAssertion(concept, ontology);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return -1;
+	}
+
+	/**
 	 * Creates a new Cyc name from a string. If required, optional context can
 	 * be used to ensure the name is valid & unique.
 	 *
@@ -1040,6 +1041,14 @@ public class ConceptMiningTask implements Runnable {
 		return new OntologyConcept(name);
 	}
 
+	public static byte getArticleState(int article) {
+		return getState(article, artStates_);
+	}
+
+	public static byte getConceptState(OntologyConcept concept) {
+		return getState(concept.getID(), ontologyStates_);
+	}
+
 	/**
 	 * Gets the state of a indexed thing from an array of states. Requires a
 	 * little more than basic array access, as the value returned must be
@@ -1059,14 +1068,6 @@ public class ConceptMiningTask implements Runnable {
 		if (index >= array.length)
 			return UNKNOWN;
 		return array[index];
-	}
-
-	public static byte getArticleState(int article) {
-		return getState(article, artStates_);
-	}
-
-	public static byte getConceptState(OntologyConcept concept) {
-		return getState(concept.getID(), ontologyStates_);
 	}
 
 	/**
