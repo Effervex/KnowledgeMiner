@@ -9,13 +9,16 @@ import io.ResourceAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
+import java.io.IOException;
 import java.util.Collection;
 
+import knowledgeMiner.ConceptMiningTask;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.textToCyc.TextToCyc_AnchorMap;
 import knowledgeMiner.mapping.textToCyc.TextToCyc_BasicString;
 import knowledgeMiner.mapping.textToCyc.TextToCyc_DateParse;
+import knowledgeMiner.mapping.textToCyc.TextToCyc_FunctionParser;
 import knowledgeMiner.mapping.textToCyc.TextToCyc_IntervalParse;
 import knowledgeMiner.mapping.textToCyc.TextToCyc_NumericParse;
 import knowledgeMiner.mapping.textToCyc.TextToCyc_TextSearch;
@@ -60,8 +63,17 @@ public class TextToCycMappingTest {
 	}
 
 	@Test
-	public void testTextToCycMapping() {
+	public void testTextToCycMapping() throws IOException {
 		OntologyConcept.parsingArgs_ = true;
+		ConceptMiningTask.addMapping(wmi_.getArticleByTitle("Bill Clinton"),
+				new OntologyConcept("BillClinton"), cyc_);
+		ConceptMiningTask.addMapping(wmi_.getArticleByTitle("Gary Oldman"),
+				new OntologyConcept("GaryOldman"), cyc_);
+		ConceptMiningTask.addMapping(wmi_.getArticleByTitle("Ethan Hawke"),
+				new OntologyConcept("EthanHawke"), cyc_);
+		ConceptMiningTask.addMapping(wmi_.getArticleByTitle("Film director"),
+				new OntologyConcept("Director-Movie"), cyc_);
+
 		WeightedSet<OntologyConcept> results = mappingRoot_.mapTextToCyc(
 				"Bill Clinton", true, true, false, true, wmi_, cyc_);
 		Collection<OntologyConcept> mostLikely = results.getMostLikely();
@@ -97,7 +109,8 @@ public class TextToCycMappingTest {
 		assertEquals(mostLikely.size(), 1);
 		assertTrue(mostLikely.contains(new OntologyConcept("Director-Movie")));
 
-		results = mappingRoot_.mapTextToCyc("origin", false, true, false, true, wmi_, cyc_);
+		results = mappingRoot_.mapTextToCyc("origin", false, true, false, true,
+				wmi_, cyc_);
 		mostLikely = results.getMostLikely();
 		assertEquals(mostLikely.size(), 4);
 		assertTrue(mostLikely.contains(new OntologyConcept("fromLocation")));
@@ -228,9 +241,10 @@ public class TextToCycMappingTest {
 		assertEquals(results.size(), 4);
 		assertTrue(results.contains(new OntologyConcept("occupation")));
 		assertTrue(results.contains(new OntologyConcept("MilitaryOccupation")));
-		assertTrue(results
-				.contains(new OntologyConcept("Occupation-AnimalActivity")));
-		assertTrue(results.contains(new OntologyConcept("PersonTypeByOccupation")));
+		assertTrue(results.contains(new OntologyConcept(
+				"Occupation-AnimalActivity")));
+		assertTrue(results.contains(new OntologyConcept(
+				"PersonTypeByOccupation")));
 
 		// No result
 		results = mapper.mapSourceToTarget("Effervex", wmi_, cyc_);
@@ -241,8 +255,7 @@ public class TextToCycMappingTest {
 				"[[Geographic Names Information System|GNIS]] feature ID",
 				wmi_, cyc_);
 		results = mapper.mapSourceToTarget(
-				"[[Eastern Standard Time Zone|EST]]",
-				wmi_, cyc_);
+				"[[Eastern Standard Time Zone|EST]]", wmi_, cyc_);
 	}
 
 	@Test
@@ -287,8 +300,8 @@ public class TextToCycMappingTest {
 		TextToCyc_DateParse mapper = new TextToCyc_DateParse(mappingRoot_);
 		OntologyConcept.parsingArgs_ = true;
 		String value = "{{birthdate and age|1974|11|16}}";
-		WeightedSet<OntologyConcept> results = mapper.mapSourceToTarget(value, wmi_,
-				cyc_);
+		WeightedSet<OntologyConcept> results = mapper.mapSourceToTarget(value,
+				wmi_, cyc_);
 		Collection<OntologyConcept> first = results.getMostLikely();
 		assertTrue(first
 				.contains(OntologyConcept
@@ -334,8 +347,8 @@ public class TextToCycMappingTest {
 				mappingRoot_);
 		OntologyConcept.parsingArgs_ = true;
 		String value = "1987-2012";
-		WeightedSet<OntologyConcept> results = mapper.mapSourceToTarget(value, wmi_,
-				cyc_);
+		WeightedSet<OntologyConcept> results = mapper.mapSourceToTarget(value,
+				wmi_, cyc_);
 		Collection<OntologyConcept> first = results.getMostLikely();
 		assertTrue(first
 				.contains(OntologyConcept
@@ -372,8 +385,8 @@ public class TextToCycMappingTest {
 		TextToCyc_AnchorMap mapper = new TextToCyc_AnchorMap(mappingRoot_);
 
 		String value = "[[Actor]]";
-		WeightedSet<OntologyConcept> results = mapper.mapSourceToTarget(value, wmi_,
-				cyc_);
+		WeightedSet<OntologyConcept> results = mapper.mapSourceToTarget(value,
+				wmi_, cyc_);
 		Collection<OntologyConcept> first = results.getMostLikely();
 		assertTrue(first.contains(OntologyConcept.parseArgument("Actor")));
 		assertEquals(first.size(), 1);
@@ -393,8 +406,8 @@ public class TextToCycMappingTest {
 	public void testTextToCyc_NumericParse() throws Exception {
 		TextToCyc_NumericParse mapper = new TextToCyc_NumericParse(mappingRoot_);
 		String value = "Actress";
-		WeightedSet<OntologyConcept> results = mapper.mapSourceToTarget(value, wmi_,
-				cyc_);
+		WeightedSet<OntologyConcept> results = mapper.mapSourceToTarget(value,
+				wmi_, cyc_);
 		assertEquals(results.size(), 0);
 
 		value = "53";
@@ -404,7 +417,8 @@ public class TextToCycMappingTest {
 
 		value = "6.457E-42";
 		results = mapper.mapSourceToTarget(value, wmi_, cyc_);
-		assertTrue(results.contains(OntologyConcept.parseArgument("'6.457E-42")));
+		assertTrue(results
+				.contains(OntologyConcept.parseArgument("'6.457E-42")));
 		assertEquals(results.size(), 1);
 	}
 
@@ -412,9 +426,10 @@ public class TextToCycMappingTest {
 	public void testTextToCyc_BasicString() throws Exception {
 		TextToCyc_BasicString mapper = new TextToCyc_BasicString(mappingRoot_);
 		String value = "Actress";
-		WeightedSet<OntologyConcept> results = mapper.mapSourceToTarget(value, wmi_,
-				cyc_);
-		assertTrue(results.contains(OntologyConcept.parseArgument("\"Actress\"")));
+		WeightedSet<OntologyConcept> results = mapper.mapSourceToTarget(value,
+				wmi_, cyc_);
+		assertTrue(results.contains(OntologyConcept
+				.parseArgument("\"Actress\"")));
 		assertEquals(results.size(), 1);
 
 		value = "[[Actor]]";
@@ -435,7 +450,8 @@ public class TextToCycMappingTest {
 
 		value = "[[Recursive (query)|[[Anchor]]]]";
 		results = mapper.mapSourceToTarget(value, wmi_, cyc_);
-		assertTrue(results.contains(OntologyConcept.parseArgument("\"Anchor\"")));
+		assertTrue(results
+				.contains(OntologyConcept.parseArgument("\"Anchor\"")));
 		assertEquals(results.size(), 1);
 
 		value = "[[Recursive (query)|[[Anchor]]";
@@ -446,7 +462,8 @@ public class TextToCycMappingTest {
 
 		value = "[[Recursive (query)|Anchor]]]]";
 		results = mapper.mapSourceToTarget(value, wmi_, cyc_);
-		assertTrue(results.contains(OntologyConcept.parseArgument("\"Anchor]]\"")));
+		assertTrue(results.contains(OntologyConcept
+				.parseArgument("\"Anchor]]\"")));
 		assertEquals(results.size(), 1);
 
 		value = "{{Year|1|2|3}}";
@@ -455,7 +472,36 @@ public class TextToCycMappingTest {
 
 		value = "Some text {{Year|1|2|3}}";
 		results = mapper.mapSourceToTarget(value, wmi_, cyc_);
-		assertTrue(results.contains(OntologyConcept.parseArgument("\"Some text\"")));
+		assertTrue(results.contains(OntologyConcept
+				.parseArgument("\"Some text\"")));
+		assertEquals(results.size(), 1);
+	}
+
+	@Test
+	public void testTextToCyc_FunctionParser() throws Exception {
+		ConceptMiningTask.addMapping(wmi_.getArticleByTitle("Horse"),
+				new OntologyConcept("Horse"), cyc_);
+		ConceptMiningTask.addMapping(wmi_.getArticleByTitle("Lamivudine"),
+				new OntologyConcept("Lamivudine"), cyc_);
+
+		TextToCyc_FunctionParser mapper = new TextToCyc_FunctionParser(
+				mappingRoot_);
+		// Technically a function - but no mappable target
+		WeightedSet<OntologyConcept> results = mapper.mapSourceToTarget(
+				"Small horse", wmi_, cyc_);
+		assertEquals(results.size(), 0);
+
+		results = mapper.mapSourceToTarget("Small [[horse]]", wmi_, cyc_);
+		assertTrue(results.contains(OntologyConcept
+				.parseArgument("(SmallFn Horse)")));
+		assertEquals(results.size(), 1);
+
+		// Function with multi-word alias
+		// Also, conflicting functions (SideEffectOf/SideEffectOfDrugSubstance)
+		results = mapper.mapSourceToTarget("Side effect of [[lamivudine]]",
+				wmi_, cyc_);
+		assertTrue(results.contains(OntologyConcept
+				.parseArgument("(SideEffectsOfUsingDrugTypeFn Lamivudine)")));
 		assertEquals(results.size(), 1);
 	}
 }

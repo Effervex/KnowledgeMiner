@@ -15,6 +15,7 @@ import knowledgeMiner.mapping.MappingHeuristic;
 
 import org.slf4j.LoggerFactory;
 
+import util.collection.HierarchicalWeightedSet;
 import util.collection.WeightedSet;
 import cyc.OntologyConcept;
 
@@ -52,14 +53,15 @@ public class TextToCyc_TimeContextParse extends
 		Matcher m = CONTEXT_PATTERN.matcher(value);
 		if (m.matches()) {
 			// Match item
-			WeightedSet<OntologyConcept> arguments = mapper_.mapTextToCyc(
-					m.group(1), false, false, false, false, wmi, ontology);
+			HierarchicalWeightedSet<OntologyConcept> arguments = mapper_
+					.mapTextToCyc(m.group(1), false, false, false, false, wmi,
+							ontology);
 			if (arguments.isEmpty())
 				return new WeightedSet<>();
 
 			// Match context
 			WeightedSet<OntologyConcept> context = mapper_.mapViaHeuristic(
-						m.group(2), TextToCyc_DateParse.class, wmi, ontology);
+					m.group(2), TextToCyc_DateParse.class, wmi, ontology);
 			if (context.isEmpty())
 				return new WeightedSet<>();
 
@@ -81,8 +83,7 @@ public class TextToCyc_TimeContextParse extends
 	private WeightedSet<OntologyConcept> resolveTimeContext(
 			WeightedSet<OntologyConcept> arguments,
 			WeightedSet<OntologyConcept> contexts, OntologySocket ontology) {
-		WeightedSet<OntologyConcept> results = new WeightedSet<>(arguments.size()
-				* contexts.size());
+		HierarchicalWeightedSet<OntologyConcept> results = new HierarchicalWeightedSet<>();
 
 		// Only accept TEMPORAL assertions
 		for (OntologyConcept context : contexts) {
@@ -100,6 +101,17 @@ public class TextToCyc_TimeContextParse extends
 				OntologyConcept cloneArg = arg.clone();
 				cloneArg.setTemporalContext(context);
 				results.add(cloneArg, contextWeight * argWeight);
+			}
+
+			// Processing subsets
+			if (arguments instanceof HierarchicalWeightedSet) {
+				for (WeightedSet<OntologyConcept> subset : ((HierarchicalWeightedSet<OntologyConcept>) arguments)
+						.getSubSets()) {
+					WeightedSet<OntologyConcept> subResult = resolveTimeContext(
+							subset, contexts, ontology);
+					if (!subResult.isEmpty())
+						results.addLower(subResult);
+				}
 			}
 		}
 		return results;

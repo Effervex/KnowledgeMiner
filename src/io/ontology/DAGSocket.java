@@ -217,6 +217,8 @@ public class DAGSocket extends OntologySocket {
 			String output = command("addnode", args, false);
 			IOManager.getInstance().writeCycOperation("addnode " + args);
 			int pipeIndex = output.indexOf('|');
+			if (pipeIndex == -1)
+				return -1;
 			clearCachedArticles();
 			return Integer.parseInt(output.substring(0, pipeIndex));
 		} catch (Exception e) {
@@ -256,6 +258,14 @@ public class DAGSocket extends OntologySocket {
 	@Override
 	public Collection<OntologyConcept> findConceptByName(String name,
 			boolean caseSensitive, boolean exactString, boolean allowAliases) {
+		return findFilteredConceptByName(name, caseSensitive, exactString,
+				allowAliases);
+	}
+
+	@Override
+	public Collection<OntologyConcept> findFilteredConceptByName(String name,
+			boolean caseSensitive, boolean exactString, boolean allowAliases,
+			Object... queryArgs) {
 		Collection<OntologyConcept> concepts = new HashSet<>();
 		if (name.isEmpty())
 			return concepts;
@@ -272,7 +282,15 @@ public class DAGSocket extends OntologySocket {
 			else
 				buffer.append(" F");
 
-			String result = command("findnodes", buffer.toString(), true);
+			// Adding the query (if it exists)
+			String command = "findnodes";
+			if (queryArgs != null && queryArgs.length > 0) {
+				buffer.append(" ("
+						+ noNewLine(StringUtils.join(queryArgs, ' ')) + ")");
+				command = "findnodes*";
+			}
+
+			String result = command(command, buffer.toString(), true);
 			String[] split = result.split("\\|");
 			for (int i = 1; i < split.length; i++) {
 				if (!split[i].startsWith("(")
@@ -292,8 +310,9 @@ public class DAGSocket extends OntologySocket {
 			logger_.error("findConceptByName: {}, {}", name,
 					Arrays.toString(e.getStackTrace()));
 			if (restartConnection()) {
-				Collection<OntologyConcept> result = findConceptByName(name,
-						caseSensitive, exactString, allowAliases);
+				Collection<OntologyConcept> result = findFilteredConceptByName(
+						name, caseSensitive, exactString, allowAliases,
+						queryArgs);
 				canRestart_ = true;
 				return result;
 			}
@@ -642,8 +661,8 @@ public class DAGSocket extends OntologySocket {
 	}
 
 	@Override
-	public boolean validArg(Object predicate, Object concept, int argNum) {
-		if (!super.validArg(predicate, concept, argNum))
+	public boolean isValidArg(Object predicate, Object concept, int argNum) {
+		if (!super.isValidArg(predicate, concept, argNum))
 			return false;
 
 		try {
@@ -654,7 +673,7 @@ public class DAGSocket extends OntologySocket {
 			logger_.error("validArg: {}:{}:{}, {}", predicate, concept, argNum,
 					Arrays.toString(e.getStackTrace()));
 			if (restartConnection()) {
-				boolean result = validArg(predicate, concept, argNum);
+				boolean result = isValidArg(predicate, concept, argNum);
 				canRestart_ = true;
 				return result;
 			}

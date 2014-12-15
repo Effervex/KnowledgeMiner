@@ -85,7 +85,7 @@ public class CycMiner {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		// Register the heuristics with KnowledgeMiner for lookup
 		if (knowledgeMiner != null)
 			for (MiningHeuristic heuristic : miningHeuristics_)
@@ -127,14 +127,16 @@ public class CycMiner {
 			throws Exception {
 		// Apply every mining heuristic to extracting information from the
 		// article.
+		MinedInformation info = new MinedInformation(conceptModule.getArticle());
 		for (MiningHeuristic mh : miningHeuristics_) {
-			logger_.info("Mining {} with {}", conceptModule, mh.toString());
+			logger_.info("Mining {} with {}", info, mh.toString());
 			MinedInformation mined = mh.mineArticle(conceptModule,
 					informationRequested, wmi, ontology);
 			ConceptMiningTask.interactiveInterface_.interactiveMining(mined,
 					mh, wmi, ontology);
-			conceptModule.mergeInformation(mined);
+			info.mergeInformation(mined);
 		}
+		conceptModule.mergeInformation(info);
 		conceptModule.addMinedInfoType(informationRequested);
 	}
 

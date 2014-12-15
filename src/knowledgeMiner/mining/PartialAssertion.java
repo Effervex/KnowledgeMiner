@@ -174,7 +174,7 @@ public class PartialAssertion extends MinedAssertion {
 			// Otherwise, recurse into every possibility, stopping if invalid.
 			boolean copyArray = false;
 			for (OntologyConcept concept : expandedArgs[i]) {
-				if (ontology.validArg(relation.getIdentifier(), concept, i + 1)) {
+				if (ontology.isValidArg(relation.getIdentifier(), concept, i + 1)) {
 					if (copyArray)
 						argArray = Arrays.copyOf(argArray, argArray.length);
 					argArray[i] = concept;

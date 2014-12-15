@@ -25,7 +25,7 @@ public abstract class OntologySocket extends KMSocket {
 	public OntologySocket(KMAccess<? extends KMSocket> access) {
 		super(access);
 	}
-	
+
 	public OntologySocket(KMAccess<? extends KMSocket> access, int port) {
 		super(access, port);
 	}
@@ -68,6 +68,10 @@ public abstract class OntologySocket extends KMSocket {
 	public abstract Collection<OntologyConcept> findConceptByName(String name,
 			boolean caseSensitive, boolean exactString, boolean allowAliases);
 
+	public abstract Collection<OntologyConcept> findFilteredConceptByName(
+			String name, boolean caseSensitive, boolean exactString,
+			boolean allowAliases, Object... queryArgs);
+
 	public abstract String[] findEdgeByID(int id);
 
 	public abstract int findEdgeIDByArgs(Object... edgeArgs);
@@ -84,7 +88,7 @@ public abstract class OntologySocket extends KMSocket {
 	}
 
 	public abstract int getNextEdge(int id);
-	
+
 	public abstract int getPrevEdge(int id);
 
 	public abstract int getNextNode(int id);
@@ -133,8 +137,8 @@ public abstract class OntologySocket extends KMSocket {
 				return false;
 		} else {
 			// Need more than Individual as a parent
-			Collection<OntologyConcept> parentCols = quickQuery(CommonQuery.MINISA,
-					concept.getIdentifier());
+			Collection<OntologyConcept> parentCols = quickQuery(
+					CommonQuery.MINISA, concept.getIdentifier());
 			if (parentCols.size() > 1)
 				return false;
 			else if (!parentCols.isEmpty()
@@ -176,7 +180,7 @@ public abstract class OntologySocket extends KMSocket {
 
 	public abstract boolean unassert(String microtheory, int assertionID);
 
-	public boolean validArg(Object predicate, Object concept, int argNum) {
+	public boolean isValidArg(Object predicate, Object concept, int argNum) {
 		if (predicate.equals(CycConstants.ISA_GENLS.getConcept()
 				.getIdentifier())) {
 			if (concept.toString().startsWith("\"")
@@ -186,7 +190,7 @@ public abstract class OntologySocket extends KMSocket {
 				return true;
 			return false;
 		}
-		if (!isa(predicate, CommonConcepts.BINARY_PREDICATE.getID()))
+		if (!isa(predicate, "Relation"))
 			return false;
 
 		return true;

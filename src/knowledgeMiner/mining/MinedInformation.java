@@ -325,7 +325,7 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 	public boolean mergeInformation(MinedInformation otherInfo,
 			boolean recreateInternals) throws Exception {
 		// No info, do nothing.
-		if (otherInfo == null || !otherInfo.isModified_)
+		if (otherInfo == null || !otherInfo.isModified_ || otherInfo == this)
 			return true;
 		isModified_ = true;
 
