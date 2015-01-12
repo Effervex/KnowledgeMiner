@@ -39,7 +39,7 @@ public class TextToCyc_WikifySearch extends
 	protected WeightedSet<OntologyConcept> mapSourceInternal(String term,
 			WMISocket wmi, OntologySocket cyc) throws Exception {
 		LoggerFactory.getLogger(getClass()).trace(term);
-		String annotated = wmi.annotate(term);
+		String annotated = wmi.annotate(term, 0, false);
 		Matcher m = WikiParser.ANCHOR_PARSER.matcher(annotated);
 		// Return if the term could not be entirely wikified (if at all)
 		if (annotated == null || annotated.equals(term) || !m.matches())

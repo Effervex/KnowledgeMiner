@@ -401,50 +401,24 @@ public class WMISocket extends KMSocket {
 	 * 
 	 * @param text
 	 *            The text to annotate.
+	 * @param minWeight
+	 *            The minimum weight to create annotations for.
+	 * @param withWeight
+	 *            If the weight should be included in the annotation.
 	 * @return The annotated text.
 	 * @throws IOException
 	 *             Should something go awry...
 	 */
-	public String annotate(String text) throws IOException {
-		SortedSet<WikiAnnotation> topics = getTopics(text);
-
-		// Resolve conflicts
-		SortedSet<WikiAnnotation> annotations = new TreeSet<>();
-		for (WikiAnnotation label : topics) {
-			String labelText = label.getText();
-			Pattern p = Pattern.compile("(?:\\W|^)(" + Pattern.quote(labelText)
-					+ ")(?:\\W|$)");
-			Matcher m = p.matcher(text);
-			while (m.find()) {
-				int currIndex = m.start(1);
-				WikiAnnotation a = new WikiAnnotation(label, currIndex, this);
-
-				// Check each mapped topic, removing conflicting links.
-				Collection<WikiAnnotation> removables = new HashSet<>();
-				boolean keepTopic = true;
-				for (WikiAnnotation a2 : annotations) {
-					int overlapResult = a.overlaps(a2);
-					if (overlapResult > 0)
-						removables.add(a2);
-					else if (overlapResult < 0) {
-						keepTopic = false;
-						break;
-					}
-				}
-
-				// Record the topic
-				if (keepTopic) {
-					annotations.removeAll(removables);
-					annotations.add(a);
-				}
-			}
-		}
-
-		// Apply annotations
-		for (WikiAnnotation a : annotations)
-			text = a.applyLabel(text);
-
-		return text;
+	public String annotate(String text, double minWeight, boolean withWeight)
+			throws IOException {
+		StringBuilder sb = new StringBuilder();
+		sb.append(minWeight + " ");
+		if (withWeight)
+			sb.append("T ");
+		else
+			sb.append("F ");
+		sb.append(TOPIC_DELIMITER + "\n" + text + "\n" + TOPIC_DELIMITER);
+		return command("annotate", sb.toString(), new AnnotateParser());
 	}
 
 	/**
@@ -1143,6 +1117,18 @@ public class WMISocket extends KMSocket {
 		for (Collection<T> collection : collectionList)
 			union.addAll(collection);
 		return union;
+	}
+
+	/**
+	 * Parses a double value from a String.
+	 * 
+	 * @author Sam Sarjant
+	 */
+	private final class AnnotateParser extends WMIMethod<String> {
+		@Override
+		public String parseResult(String result, String source) {
+			return result;
+		}
 	}
 
 	/**

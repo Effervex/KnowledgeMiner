@@ -269,6 +269,7 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 				paragraph = WikiParser.cleanupUselessMarkup(paragraph);
 				paragraph = WikiParser
 						.cleanupExternalLinksAndStyling(paragraph);
+				paragraph = paragraph.replaceAll("'{2,}", "'");
 				paragraph = replaceAnchorsWithOntolinks(paragraph, wmi, cyc);
 
 				paragraph = NLPToSyntaxModule.convertToAscii(paragraph);
@@ -313,7 +314,6 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 						builder.append("[[" + concept.getConceptName() + "|");
 						knownConcept = true;
 					}
-					// TODO Could add a synonym here for the linked article
 				}
 
 				if (m.group(2) != null)
@@ -363,7 +363,7 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 
 		// Wikify text?
 		if (wikifyText)
-			collectionFragment = wmi.annotate(collectionFragment);
+			collectionFragment = wmi.annotate(collectionFragment, 0, false);
 
 		// Check if the first word is valid
 		for (int i = 0; i <= REGEXP_LEEWAY; i++) {

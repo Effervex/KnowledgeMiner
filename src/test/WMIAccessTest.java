@@ -324,7 +324,8 @@ public class WMIAccessTest {
 		// Fruit weighted
 		context.clear();
 		context.add(wmi_.getArticleByTitle("Fruit"));
-		contextWeighted = wmi_.getWeightedArticles("Kiwi", KnowledgeMiner.CUTOFF_THRESHOLD, context);
+		contextWeighted = wmi_.getWeightedArticles("Kiwi",
+				KnowledgeMiner.CUTOFF_THRESHOLD, context);
 		assertEquals(contextWeighted.size(), 14);
 		contextOrdered = contextWeighted.getOrdered();
 		assertTrue(!contextOrdered.equals(ordered));
@@ -334,7 +335,8 @@ public class WMIAccessTest {
 		// Rugby
 		context.clear();
 		context.add(wmi_.getArticleByTitle("Rugby football"));
-		contextWeighted = wmi_.getWeightedArticles("Kiwi", KnowledgeMiner.CUTOFF_THRESHOLD, context);
+		contextWeighted = wmi_.getWeightedArticles("Kiwi",
+				KnowledgeMiner.CUTOFF_THRESHOLD, context);
 		assertEquals(contextWeighted.size(), 14);
 		contextOrdered = contextWeighted.getOrdered();
 		assertTrue(!contextOrdered.equals(ordered));
@@ -423,33 +425,42 @@ public class WMIAccessTest {
 	@Test
 	public void testAnnotate() throws IOException {
 		// Single terms
-		assertEquals(wmi_.annotate("Actor"), "[[Actor]]");
-		assertEquals(wmi_.annotate("cat"), "[[cat]]");
-		assertEquals(wmi_.annotate("actress"), "[[actress]]");
-		assertEquals(wmi_.annotate("American"), "[[United States|American]]");
-		assertEquals(wmi_.annotate("SAusaGe"), "[[Sausage|SAusaGe]]");
-		assertEquals(wmi_.annotate("GFDhkjs"), "GFDhkjs");
+		assertEquals(wmi_.annotate("Actor", 0, false), "[[Actor]]");
+		assertEquals(wmi_.annotate("cat", 0, false), "[[cat]]");
+		assertEquals(wmi_.annotate("actress", 0, false), "[[Actor|actress]]");
+		assertEquals(wmi_.annotate("American", 0, false),
+				"[[United States|American]]");
+		assertEquals(wmi_.annotate("SAusaGe", 0, false), "[[SAusaGe]]");
+		assertEquals(wmi_.annotate("GFDhkjs", 0, false), "GFDhkjs");
+		assertEquals(wmi_.annotate("American actor", 0, false),
+				"[[United States|American]] [[actor]]");
 
 		// Multilines
 		String text = "American film and television actor and film producer.";
 		assertEquals(
-				wmi_.annotate(text),
-				"[[United States|American]] [[film]] and [[television actor]] and [[film producer]].");
+				wmi_.annotate(text, 0, false),
+				"[[United States|American]] [[film]] and [[Actor|television actor]] and [[film producer]].");
 		text = "American screenwriter, director, actor, comedian, author, playwright, and musician whose career spans over half a century.";
 		assertEquals(
-				wmi_.annotate(text),
+				wmi_.annotate(text, 0, false),
 				"[[United States|American]] [[screenwriter]], [[Film director|director]], [[actor]], [[comedian]], [[author]], [[playwright]], and [[musician]] whose career spans over half a century.");
 
 		// Already annotated
 		text = "[[United States|American]] [[screenwriter]], [[Film director|director]], [[actor]], [[comedian]], [[author]], [[playwright]], and [[musician]] whose career spans over half a century.";
 		assertEquals(
-				wmi_.annotate(text),
+				wmi_.annotate(text, 0, false),
 				"[[United States|American]] [[screenwriter]], [[Film director|director]], [[actor]], [[comedian]], [[author]], [[playwright]], and [[musician]] whose career spans over half a century.");
 
 		// Partially annotated
 		text = "[[United States|American]] screenwriter, director, [[actor]], [[comedian]], [[author]], playwright, and [[musician]] whose career spans over half a century.";
 		assertEquals(
-				wmi_.annotate(text),
+				wmi_.annotate(text, 0, false),
 				"[[United States|American]] [[screenwriter]], [[Film director|director]], [[actor]], [[comedian]], [[author]], [[playwright]], and [[musician]] whose career spans over half a century.");
+
+		// Already annotated (problem string)
+		text = "An electronic keyboard (also called digital keyboard, portable keyboard and home keyboard) is an electronic or digital [[keyboard instrument]].";
+		assertEquals(
+				wmi_.annotate(text, 0, false),
+				"An [[electronic keyboard]] (also called [[Electronic keyboard|digital keyboard]], portable [[Keyboard instrument|keyboard]] and home [[Keyboard instrument|keyboard]]) is an [[Electronic music|electronic]] or [[digital]] [[keyboard instrument]].");
 	}
 }

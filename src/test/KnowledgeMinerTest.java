@@ -3,7 +3,9 @@
  ******************************************************************************/
 package test;
 
+import static org.junit.Assert.*;
 import io.ResourceAccess;
+import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
 import java.io.IOException;
@@ -25,6 +27,7 @@ import cyc.OntologyConcept;
 public class KnowledgeMinerTest {
 	private static KnowledgeMiner km_;
 	private static WMISocket wmi_;
+	private static OntologySocket ontology_;
 
 	/**
 	 * 
@@ -34,6 +37,7 @@ public class KnowledgeMinerTest {
 	public static void setUp() throws Exception {
 		km_ = KnowledgeMiner.getInstance();
 		wmi_ = ResourceAccess.requestWMISocket();
+		ontology_ = ResourceAccess.requestOntologySocket();
 		FirstSentenceMiner.wikifyText_ = true;
 	}
 
@@ -44,11 +48,11 @@ public class KnowledgeMinerTest {
 		article = wmi_.getArticleByTitle("Alabama");
 		cm = new ConceptModule(article);
 		km_.processConcept(new ConceptMiningTask(cm));
-		
+
 		article = wmi_.getArticleByTitle("Abraham Lincoln");
 		cm = new ConceptModule(article);
 		km_.processConcept(new ConceptMiningTask(cm));
-		
+
 		article = wmi_.getArticleByTitle("Uma Thurman");
 		cm = new ConceptModule(article);
 		km_.processConcept(new ConceptMiningTask(cm));
@@ -116,5 +120,22 @@ public class KnowledgeMinerTest {
 
 		cm = new ConceptModule(new OntologyConcept("PhoenicianLanguage"));
 		km_.processConcept(new ConceptMiningTask(cm));
+	}
+
+	@Test
+	public void testGetKnownMapping() throws IOException {
+		// Some obscure, unmappable article
+		int article = wmi_
+				.getArticleByTitle("List of United States Numbered Highways");
+		assertTrue(article != -1);
+		OntologyConcept mapped = KnowledgeMiner.getKnownMapping(article,
+				ontology_);
+		assertNull(mapped);
+
+		// Less obscure
+		article = wmi_.getArticleByTitle("United States Census Bureau");
+		assertTrue(article != -1);
+		mapped = KnowledgeMiner.getKnownMapping(article, ontology_);
+		assertNull(mapped);
 	}
 }

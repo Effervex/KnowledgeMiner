@@ -208,10 +208,8 @@ public class DAGSocket extends OntologySocket {
 			String args = null;
 			// Special case for creating the KnowledgeMiner concept (which
 			// throws an Exception).
-			if (!name.equals("KnowledgeMiner")
-					&& CycConstants.KNOWLEDGE_MINER.getID() != -1)
-				args = noNewLine(name) + " ("
-						+ CycConstants.KNOWLEDGE_MINER.getID() + ")";
+			if (!name.equals("KnowledgeMiner"))
+				args = noNewLine(name) + " (KnowledgeMiner)";
 			else
 				args = noNewLine(name);
 			String output = command("addnode", args, false);

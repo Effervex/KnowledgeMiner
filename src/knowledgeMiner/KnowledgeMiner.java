@@ -452,16 +452,16 @@ public class KnowledgeMiner {
 		int edgeID = ontology.findEdgeIDByArgs(
 				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getID(), null,
 				CycConstants.WIKI_VERSION.getID(), "\"" + article + "\"");
-		if (edgeID < 0
-				&& ConceptMiningTask.getArticleState(article) == ConceptMiningTask.UNKNOWN) {
-			ConceptMiningTask.setArticleState(article,
-					ConceptMiningTask.UNMAPPABLE_PRIOR, null);
+		if (edgeID < 0) {
+			if (state == ConceptMiningTask.UNKNOWN)
+				ConceptMiningTask.setArticleState(article,
+						ConceptMiningTask.UNMAPPABLE_PRIOR, null);
 			return null;
 		}
 
 		// Parse the concept out
-		OntologyConcept concept = OntologyConcept.parseArgument(ontology
-				.findEdgeByID(edgeID)[1]);
+		String[] edgeArgs = ontology.findEdgeByID(edgeID);
+		OntologyConcept concept = OntologyConcept.parseArgument(edgeArgs[1]);
 		return concept;
 	}
 
@@ -519,7 +519,7 @@ public class KnowledgeMiner {
 			km.preprocess();
 
 		if (runID_ != -1)
-			km.readRunMappings(runID_);
+			readInOntologyMappings(runID_);
 
 		// Link an input file to KM
 		String resourceName = RESOURCE_WIKIPEDIA;
@@ -536,7 +536,7 @@ public class KnowledgeMiner {
 	 * there exists a mapping, but it is of a different run ID, it will be
 	 * remapped. TODO Remove the old run's information.
 	 */
-	private void readRunMappings(int runID) {
+	public static void readInOntologyMappings(int runID) {
 		System.out.println("Beginning preloading.");
 		DAGSocket ontology = (DAGSocket) ResourceAccess.requestOntologySocket();
 		String delimiter = "###";

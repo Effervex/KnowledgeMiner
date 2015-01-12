@@ -12,41 +12,40 @@ import java.util.LinkedList;
 import knowledgeMiner.KnowledgeMiner;
 
 public enum CycConstants {
-	KNOWLEDGE_MINER("KnowledgeMiner"),
 	BASE_MICROTHEORY("KnowledgeMinerMt"),
 	BASEKB("BaseKB"),
+	BIRTH_DATE("birthDate"),
+	COLLECTION("Collection"),
+	COMMENT("comment"),
+	CONCEPT_IMAGE("conceptImage"),
 	DATA_MICROTHEORY("KnowledgeMinerDataMt"),
+	DEATH_DATE("dateOfDeath"),
 	DEFAULTED_INDIVIDUAL("DefaultedIndividual"),
 	EVERY_WIKI_MICROTHEORY("KnowledgeMinerCollectorMt"),
 	EVERYTHING_PSC("EverythingPSC"),
+	FUNCTION("Function-Denotational"),
+	GENLS("genls"),
 	IMPLEMENTATION_MICROTHEORY("KnowledgeMinerImplementationMt"),
+	INDIVIDUAL("Individual"),
 	INFOBOX_PAIRING("PairedViaInfoboxType"),
 	INFOBOX_VALUE_SYNONYM("wikipediaInfoboxValue"),
+	ISA("isa"),
 	ISA_GENLS("isaGenls"),
+	KNOWLEDGE_MINER("KnowledgeMiner"),
 	LEXICAL_MICROTHEORY("KnowledgeMinerLexicalMt"),
-	UNCLASSIFIED_CONCEPT("KnowledgeMinerUnclassified"),
 	MAPPING_CONFIDENCE("mappingConfidence"),
+	PREDICATE("Predicate"),
+	QUOTEDISA("quotedIsa"),
 	QUOTEDISA_PARENT("SubLExpressionType"),
 	SYNONYM_RELATION("wikipediaArticleSynonym"),
 	SYNONYM_RELATION_CANONICAL("wikipediaArticleName-Canonical"),
 	SYNONYMOUS_EXTERNAL_CONCEPT("synonymousExternalConcept"),
-	// SYNONYMOUS_EXTERNAL_PREDICATE("synonymousExternalPredWRTTypes"),
-	UNIVERSAL_VOCAB_MT("UniversalVocabularyMt"),
-	WIKIPEDIA_URL("wikipediaArticleURL-Expansion"),
 	UGLY_PRED("uglyString"),
-	GENLS("genls"),
-	ISA("isa"),
-	COMMENT("comment"),
-	WIKIPEDIA_COMMENT("wikipediaComment"),
-	BIRTH_DATE("birthDate"),
-	DEATH_DATE("dateOfDeath"),
+	UNCLASSIFIED_CONCEPT("KnowledgeMinerUnclassified"),
+	UNIVERSAL_VOCAB_MT("UniversalVocabularyMt"),
 	URLFN("URLFn"),
-	CONCEPT_IMAGE("conceptImage"),
-	QUOTEDISA("quotedIsa"),
-	INDIVIDUAL("Individual"),
-	COLLECTION("Collection"),
-	PREDICATE("Predicate"),
-	FUNCTION("Function-Denotational");
+	WIKIPEDIA_COMMENT("wikipediaComment"),
+	WIKIPEDIA_URL("wikipediaArticleURL-Expansion");
 
 	public static OntologyConcept WIKI_VERSION;
 	private OntologyConcept concept_;
@@ -59,6 +58,40 @@ public enum CycConstants {
 
 	public OntologyConcept getConcept() {
 		return concept_;
+	}
+
+	public String getConceptName() {
+		return getConcept().getConceptName();
+	}
+
+	public int getID() {
+		if (concept_ == null)
+			return -1;
+		return concept_.getID();
+	}
+
+	@Override
+	public String toString() {
+		return getID() + "";
+	}
+
+	private static void lexicalPredicate(OntologyConcept predicate,
+			String comment, Object genls, Object arg1Isa, OntologySocket cyc)
+			throws Exception {
+		cyc.createAndAssert(predicate.getConceptName(),
+				CommonConcepts.PREDICATE.getID(), comment);
+		cyc.assertToOntology(BASEKB.getConceptName(),
+				CommonConcepts.GENLPREDS.getID(), predicate.getID(), genls);
+		cyc.assertToOntology(BASEKB.getConceptName(),
+				CommonConcepts.ISA.getID(), predicate.getID(),
+				CommonConcepts.BINARY_PREDICATE.getID());
+		cyc.assertToOntology(BASEKB.getConceptName(),
+				CommonConcepts.ARITY.getID(), predicate.getID(), "'2");
+		cyc.assertToOntology(BASEKB.getConceptName(),
+				CommonConcepts.ARG1ISA.getID(), predicate.getID(), arg1Isa);
+		cyc.assertToOntology(BASEKB.getConceptName(),
+				CommonConcepts.ARG2ISA.getID(), predicate.getID(),
+				CommonConcepts.CHARACTER_STRING.getID());
 	}
 
 	/**
@@ -222,6 +255,10 @@ public enum CycConstants {
 				IMPLEMENTATION_MICROTHEORY.getConceptName(), ISA.getID(),
 				CONCEPT_IMAGE.getID(),
 				CommonConcepts.STRICTLY_FUNCTIONAL_SLOT.getID());
+		ontologySocket.assertToOntology(
+				IMPLEMENTATION_MICROTHEORY.getConceptName(), ISA.getID(),
+				WIKIPEDIA_COMMENT.getID(),
+				CommonConcepts.STRICTLY_FUNCTIONAL_SLOT.getID());
 	}
 
 	/**
@@ -282,25 +319,6 @@ public enum CycConstants {
 						"ProjectMicrotheory", genlsMt);
 	}
 
-	private static void lexicalPredicate(OntologyConcept predicate,
-			String comment, Object genls, Object arg1Isa, OntologySocket cyc)
-			throws Exception {
-		cyc.createAndAssert(predicate.getConceptName(),
-				CommonConcepts.PREDICATE.getID(), comment);
-		cyc.assertToOntology(BASEKB.getConceptName(),
-				CommonConcepts.GENLPREDS.getID(), predicate.getID(), genls);
-		cyc.assertToOntology(BASEKB.getConceptName(),
-				CommonConcepts.ISA.getID(), predicate.getID(),
-				CommonConcepts.BINARY_PREDICATE.getID());
-		cyc.assertToOntology(BASEKB.getConceptName(),
-				CommonConcepts.ARITY.getID(), predicate.getID(), "'2");
-		cyc.assertToOntology(BASEKB.getConceptName(),
-				CommonConcepts.ARG1ISA.getID(), predicate.getID(), arg1Isa);
-		cyc.assertToOntology(BASEKB.getConceptName(),
-				CommonConcepts.ARG2ISA.getID(), predicate.getID(),
-				CommonConcepts.CHARACTER_STRING.getID());
-	}
-
 	/**
 	 * Initialises the microtheories and assertions that will be used when
 	 * asserting.
@@ -317,20 +335,5 @@ public enum CycConstants {
 						+ "and asserts information from various resources."));
 		setUpMicrotheories(ontologySocket);
 		setUpAssertions(ontologySocket);
-	}
-
-	public int getID() {
-		if (concept_ == null)
-			return -1;
-		return concept_.getID();
-	}
-
-	@Override
-	public String toString() {
-		return getID() + "";
-	}
-
-	public String getConceptName() {
-		return getConcept().getConceptName();
 	}
 }

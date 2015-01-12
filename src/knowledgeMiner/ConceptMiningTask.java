@@ -60,10 +60,10 @@ public class ConceptMiningTask implements Runnable {
 
 	/** Mappings from an indexed concept (ID) to a given article. */
 	private static byte[] ontologyStates_ = new byte[BIG_ENOUGH];
-	
+
 	/** Mappings from an indexed article to a given ontology (ID). */
 	private static byte[] artStates_ = new byte[BIG_ENOUGH];
-	
+
 	static final byte MAPPED_CURRENT = 2;
 	static final byte PENDING = 1;
 	static final byte UNKNOWN = 0;
@@ -1093,6 +1093,8 @@ public class ConceptMiningTask implements Runnable {
 					} else if (args[i].equals("-r")) {
 						i++;
 						KnowledgeMiner.runID_ = Integer.parseInt(args[i]);
+						KnowledgeMiner
+								.readInOntologyMappings(KnowledgeMiner.runID_);
 					} else {
 						if (article == null)
 							article = new StringBuilder(args[i]);

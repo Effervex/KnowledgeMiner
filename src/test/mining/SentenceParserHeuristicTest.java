@@ -39,6 +39,7 @@ public class SentenceParserHeuristicTest {
 
 	@Test
 	public void testExtractAssertions() throws Exception {
+		SentenceParserHeuristic.wikifyText_ = false;
 		MappableConcept focusConcept = new TextMappedConcept("Test", false,
 				false);
 
@@ -85,7 +86,7 @@ public class SentenceParserHeuristicTest {
 		assertTrue(output.contains(buildPartial(focusConcept, "skater", null)));
 		assertEquals(output.size(), 2);
 
-		// Anchors
+		// Anchors & wikification
 		sentence = "Test is a professional [[American football|football]] "
 				+ "[[End (American football)|end]] and later a coach "
 				+ "for the [[Miami Dolphins]].";
@@ -109,8 +110,9 @@ public class SentenceParserHeuristicTest {
 				buildPartial(focusConcept, "professional", null))));
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"[[American football|football]]", null)));
-		assertTrue(output.contains(buildPartial(focusConcept, "coach", null)));
-		assertEquals(output.size(), 6);
+		// assertTrue(output.contains(buildPartial(focusConcept, "coach",
+		// null)));
+		// assertEquals(output.size(), 6);
 
 		// Three JJs + 2 NNs
 		sentence = "Test was a Swiss former competitive figure skater.";
@@ -193,6 +195,40 @@ public class SentenceParserHeuristicTest {
 				"[[Model (person)|model]]", null)));
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"[[United States|American]] [[actress]]", null)));
+		assertEquals(output.size(), 4);
+	}
+
+	@Test
+	public void testExtractAssertionsWikified() throws Exception {
+		SentenceParserHeuristic.wikifyText_ = true;
+		MappableConcept focusConcept = new TextMappedConcept("Test", false,
+				false);
+
+		// Simple test
+		String sentence = "Test was a battle.";
+		Collection<PartialAssertion> output = sut_.extractAssertions(sentence,
+				focusConcept, wmi_, ontology_, null);
+		assertNotNull(output);
+		assertTrue(output.contains(buildPartial(focusConcept, "[[battle]]",
+				null)));
+		assertEquals(output.size(), 1);
+
+		// Existing anchors
+		sentence = "An '''electronic keyboard''' (also called '''digital keyboard''', '''portable keyboard''' and '''home keyboard''') is an electronic or digital [[keyboard instrument]].";
+		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
+				ontology_, null);
+		assertNotNull(output);
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"[[keyboard instrument]]", null)));
+		assertTrue(output.contains(buildPartial(focusConcept, "instrument",
+				null)));
+		PartialAssertion pa = buildPartial(focusConcept, "[[digital]] instrument",
+				null);
+		pa.addSubAssertion(buildPartial(focusConcept, "[[digital]]",
+				null));
+		assertTrue(output.contains(pa));
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"[[digital]] [[keyboard instrument]]", null)));
 		assertEquals(output.size(), 4);
 	}
 

@@ -45,6 +45,7 @@ public class CycMinerParameterisedTest {
 	private static String artTitle_;
 	private static KnowledgeMiner km_;
 	private MultiMap<String, String> heuristicMap_;
+	private static final boolean TEST_ALL = true;
 
 	public CycMinerParameterisedTest(String articleTitle,
 			MultiMap<String, String> heuristicAssertionMap) {
@@ -60,6 +61,8 @@ public class CycMinerParameterisedTest {
 	}
 
 	private boolean shouldPerformTest(String heurName) {
+		if (TEST_ALL)
+			return true;
 		if (!heuristicMap_.containsKey(heurName)
 				|| heuristicMap_.isValueEmpty(heurName)) {
 			System.out.println("No need to test " + heurName + " for '"
