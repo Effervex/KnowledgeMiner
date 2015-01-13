@@ -55,6 +55,7 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 					basicProvenance_, info.getMappableSelfRef(),
 					new StringConcept(NLPToSyntaxModule.convertToAscii(title))));
 
+		boolean isCollection = false;
 		if (informationRequested(informationRequested, InformationType.STANDING)) {
 			// Remove commas and text after commas (Moscow, Russia ->
 			// Moscow)
@@ -73,6 +74,7 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 							getWeight(), basicProvenance_);
 				} else if (Character.isLowerCase(split[split.length - 1]
 						.charAt(0))) {
+					isCollection = true;
 					info.addStandingInformation(TermStanding.COLLECTION,
 							getWeight(), basicProvenance_);
 				}
@@ -80,7 +82,7 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 		}
 
 		// Create taxonomic data from title
-		// if (informationRequested(informationRequested,
+		// if (isCollection && informationRequested(informationRequested,
 		// InformationType.TAXONOMIC) && title.contains(" ")) {
 		// // Set up a sentence with the title as the parent
 		// String lowerCaseTitle = title;
