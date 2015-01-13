@@ -54,8 +54,6 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 			Pattern.compile("^In [^,.]+, "),
 			Pattern.compile("(?<=[^,.]+), [^,.]+,(?= (is|was|are|were))") };
 	public static final String SENTENCE_PREFIX = "TOPICS is a ";
-	/** If the text should be wikified first. */
-	public static boolean wikifyText_ = true;
 
 	public SentenceParserHeuristic(CycMapper mapper, CycMiner miner) {
 		super(false, mapper, miner);
@@ -124,8 +122,8 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 				} else {
 					// TODO Figure out a safe way to parse predicates. Probably
 					// need to look at the parse code again.
-//					predStr = reAnchorString(predStr, anchors);
-//					predicate = new TextMappedConcept(predStr, true, true);
+					// predStr = reAnchorString(predStr, anchors);
+					// predicate = new TextMappedConcept(predStr, true, true);
 				}
 
 				if (predicate == null)
@@ -314,6 +312,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 			AssertionArgument predicate, MappableConcept focusConcept,
 			Collection<Tree<String>> nounStrs, HeuristicProvenance provenance) {
 		Collection<PartialAssertion> assertions = new ArrayList<>();
+		// Recurse through every discovered noun combination
 		for (Tree<String> t : nounStrs) {
 			PartialAssertion pa = new PartialAssertion(predicate, provenance,
 					focusConcept, new TextMappedConcept(t.getValue(), false,
@@ -370,6 +369,8 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 *            The sentence to extract assertions from.
 	 * @param focusConcept
 	 *            The concept the sentence is being mined for.
+	 * @param wikifyText
+	 *            If the text should be wikified.
 	 * @param wmi
 	 *            The WMI access.
 	 * @param cyc
@@ -380,14 +381,16 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 *             Should something go awry...
 	 */
 	public Collection<PartialAssertion> extractAssertions(String sentence,
-			MappableConcept focusConcept, WMISocket wmi, OntologySocket cyc,
-			MiningHeuristic heuristic) throws Exception {
+			MappableConcept focusConcept, boolean wikifyText, WMISocket wmi,
+			OntologySocket cyc, MiningHeuristic heuristic) throws Exception {
 		logger_.trace("mineSentence: " + sentence);
 
-		if (wikifyText_)
+		if (wikifyText)
 			sentence = wmi.annotate(sentence, 0, false);
 
-		SortedMap<String, String> anchors = locateAnchors(sentence);
+		Map<String, Double> anchorWeights = new HashMap<>();
+		SortedMap<String, String> anchors = locateAnchors(sentence,
+				anchorWeights);
 		sentence = sentence.replaceAll("'{3,}.+?'{3,}", "THING");
 		sentence = sentence.replaceAll("\\?{2,}", "");
 		String cleanSentence = WikiParser.cleanAllMarkup(sentence);
@@ -411,9 +414,14 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 * 
 	 * @param sentence
 	 *            The sentence to search for anchors.
+	 * @param anchorWeights
+	 *            An optional map to record any weight information for the
+	 *            anchors. If no weights in the text, all weights are assumed to
+	 *            be 1.0.
 	 * @return A SortedMap of anchors, ordered in largest text size to smallest.
 	 */
-	public static SortedMap<String, String> locateAnchors(String sentence) {
+	public static SortedMap<String, String> locateAnchors(String sentence,
+			Map<String, Double> anchorWeights) {
 		SortedMap<String, String> anchorMap = new TreeMap<>(
 				new Comparator<String>() {
 					@Override
@@ -449,7 +457,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 					System.in));
 			input = in.readLine();
 			Collection<PartialAssertion> assertions = sph.extractAssertions(
-					input, mappable, wmi, cyc, null);
+					input, mappable, true, wmi, cyc, null);
 			System.out.println(assertions);
 		}
 	}

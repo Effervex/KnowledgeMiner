@@ -140,15 +140,15 @@ public class CycMiner {
 		conceptModule.addMinedInfoType(informationRequested);
 	}
 
-	public void mineSentence(String sentence, MinedInformation info,
-			MiningHeuristic heuristic, OntologySocket cyc, WMISocket wmi) {
+	public void mineSentence(String sentence, boolean wikifyText,
+			MinedInformation info, MiningHeuristic heuristic, OntologySocket cyc, WMISocket wmi) {
 		logger_.trace("mineSentence: " + info.getArticle());
 		try {
 			WikipediaMappedConcept focusConcept = new WikipediaMappedConcept(
 					info.getArticle());
 			Collection<PartialAssertion> results = sentenceParser_
-					.extractAssertions(sentence, focusConcept, wmi, cyc,
-							heuristic);
+					.extractAssertions(sentence, focusConcept, wikifyText, wmi,
+							cyc, heuristic);
 			for (PartialAssertion assertion : results)
 				info.addAssertion(assertion);
 		} catch (Exception e) {

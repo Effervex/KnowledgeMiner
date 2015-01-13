@@ -1,5 +1,6 @@
 package test.mining;
 
+import static org.junit.Assert.assertTrue;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
@@ -11,16 +12,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.junit.*;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.WeightedHeuristic;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
-import knowledgeMiner.mining.SentenceParserHeuristic;
 import knowledgeMiner.mining.wikipedia.CategoryChildMiner;
 import knowledgeMiner.mining.wikipedia.CategoryMembershipMiner;
 import knowledgeMiner.mining.wikipedia.FirstSentenceMiner;
@@ -31,9 +26,16 @@ import knowledgeMiner.mining.wikipedia.ListMiner;
 import knowledgeMiner.mining.wikipedia.SubCategoryMiner;
 import knowledgeMiner.mining.wikipedia.TitleMiner;
 import knowledgeMiner.mining.wikipedia.WikipediaArticleMiningHeuristic;
+
+import org.junit.After;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+
 import util.UtilityMethods;
 import util.collection.MultiMap;
-import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class CycMinerParameterisedTest {
@@ -84,6 +86,11 @@ public class CycMinerParameterisedTest {
 
 		WikipediaArticleMiningHeuristic heuristic = (WikipediaArticleMiningHeuristic) km_
 				.getHeuristicByString(heurName);
+		if (heuristic == null) {
+			System.err.println(heurName + " is not active!");
+			return;
+		}
+			
 		MinedInformation info = heuristic.mineArticle(art_,
 				MinedInformation.ALL_TYPES, wmi_, ontology_);
 		Collection<PartialAssertion> infoAssertions = info.getAssertions();
@@ -130,7 +137,6 @@ public class CycMinerParameterisedTest {
 
 	@Test
 	public void testFirstSentenceParserMiner() throws Exception {
-		SentenceParserHeuristic.wikifyText_ = true;
 		String heurName = WeightedHeuristic
 				.generateHeuristicName(FirstSentenceParserMiner.class);
 		testMiner(heurName);

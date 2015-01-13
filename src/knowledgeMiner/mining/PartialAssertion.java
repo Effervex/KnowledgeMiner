@@ -97,6 +97,24 @@ public class PartialAssertion extends MinedAssertion {
 		return aq;
 	}
 
+	/**
+	 * Partially grounds a partial assertion by grounding all mappable concepts
+	 * that are not excluded concepts into ontology concepts. The grounding
+	 * process may produce multiple assertions with varying weights, so all
+	 * concepts are returned within an AssertionQueue.
+	 *
+	 * @param excluded
+	 *            The concepts that are not allowed to be grounded (typically
+	 *            the focus article of the assertion).
+	 * @param mapper
+	 *            The mapper for grounding concepts.
+	 * @param ontology
+	 *            The ontology access.
+	 * @param wmi
+	 *            The WMI access.
+	 * @return An assertion queue of all the potential groundings created in
+	 *         this process.
+	 */
 	@SuppressWarnings("unchecked")
 	private AssertionQueue expandInternal(Collection<MappableConcept> excluded,
 			CycMapper mapper, OntologySocket ontology, WMISocket wmi) {
@@ -122,6 +140,7 @@ public class PartialAssertion extends MinedAssertion {
 						&& args_[i] instanceof MappableConcept) {
 					expandedArgs[i] = ((MappableConcept) args_[i]).mapThing(
 							mapper, wmi, ontology);
+					// TODO Avoid self-referential excluded anchors
 
 					// No concept found.
 					if (expandedArgs[i].isEmpty())
@@ -174,7 +193,8 @@ public class PartialAssertion extends MinedAssertion {
 			// Otherwise, recurse into every possibility, stopping if invalid.
 			boolean copyArray = false;
 			for (OntologyConcept concept : expandedArgs[i]) {
-				if (ontology.isValidArg(relation.getIdentifier(), concept, i + 1)) {
+				if (ontology.isValidArg(relation.getIdentifier(), concept,
+						i + 1)) {
 					if (copyArray)
 						argArray = Arrays.copyOf(argArray, argArray.length);
 					argArray[i] = concept;

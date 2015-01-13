@@ -113,6 +113,7 @@ public class TextToCyc_FunctionParser extends
 			remText = StringUtils.join(split, ' ', textIndex + 1, split.length);
 		else
 			remText = StringUtils.join(split, ' ', 0, textIndex);
+		// TODO Recursive infinite loop
 		HierarchicalWeightedSet<OntologyConcept> functionTarget = mapper_
 				.mapTextToCyc(remText, true, false, false, false, wmi, ontology);
 		return resolveFunctionCombination(functionConcepts, functionTarget,

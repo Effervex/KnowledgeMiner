@@ -656,49 +656,6 @@ public class ConceptMiningTask implements Runnable {
 	}
 
 	/**
-	 * Gets the verified mappings for the input to this
-	 * {@link ConceptMiningTask}. That is, get every double-checked, but not
-	 * mined, mapping with the learned weights.
-	 * 
-	 * @param mappingRestriction
-	 *            A restriction for the mapping process, such that EVERY mapping
-	 *            need not be examined.
-	 * @param wmi
-	 *            WMI access.
-	 * @param ontology
-	 *            The Cyc access.
-	 * @return A sorted set of double-checked and weight mappings.
-	 */
-	// public SortedSet<ConceptModule> getVerifiedMappings(
-	// Predicate<ConceptModule> mappingRestriction, WMISocket wmi,
-	// OntologySocket ontology) {
-	// // return runAlternative(false);
-	// wmi_ = wmi;
-	// ontology_ = ontology;
-	// ConceptModule concept = processables_.first();
-	//
-	// // Map the concept.
-	// processables_ = mapConcept(concept, false);
-	// ConceptModule[] mappings = processables_
-	// .toArray(new ConceptModule[processables_.size()]);
-	// processables_.clear();
-	//
-	// // Reverse map every mapping.
-	// for (ConceptModule mapping : mappings) {
-	// // Don't worry about mappings below the threshold.
-	// if (mapping.getModuleWeight() < KnowledgeMiner.CUTOFF_THRESHOLD)
-	// break;
-	// if (mappingRestriction == null || mappingRestriction.apply(mapping)) {
-	// processables_.add(mapping);
-	// addProcessables(mapConcept(mapping, true), false,
-	// !mapping.isCycToWiki(), true);
-	// }
-	// }
-	//
-	// return processables_;
-	// }
-
-	/**
 	 * Processes a collection of articles, assigning assertions to them if they
 	 * meet the parent collection requirements.
 	 * 

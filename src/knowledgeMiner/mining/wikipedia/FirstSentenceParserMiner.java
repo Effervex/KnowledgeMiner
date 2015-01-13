@@ -48,7 +48,7 @@ public class FirstSentenceParserMiner extends WikipediaArticleMiningHeuristic {
 			return;
 		firstSentence = NLPToSyntaxModule.convertToAscii(firstSentence);
 
-		miner_.mineSentence(firstSentence, info, this, ontology, wmi);
+		miner_.mineSentence(firstSentence, true, info, this, ontology, wmi);
 	}
 
 	@Override

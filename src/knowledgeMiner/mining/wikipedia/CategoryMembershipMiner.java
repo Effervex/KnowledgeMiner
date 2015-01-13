@@ -75,8 +75,8 @@ public class CategoryMembershipMiner extends WikipediaArticleMiningHeuristic {
 
 			// Treat the category as a chunk of text to be parsed
 			String sentence = SentenceParserHeuristic.SENTENCE_PREFIX + categoryTitle + ".";
-			miner_.mineSentence(sentence, info, this,
-					ontology, wmi);
+			miner_.mineSentence(sentence, false, info,
+					this, ontology, wmi);
 		}
 	}
 

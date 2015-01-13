@@ -1,8 +1,6 @@
 package test.mining;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
@@ -13,6 +11,7 @@ import java.util.TreeMap;
 
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
+import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.PartialAssertion;
 import knowledgeMiner.mining.SentenceParserHeuristic;
 import opennlp.tools.parser.Parse;
@@ -39,22 +38,22 @@ public class SentenceParserHeuristicTest {
 
 	@Test
 	public void testExtractAssertions() throws Exception {
-		SentenceParserHeuristic.wikifyText_ = false;
+		boolean wikifyText = false;
 		MappableConcept focusConcept = new TextMappedConcept("Test", false,
 				false);
 
 		// Simple test
 		String sentence = "Test was a battle.";
 		Collection<PartialAssertion> output = sut_.extractAssertions(sentence,
-				focusConcept, wmi_, ontology_, null);
+				focusConcept, wikifyText, wmi_, ontology_, null);
 		assertNotNull(output);
 		assertTrue(output.contains(buildPartial(focusConcept, "battle", null)));
 		assertEquals(output.size(), 1);
 
 		// Adding a conjunction
 		sentence = "Test was a battle and an event.";
-		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
-				ontology_, null);
+		output = sut_.extractAssertions(sentence, focusConcept, wikifyText,
+				wmi_, ontology_, null);
 		assertNotNull(output);
 		assertTrue(output.contains(buildPartial(focusConcept, "battle", null)));
 		assertTrue(output.contains(buildPartial(focusConcept, "event", null)));
@@ -62,8 +61,8 @@ public class SentenceParserHeuristicTest {
 
 		// Adjectives (Double JJ)
 		sentence = "Test was an indecisive naval battle.";
-		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
-				ontology_, null);
+		output = sut_.extractAssertions(sentence, focusConcept, wikifyText,
+				wmi_, ontology_, null);
 		assertNotNull(output);
 		assertTrue(output.contains(buildPartial(focusConcept, "battle", null)));
 		assertTrue(output.contains(buildPartial(focusConcept,
@@ -78,8 +77,8 @@ public class SentenceParserHeuristicTest {
 
 		// Double NN
 		sentence = "Test is a figure skater.";
-		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
-				ontology_, null);
+		output = sut_.extractAssertions(sentence, focusConcept, wikifyText,
+				wmi_, ontology_, null);
 		assertNotNull(output);
 		assertTrue(output.contains(buildPartial(focusConcept, "figure skater",
 				null)));
@@ -90,8 +89,8 @@ public class SentenceParserHeuristicTest {
 		sentence = "Test is a professional [[American football|football]] "
 				+ "[[End (American football)|end]] and later a coach "
 				+ "for the [[Miami Dolphins]].";
-		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
-				ontology_, null);
+		output = sut_.extractAssertions(sentence, focusConcept, wikifyText,
+				wmi_, ontology_, null);
 		assertNotNull(output);
 		assertTrue(output
 				.contains(buildPartial(
@@ -116,8 +115,8 @@ public class SentenceParserHeuristicTest {
 
 		// Three JJs + 2 NNs
 		sentence = "Test was a Swiss former competitive figure skater.";
-		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
-				ontology_, null);
+		output = sut_.extractAssertions(sentence, focusConcept, wikifyText,
+				wmi_, ontology_, null);
 		assertNotNull(output);
 		assertTrue(output.contains(buildPartial(focusConcept, "figure skater",
 				null)));
@@ -160,8 +159,8 @@ public class SentenceParserHeuristicTest {
 
 		// Another big example (1 JJ + 3 NN with anchor)
 		sentence = "Test was a [[public access television]] show.";
-		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
-				ontology_, null);
+		output = sut_.extractAssertions(sentence, focusConcept, wikifyText,
+				wmi_, ontology_, null);
 		assertNotNull(output);
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"[[public access television]]", null)));
@@ -184,8 +183,8 @@ public class SentenceParserHeuristicTest {
 		sentence = "Uma Karuna Thurman (born April 29, 1970) is an "
 				+ "[[United States|American]] [[actress]] and "
 				+ "[[Model (person)|model]].";
-		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
-				ontology_, null);
+		output = sut_.extractAssertions(sentence, focusConcept, wikifyText,
+				wmi_, ontology_, null);
 		assertNotNull(output);
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"[[United States|American]]", null)));
@@ -200,14 +199,14 @@ public class SentenceParserHeuristicTest {
 
 	@Test
 	public void testExtractAssertionsWikified() throws Exception {
-		SentenceParserHeuristic.wikifyText_ = true;
+		boolean wikifyText = true;
 		MappableConcept focusConcept = new TextMappedConcept("Test", false,
 				false);
 
 		// Simple test
 		String sentence = "Test was a battle.";
 		Collection<PartialAssertion> output = sut_.extractAssertions(sentence,
-				focusConcept, wmi_, ontology_, null);
+				focusConcept, wikifyText, wmi_, ontology_, null);
 		assertNotNull(output);
 		assertTrue(output.contains(buildPartial(focusConcept, "[[battle]]",
 				null)));
@@ -215,21 +214,26 @@ public class SentenceParserHeuristicTest {
 
 		// Existing anchors
 		sentence = "An '''electronic keyboard''' (also called '''digital keyboard''', '''portable keyboard''' and '''home keyboard''') is an electronic or digital [[keyboard instrument]].";
-		output = sut_.extractAssertions(sentence, focusConcept, wmi_,
-				ontology_, null);
+		output = sut_.extractAssertions(sentence, focusConcept, wikifyText,
+				wmi_, ontology_, null);
 		assertNotNull(output);
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"[[keyboard instrument]]", null)));
 		assertTrue(output.contains(buildPartial(focusConcept, "instrument",
 				null)));
-		PartialAssertion pa = buildPartial(focusConcept, "[[digital]] instrument",
-				null);
-		pa.addSubAssertion(buildPartial(focusConcept, "[[digital]]",
-				null));
-		assertTrue(output.contains(pa));
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"[[digital]] instrument", null)));
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"[[Electronic music|electronic]]", null)));
+		assertTrue(output.contains(buildPartial(focusConcept, "[[digital]]",
+				null)));
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"[[digital]] [[keyboard instrument]]", null)));
-		assertEquals(output.size(), 4);
+		// assertTrue(output.contains(buildPartial(focusConcept,
+		// "[[Electronic music|electronic]] [[keyboard instrument]]", null)));
+		// assertTrue(output.contains(buildPartial(focusConcept,
+		// "[[Electronic music|electronic]] instrument", null)));
+		assertEquals(output.size(), 6);
 	}
 
 	private PartialAssertion buildPartial(MappableConcept focusConcept,
@@ -248,7 +252,7 @@ public class SentenceParserHeuristicTest {
 		MappableConcept focusConcept = new TextMappedConcept("Test", false,
 				false);
 		Collection<PartialAssertion> output = sut_.extractAssertions(sentence,
-				focusConcept, wmi_, ontology_, null);
+				focusConcept, true, wmi_, ontology_, null);
 		System.out.println(output);
 	}
 
@@ -346,5 +350,4 @@ public class SentenceParserHeuristicTest {
 		subT.addSubValue("professional");
 		assertTrue(adjNounTree.contains(subT));
 	}
-
 }

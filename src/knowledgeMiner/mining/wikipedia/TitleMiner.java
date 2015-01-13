@@ -41,7 +41,7 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 
 	@Override
 	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket cyc)
+			int informationRequested, WMISocket wmi, OntologySocket ontology)
 			throws Exception {
 		int article = info.getArticle();
 		String title = wmi.getPageTitle(article, false).trim();
@@ -49,8 +49,7 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 			return;
 
 		// Assert the title as a canonical synonym.
-		if (informationRequested(informationRequested,
-				InformationType.SYNONYM))
+		if (informationRequested(informationRequested, InformationType.SYNONYM))
 			info.addAssertion(new PartialAssertion(
 					CycConstants.SYNONYM_RELATION_CANONICAL.getConcept(),
 					basicProvenance_, info.getMappableSelfRef(),
@@ -80,15 +79,20 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 			}
 		}
 
-		// Perform parentage check via title.
-		// TODO Can do this, but needs weighting.
+		// Create taxonomic data from title
 		// if (informationRequested(informationRequested,
-		// InformationType.TAXONOMIC)) {
-		// CycConcept parentTerm = info.getParentTerm();
-		// if (parentTerm != null
-		// && UtilityMethods.findSubString(parentTerm.getPlainName(),
-		// title, 0))
-		// info.addAssertion(createParentAssertion(term, parentTerm));
+		// InformationType.TAXONOMIC) && title.contains(" ")) {
+		// // Set up a sentence with the title as the parent
+		// String lowerCaseTitle = title;
+		// // IF the second character is alphabetical, and lowercase,
+		// // uncapitalise the title so the parser is not confused.
+		// if (Character.isAlphabetic(title.charAt(1))
+		// && !Character.isUpperCase(title.charAt(1)))
+		// lowerCaseTitle = StringUtils.uncapitalize(lowerCaseTitle);
+		// String sentence = SentenceParserHeuristic.SENTENCE_PREFIX
+		// + lowerCaseTitle + ".";
+		// miner_.mineSentence(sentence, false, info, this, ontology, wmi);
+		// TODO Might need to prune out self-referential strings
 		// }
 	}
 

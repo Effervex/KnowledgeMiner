@@ -1,6 +1,5 @@
 package test.mining;
 
-import static org.junit.Assert.*;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;

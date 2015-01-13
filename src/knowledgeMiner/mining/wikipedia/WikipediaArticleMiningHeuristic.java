@@ -48,7 +48,7 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 
 	/**
 	 * Partitions the mined information into separate parts, such that the only
-	 * infromation returned is that which concerns the current article. Also, if
+	 * information returned is that which concerns the current article. Also, if
 	 * performing precomputation, all partitioned information is added to its
 	 * respective article.
 	 *
@@ -71,6 +71,8 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 		for (PartialAssertion assertion : info.getAssertions()) {
 			// Split by each arg
 			for (int i = 0; i < assertion.getArgs().length; i++) {
+				if (assertion.isHierarchical() && i != 0)
+					continue;
 				AssertionArgument aa = assertion.getArgs()[i];
 				if (aa instanceof WikipediaMappedConcept) {
 					WikipediaMappedConcept wmc = (WikipediaMappedConcept) aa;

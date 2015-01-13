@@ -155,7 +155,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 		MinedInformation tempInfo = new MinedInformation(article);
 		String sentence = SentenceParserHeuristic.SENTENCE_PREFIX + plural
 				+ ".";
-		miner_.mineSentence(sentence, tempInfo, this, ontology, wmi);
+		miner_.mineSentence(sentence, false, tempInfo, this, ontology, wmi);
 		for (PartialAssertion pa : tempInfo.getAssertions())
 			results.add(pa.replaceArg(tempInfo.getMappableSelfRef(),
 					LIST_ELEMENT));
