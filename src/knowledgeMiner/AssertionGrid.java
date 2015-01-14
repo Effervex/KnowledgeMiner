@@ -110,7 +110,7 @@ public class AssertionGrid {
 		if (existingGrid.assertionGrid_ == null)
 			return;
 		int oldLength = existingGrid.assertionGrid_.length;
-		if (assertionRemoval) {
+		if (assertionRemoval && !existingAssertions.isEmpty()) {
 			int newLength = oldLength + existingAssertions.size();
 			instantiateAssertionGrid(existingGrid, newLength, coreConcept_,
 					concept_);
@@ -304,13 +304,13 @@ public class AssertionGrid {
 	private void instantiateAssertionGrid(AssertionGrid existingGrid,
 			int newSize, MappableConcept mappedConcept,
 			OntologyConcept replacementConcept) {
-		MinedAssertion[][] assertionGrid = existingGrid.assertionGrid_;
-		assertionGrid_ = new MinedAssertion[assertionGrid.length][];
+		MinedAssertion[][] coreGrid = existingGrid.assertionGrid_;
+		assertionGrid_ = new MinedAssertion[newSize][];
 		// Instantiate every assertion.
-		for (int x = 0; x < assertionGrid_.length; x++) {
-			assertionGrid_[x] = new MinedAssertion[assertionGrid[x].length];
-			for (int y = 0; y < assertionGrid_[x].length; y++) {
-				MinedAssertion assertion = assertionGrid[x][y];
+		for (int x = 0; x < coreGrid.length; x++) {
+			assertionGrid_[x] = new MinedAssertion[coreGrid[x].length];
+			for (int y = 0; y < coreGrid[x].length; y++) {
+				MinedAssertion assertion = coreGrid[x][y];
 				if (assertion != null) {
 					if (assertion instanceof PartialAssertion) {
 						assertionGrid_[x][y] = ((PartialAssertion) assertion)
@@ -322,7 +322,7 @@ public class AssertionGrid {
 		}
 
 		// Other members
-		if (newSize == assertionGrid.length) {
+		if (newSize == coreGrid.length) {
 			proportionVector_ = existingGrid.proportionVector_;
 			usedSeeds_ = new boolean[existingGrid.usedSeeds_.length][];
 			weightGrid_ = existingGrid.weightGrid_;
@@ -495,15 +495,22 @@ public class AssertionGrid {
 		// Print out the assertion grid
 		StringBuilder builder = new StringBuilder();
 		for (int x = 0; x < assertionGrid_.length; x++) {
-			for (int y = 0; y < assertionGrid_[x].length; y++) {
-				if (assertionGrid_[x][y] == null)
-					builder.append("[   ]");
-				else {
-					String assertion = assertionGrid_[x][y].toString();
-					if (usedSeeds_[x][y])
-						assertion = assertion.toUpperCase();
-					builder.append("[" + assertion + ":" + weightGrid_[x][y]
-							+ "]");
+			if (assertionGrid_[x] == null)
+				builder.append("null");
+			else {
+				for (int y = 0; y < assertionGrid_[x].length; y++) {
+					if (assertionGrid_[x][y] == null)
+						builder.append("[   ]");
+					else {
+						String assertion = assertionGrid_[x][y].toString();
+						if (usedSeeds_[x] != null && usedSeeds_[x][y])
+							assertion = assertion.toUpperCase();
+						if (weightGrid_[x] == null)
+							builder.append("[" + assertion + ":???]");
+						else
+							builder.append("[" + assertion + ":"
+									+ weightGrid_[x][y] + "]");
+					}
 				}
 			}
 			builder.append("\n");

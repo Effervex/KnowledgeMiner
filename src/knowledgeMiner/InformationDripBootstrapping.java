@@ -10,6 +10,7 @@
  ******************************************************************************/
 package knowledgeMiner;
 
+import io.IOManager;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
@@ -59,6 +60,9 @@ public class InformationDripBootstrapping {
 	/** WMI access. */
 	private WMISocket wmi_;
 
+	/** The starting run number for bootstrapping purposes. */
+	private int initialRunNumber_;
+
 	/**
 	 * Constructor for a new InformationDripBootstrapping
 	 * 
@@ -68,10 +72,12 @@ public class InformationDripBootstrapping {
 	 *            The distance of 'ripples' to update (optional).
 	 * @param repeats
 	 *            The number of 'drips' to perform (optional).
+	 * @param initalRunNumber
+	 *            The starting run number for bootstrapping purposes.
 	 * @throws Exception
 	 */
 	public InformationDripBootstrapping(String concept, String ripples,
-			String repeats) throws Exception {
+			String repeats, String initialRunNumber) throws Exception {
 		wmi_ = ResourceAccess.requestWMISocket();
 		ontology_ = ResourceAccess.requestOntologySocket();
 		KnowledgeMinerPreprocessor.getInstance();
@@ -95,6 +101,9 @@ public class InformationDripBootstrapping {
 		repeats_ = 1;
 		if (repeats != null)
 			repeats_ = Integer.parseInt(repeats);
+		initialRunNumber_ = 0;
+		if (initialRunNumber != null)
+			initialRunNumber_ = Integer.parseInt(initialRunNumber);
 	}
 
 	/**
@@ -103,13 +112,16 @@ public class InformationDripBootstrapping {
 	 * repeat for as many repeats as defined.
 	 */
 	private void run() {
-		KnowledgeMinerPreprocessor.ENABLE_PREPROCESSING = false;
 		ResourceAccess.newInstance();
+		IOManager.newInstance();
+		KnowledgeMiner.readInOntologyMappings(initialRunNumber_);
 		Executor executor = Executors.newFixedThreadPool(KnowledgeMiner
 				.getNumThreads());
 		pool_ = new ExecutorCompletionService<Collection<ConceptModule>>(
 				executor);
 		for (int i = 0; i < repeats_; i++) {
+			KnowledgeMiner.runID_ = initialRunNumber_ + i;
+			
 			// Set up completed collections
 			Set<OntologyConcept> completedConcepts = Collections
 					.newSetFromMap(new ConcurrentHashMap<OntologyConcept, Boolean>());
@@ -123,8 +135,9 @@ public class InformationDripBootstrapping {
 			int maxRipples = (maxRipple_ == -1) ? Integer.MAX_VALUE
 					: maxRipple_;
 			for (int r = 0; r <= maxRipples; r++) {
-				System.out.println("\nRipple " + r + ": " + rippleLayer.size() + " tasks to process.\n");
-				
+				System.out.println("\nRipple " + r + ": " + rippleLayer.size()
+						+ " tasks to process.\n");
+
 				// Simultaneously process every concept in the ripple layer
 				for (ConceptModule cm : rippleLayer) {
 					pool_.submit(new RippleTask(cm, r != maxRipples,
@@ -177,13 +190,14 @@ public class InformationDripBootstrapping {
 		options.addOption("c", true,
 				"The concept to begin with (\"article\" or #concept).");
 		options.addOption("N", true, "The initial hashmap size for the nodes.");
+		options.addOption("i", true, "Initial run number.");
 
 		CommandLineParser parser = new BasicParser();
 		try {
 			CommandLine parse = parser.parse(options, args);
 			InformationDripBootstrapping rb = new InformationDripBootstrapping(
 					parse.getOptionValue("c"), parse.getOptionValue("r"),
-					parse.getOptionValue("N"));
+					parse.getOptionValue("N"), null);
 			rb.run();
 		} catch (Exception e) {
 			e.printStackTrace();

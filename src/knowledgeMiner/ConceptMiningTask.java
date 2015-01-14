@@ -283,7 +283,6 @@ public class ConceptMiningTask implements Runnable {
 	private ConceptModule createConcept(ConceptModule cm) {
 		Integer article = cm.getArticle();
 		try {
-			// TODO Identify some collection sense
 			// Use the possible parentage, perhaps? Might have to be after
 			// disambiguation though.
 			OntologyConcept newConcept = createNewCycTermName(

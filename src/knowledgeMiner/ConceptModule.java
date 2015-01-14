@@ -442,6 +442,7 @@ public class ConceptModule extends MinedInformation implements
 		for (DefiniteAssertion assertion : dd_.getRemovedAssertions())
 			addDeletedAssertion(assertion);
 		miningWeight_ = dd_.getConjointWeight();
+		try {
 		if (createdConcept_) {
 			if (dd_.isCollection())
 				type_ = CycConstants.COLLECTION.getConcept();
@@ -449,6 +450,9 @@ public class ConceptModule extends MinedInformation implements
 				type_ = CycConstants.INDIVIDUAL.getConcept();
 		} else {
 			type_ = determineType(ontology);
+		}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 
 		return miningWeight_;

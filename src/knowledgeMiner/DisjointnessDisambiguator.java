@@ -41,7 +41,7 @@ public class DisjointnessDisambiguator {
 	public final static Logger logger_ = LoggerFactory
 			.getLogger(AssertionGrid.class);
 
-	private static final boolean ASSERTION_REMOVAL = false;
+	private static final boolean ASSERTION_REMOVAL = true;
 
 	private Collection<DefiniteAssertion> consistentAssertions_;
 
@@ -179,9 +179,11 @@ public class DisjointnessDisambiguator {
 		}
 
 		// Note the removed assertions
+		logger_.trace("Added " + consistentAssertions_.size());
 		if (ASSERTION_REMOVAL) {
 			existingAssertions.removeAll(consistentAssertions_);
 			removedAssertions_ = existingAssertions;
+			logger_.trace("Removed " + removedAssertions_.size());
 		} else
 			removedAssertions_ = CollectionUtils.EMPTY_COLLECTION;
 	}

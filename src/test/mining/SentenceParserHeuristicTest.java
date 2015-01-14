@@ -11,7 +11,6 @@ import java.util.TreeMap;
 
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
-import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.PartialAssertion;
 import knowledgeMiner.mining.SentenceParserHeuristic;
 import opennlp.tools.parser.Parse;
