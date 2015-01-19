@@ -4,7 +4,6 @@
 package knowledgeMiner;
 
 import graph.core.CommonConcepts;
-import io.KMSocket;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
@@ -674,12 +673,9 @@ public class ConceptModule extends MinedInformation implements
 	/**
 	 * A simple few words about this module.
 	 * 
-	 * @param wmi
-	 *            The WMI access.
-	 * 
 	 * @return A String describing this module.
 	 */
-	public String toSimpleString(KMSocket wmi) {
+	public String toSimpleString() {
 		String output = null;
 		String article = articleToString();
 		String concept = conceptToString();

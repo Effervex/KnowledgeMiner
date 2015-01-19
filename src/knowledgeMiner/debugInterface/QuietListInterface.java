@@ -3,8 +3,6 @@
  ******************************************************************************/
 package knowledgeMiner.debugInterface;
 
-import io.KMSocket;
-
 import java.util.SortedSet;
 
 import knowledgeMiner.ConceptModule;
@@ -12,9 +10,12 @@ import knowledgeMiner.ConceptModule;
 public class QuietListInterface implements ConceptThreadInterface {
 
 	@Override
-	public void update(Thread thread, ConceptModule concept,
-			SortedSet<ConceptModule> processables, KMSocket wmi) {
+	public void update(ConceptModule concept, SortedSet<ConceptModule> processables) {
 		
+	}
+
+	@Override
+	public void flush() {	
 	}
 
 }

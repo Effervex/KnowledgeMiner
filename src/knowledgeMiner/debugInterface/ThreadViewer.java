@@ -3,9 +3,6 @@
  ******************************************************************************/
 package knowledgeMiner.debugInterface;
 
-import io.KMSocket;
-
-import java.util.HashMap;
 import java.util.SortedSet;
 
 import knowledgeMiner.ConceptModule;
@@ -15,25 +12,25 @@ import knowledgeMiner.ConceptModule;
  * @author Sam Sarjant
  */
 public abstract class ThreadViewer implements ConceptThreadInterface {
-	private HashMap<Thread, Integer> threadPositions_;
+	private ThreadLocal<Integer> threadPositions_;
 	private int currentThreads_ = 0;
 	private String[] outputs_;
 
 	public ThreadViewer(int numThreads) {
-		threadPositions_ = new HashMap<>(numThreads);
+		threadPositions_ = new ThreadLocal<>();
 		outputs_ = new String[numThreads];
 	}
 
 	@Override
-	public void update(Thread thread, ConceptModule concept,
-			SortedSet<ConceptModule> processables, KMSocket wmi) {
-		Integer pos = threadPositions_.get(thread);
+	public void update(ConceptModule concept,
+			SortedSet<ConceptModule> processables) {
+		Integer pos = threadPositions_.get();
 		if (pos == null) {
 			pos = currentThreads_++;
-			threadPositions_.put(thread, pos);
+			threadPositions_.set(pos);
 		}
 
-		outputs_[pos] = concept.toSimpleString(wmi) + " ("
+		outputs_[pos] = concept.toSimpleString() + " ("
 				+ processables.size() + " more)";
 		redraw(outputs_, pos);
 	}
@@ -41,8 +38,14 @@ public abstract class ThreadViewer implements ConceptThreadInterface {
 	/**
 	 * Redraw the outputs.
 	 *
-	 * @param outputs The stuff to redraw.
-	 * @param pos The index of the output that changed.
+	 * @param outputs
+	 *            The stuff to redraw.
+	 * @param pos
+	 *            The index of the output that changed.
 	 */
 	protected abstract void redraw(String[] outputs, int pos);
+
+	@Override
+	public void flush() {	
+	}
 }

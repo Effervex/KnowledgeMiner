@@ -34,5 +34,4 @@ public class BasicCLIUpdater extends ThreadViewer {
 			requests_ = 0;
 		}
 	}
-
 }

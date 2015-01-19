@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import util.UtilityMethods;
 import util.collection.WeightedSet;
 import util.serialisation.DefaultSerialisationMechanism;
+import util.serialisation.FSTSerialisationMechanism;
 import util.serialisation.SerialisationMechanism;
 import cyc.OntologyConcept;
 
@@ -421,6 +422,9 @@ public class KnowledgeMinerPreprocessor {
 		for (HeuristicResult heuristic : heuristicResults_.values())
 			heuristic.writeHeuristic();
 
+		// Clear the serialisation cache
+		((FSTSerialisationMechanism) SerialisationMechanism.FST.getSerialiser())
+				.reset();
 	}
 
 	/**

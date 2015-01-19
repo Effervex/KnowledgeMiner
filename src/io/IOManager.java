@@ -30,6 +30,7 @@ public class IOManager {
 	public static final String CYC_BLOCKED = "cycBlocked.txt";
 	public static final String FIRST_SENTENCE_UNDETERMINEDS = "firstSentences.txt";
 	public static final String MAPPINGS_FILE = "mappings.txt";
+	public static final String MAPPING_CHAIN = "mappingChain.txt";
 	public static final String REMOVED_FILE = "removedConstants.txt";
 	public static final String CYC_OPERATIONS = "cycOperations.txt";
 
@@ -46,6 +47,9 @@ public class IOManager {
 
 	/** The removed constants. */
 	private BufferedWriter removed_;
+
+	/** The mapping chain file. */
+	private BufferedWriter mappingChain_;
 
 	private Set<Integer> writtenSentences_;
 
@@ -73,13 +77,15 @@ public class IOManager {
 	 *            The removed constants file.
 	 * @param cycOperations
 	 *            The file containing Cyc altering operations.
+	 * @param mappingChain
+	 *            TODO
 	 * @throws IOException
 	 *             Should something go awry...
 	 */
 	private IOManager(String assertions, String blocked,
 			String firstSentenceOut, String infoboxTypes,
 			String infoboxRelations, String mappings, String removed,
-			String cycOperations) throws IOException {
+			String cycOperations, String mappingChain) throws IOException {
 		File f = new File(assertions);
 		f.createNewFile();
 		assertions_ = new BufferedWriter(new FileWriter(f));
@@ -104,6 +110,10 @@ public class IOManager {
 		f = new File(cycOperations);
 		f.createNewFile();
 		cycOperations_ = new BufferedWriter(new FileWriter(f));
+
+		f = new File(mappingChain);
+		f.createNewFile();
+		mappingChain_ = new BufferedWriter(new FileWriter(f));
 	}
 
 	/**
@@ -129,15 +139,22 @@ public class IOManager {
 	 *             Should something go awry...
 	 */
 	public void flush() throws IOException {
-		assertions_.flush();
-		blocked_.flush();
-		firstSentenceOut_.flush();
-		mappings_.flush();
-		removed_.flush();
+		if (assertions_ != null)
+			assertions_.flush();
+		if (blocked_ != null)
+			blocked_.flush();
+		if (firstSentenceOut_ != null)
+			firstSentenceOut_.flush();
+		if (mappings_ != null)
+			mappings_.flush();
+		if (removed_ != null)
+			removed_.flush();
+		if (mappingChain_ != null)
+			mappingChain_.flush();
 	}
 
-	public void writeAssertion(OntologyConcept concept, DefiniteAssertion assertion)
-			throws IOException {
+	public void writeAssertion(OntologyConcept concept,
+			DefiniteAssertion assertion) throws IOException {
 		if (assertions_ != null)
 			assertions_.write(concept.getConceptName() + "\t"
 					+ assertion.getRelation() + "\t"
@@ -189,8 +206,7 @@ public class IOManager {
 	public void writeMapping(ConceptModule concept, String articleTitle)
 			throws Exception {
 		OntologyConcept cycTerm = concept.getConcept();
-		System.out.println(cycTerm.toPrettyString() + " <=> '" + articleTitle
-				+ "' (" + concept.getModuleWeight() + ") ("
+		System.out.println(concept.toPrettyString() + " ("
 				+ concept.getConcreteAssertions().size() + " assertions).");
 		if (mappings_ != null) {
 			StringBuilder buffer = new StringBuilder();
@@ -202,6 +218,11 @@ public class IOManager {
 			buffer.append("\t" + concept.getModuleWeight());
 			mappings_.write(buffer.toString() + "\n");
 		}
+	}
+
+	public void writeMappingChain(String chain) throws IOException {
+		if (mappingChain_ != null)
+			mappingChain_.write(chain + "\n");
 	}
 
 	public void writeRemovedConstant(String constant) throws IOException {
@@ -230,7 +251,7 @@ public class IOManager {
 					FIRST_SENTENCE_UNDETERMINEDS,
 					InfoboxTypeMiner.INFOBOX_TYPE_FILE.getName(),
 					InfoboxRelationMiner.INFOBOX_RELATION_FILE.getName(),
-					MAPPINGS_FILE, REMOVED_FILE, CYC_OPERATIONS);
+					MAPPINGS_FILE, REMOVED_FILE, CYC_OPERATIONS, MAPPING_CHAIN);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -240,13 +261,13 @@ public class IOManager {
 	public static void newInstance(String assertions, String blocked,
 			String cyc2Wiki, String wiki2Cyc, String firstSentenceOut,
 			String infoboxTypes, String infoboxRelations, String mappings,
-			String removed, String cycOperations) {
+			String removed, String cycOperations, String mappingChain) {
 		if (instance_ != null)
 			return;
 		try {
 			instance_ = new IOManager(assertions, blocked, firstSentenceOut,
 					infoboxTypes, infoboxRelations, mappings, removed,
-					cycOperations);
+					cycOperations, mappingChain);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(1);

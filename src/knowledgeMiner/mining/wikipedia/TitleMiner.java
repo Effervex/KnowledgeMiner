@@ -82,20 +82,20 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 		}
 
 		// Create taxonomic data from title
-		// if (isCollection && informationRequested(informationRequested,
-		// InformationType.TAXONOMIC) && title.contains(" ")) {
-		// // Set up a sentence with the title as the parent
-		// String lowerCaseTitle = title;
-		// // IF the second character is alphabetical, and lowercase,
-		// // uncapitalise the title so the parser is not confused.
-		// if (Character.isAlphabetic(title.charAt(1))
-		// && !Character.isUpperCase(title.charAt(1)))
-		// lowerCaseTitle = StringUtils.uncapitalize(lowerCaseTitle);
-		// String sentence = SentenceParserHeuristic.SENTENCE_PREFIX
-		// + lowerCaseTitle + ".";
-		// miner_.mineSentence(sentence, false, info, this, ontology, wmi);
-		// TODO Might need to prune out self-referential strings
-		// }
+//		 if (isCollection && informationRequested(informationRequested,
+//		 InformationType.TAXONOMIC) && title.contains(" ")) {
+//		 // Set up a sentence with the title as the parent
+//		 String lowerCaseTitle = title;
+//		 // IF the second character is alphabetical, and lowercase,
+//		 // uncapitalise the title so the parser is not confused.
+//		 if (Character.isAlphabetic(title.charAt(1))
+//		 && !Character.isUpperCase(title.charAt(1)))
+//		 lowerCaseTitle = StringUtils.uncapitalize(lowerCaseTitle);
+//		 String sentence = SentenceParserHeuristic.SENTENCE_PREFIX
+//		 + lowerCaseTitle + ".";
+//		 miner_.mineSentence(sentence, false, info, this, ontology, wmi);
+//		 // TODO Might need to prune out self-referential strings
+//		 }
 	}
 
 }

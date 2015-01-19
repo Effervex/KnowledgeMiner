@@ -340,7 +340,7 @@ public class ConceptMiningTask implements Runnable {
 			Set<Integer> pendingArts, Set<Integer> pendingConcepts) {
 		try {
 			logger_.info(cm.toFlatString());
-			km_.updateConcept(Thread.currentThread(), cm, processables_, wmi_);
+			km_.getInterface().update(cm, processables_);
 			MiningState state = cm.getState();
 			switch (state) {
 			case UNMINED:
@@ -524,6 +524,8 @@ public class ConceptMiningTask implements Runnable {
 			assertedCount_++;
 			if (assertedCount_ % UPDATE_INTERVAL == 0)
 				km_.statusUpdate();
+			
+			km_.getInterface().update(concept, processables_);
 
 			return true;
 		} catch (Exception e) {
@@ -738,7 +740,10 @@ public class ConceptMiningTask implements Runnable {
 			// mapping).
 		} while (!processables_.isEmpty()
 				&& !(singleMapping && !allResults.isEmpty()));
-
+		
+		// Flush the interface
+		km_.getInterface().flush();
+		
 		// Clean up any loose pending articles (theoretically shouldn't
 		// happen).
 		cleanupPending(pendingArts, pendingConcepts);
@@ -792,7 +797,7 @@ public class ConceptMiningTask implements Runnable {
 			ConceptModule cm = parseConceptModule(map, cmt.wmi_, cmt.ontology_);
 			if (cm != null) {
 				cmt = new ConceptMiningTask(cm, true);
-				cmt.run(false);
+				cmt.run(true);
 				System.out.println(cmt.getAssertedConcepts());
 				// cmt.run();
 			} else {
@@ -802,6 +807,8 @@ public class ConceptMiningTask implements Runnable {
 			staticReverseMap(cmt, input);
 		else if (!input.equals("exit"))
 			staticMap(cmt, input);
+		
+		IOManager.getInstance().flush();
 	}
 
 	/**

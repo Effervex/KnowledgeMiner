@@ -3,8 +3,6 @@
  ******************************************************************************/
 package knowledgeMiner.debugInterface;
 
-import io.KMSocket;
-
 import java.util.SortedSet;
 
 import knowledgeMiner.ConceptModule;
@@ -19,13 +17,16 @@ public interface ConceptThreadInterface {
 	/**
 	 * Updates the interface to reflect the changes.
 	 * 
-	 * @param thread
-	 *            The thread changing.
 	 * @param concept
 	 *            The concept being processed in the thread.
 	 * @param processables
 	 *            The remaining concepts to be processed.
 	 */
-	void update(Thread thread, ConceptModule concept,
-			SortedSet<ConceptModule> processables, KMSocket wmi);
+	void update(ConceptModule concept, SortedSet<ConceptModule> processables);
+
+	/**
+	 * Flushes the interface (allows it to write to file, or otherwise). Called
+	 * when a concept mining task has completed its processing.
+	 */
+	void flush();
 }

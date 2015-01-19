@@ -4,7 +4,6 @@
 package knowledgeMiner;
 
 import io.IOManager;
-import io.KMSocket;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
 import io.ontology.OntologySocket;
@@ -19,14 +18,13 @@ import java.io.LineNumberReader;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.SortedSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import knowledgeMiner.debugInterface.ConceptThreadInterface;
-import knowledgeMiner.debugInterface.QuietListInterface;
+import knowledgeMiner.debugInterface.MappingChainInterface;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.wikipedia.FirstSentenceMiner;
@@ -143,7 +141,7 @@ public class KnowledgeMiner {
 		executor_ = (ThreadPoolExecutor) Executors.newFixedThreadPool(Math.max(
 				1, numThreads));
 
-		interface_ = new QuietListInterface(); // new SimpleListInterface();
+		interface_ = new MappingChainInterface(); // new SimpleListInterface();
 		ontology_ = ResourceAccess.requestOntologySocket();
 		ontology_.findConceptByName("INITIALISED", true, true, false);
 		wiki_ = ResourceAccess.requestWMISocket();
@@ -404,19 +402,8 @@ public class KnowledgeMiner {
 		}
 	}
 
-	/**
-	 * Updates the thread viewing interface.
-	 * 
-	 * @param thread
-	 *            The thread being updated.
-	 * @param concept
-	 *            The concept being processed in that thread.
-	 * @param processables
-	 *            The remaining concepts to process.
-	 */
-	public void updateConcept(Thread thread, ConceptModule concept,
-			SortedSet<ConceptModule> processables, KMSocket wmi) {
-		interface_.update(thread, concept, processables, wmi);
+	public ConceptThreadInterface getInterface() {
+		return interface_;
 	}
 
 	/**

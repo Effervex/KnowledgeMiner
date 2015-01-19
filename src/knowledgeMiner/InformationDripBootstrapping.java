@@ -72,7 +72,7 @@ public class InformationDripBootstrapping {
 	 *            The distance of 'ripples' to update (optional).
 	 * @param repeats
 	 *            The number of 'drips' to perform (optional).
-	 * @param initalRunNumber
+	 * @param initialRunNumber
 	 *            The starting run number for bootstrapping purposes.
 	 * @throws Exception
 	 */
@@ -81,6 +81,7 @@ public class InformationDripBootstrapping {
 		wmi_ = ResourceAccess.requestWMISocket();
 		ontology_ = ResourceAccess.requestOntologySocket();
 		KnowledgeMinerPreprocessor.getInstance();
+		IOManager.newInstance();
 
 		initial_ = null;
 		if (concept.startsWith("#")) {
@@ -121,7 +122,7 @@ public class InformationDripBootstrapping {
 				executor);
 		for (int i = 0; i < repeats_; i++) {
 			KnowledgeMiner.runID_ = initialRunNumber_ + i;
-			
+
 			// Set up completed collections
 			Set<OntologyConcept> completedConcepts = Collections
 					.newSetFromMap(new ConcurrentHashMap<OntologyConcept, Boolean>());
@@ -137,8 +138,10 @@ public class InformationDripBootstrapping {
 			for (int r = 0; r <= maxRipples; r++) {
 				System.out.println("\nRipple " + r + ": " + rippleLayer.size()
 						+ " tasks to process.\n");
+				int count = 0;
 
 				// Simultaneously process every concept in the ripple layer
+				System.out.print(count++ + ": ");
 				for (ConceptModule cm : rippleLayer) {
 					pool_.submit(new RippleTask(cm, r != maxRipples,
 							completedArticles, completedConcepts));
@@ -150,6 +153,8 @@ public class InformationDripBootstrapping {
 					try {
 						// Get the results and process them.
 						Collection<ConceptModule> result = pool_.take().get();
+						if (count <= rippleLayer.size())
+							System.out.print(count++ + ": ");
 						if (r == maxRipples)
 							continue;
 
@@ -197,7 +202,7 @@ public class InformationDripBootstrapping {
 			CommandLine parse = parser.parse(options, args);
 			InformationDripBootstrapping rb = new InformationDripBootstrapping(
 					parse.getOptionValue("c"), parse.getOptionValue("r"),
-					parse.getOptionValue("N"), null);
+					parse.getOptionValue("N"), parse.getOptionValue("i"));
 			rb.run();
 		} catch (Exception e) {
 			e.printStackTrace();
