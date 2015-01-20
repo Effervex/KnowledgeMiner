@@ -96,6 +96,8 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 //		 miner_.mineSentence(sentence, false, info, this, ontology, wmi);
 //		 // TODO Might need to prune out self-referential strings
 //		 }
+		
+		// TODO Also set context as taxonomic parent 'Duality (song) is a song'
 	}
 
 }

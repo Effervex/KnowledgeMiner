@@ -36,8 +36,6 @@ public class RemoveUseless implements Preprocessor {
 	public void processTerm(OntologyConcept term) throws Exception {
 		for (Predicate<OntologyConcept> qualifier : uselessQualifiers_) {
 			if (qualifier.apply(term)) {
-				IOManager.getInstance().writeRemovedConstant(
-						term.getConceptName());
 				ResourceAccess.requestOntologySocket().removeConcept(
 						term.getID());
 				return;

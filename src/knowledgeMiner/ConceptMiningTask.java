@@ -524,7 +524,7 @@ public class ConceptMiningTask implements Runnable {
 			assertedCount_++;
 			if (assertedCount_ % UPDATE_INTERVAL == 0)
 				km_.statusUpdate();
-			
+
 			km_.getInterface().update(concept, processables_);
 
 			return true;
@@ -740,10 +740,10 @@ public class ConceptMiningTask implements Runnable {
 			// mapping).
 		} while (!processables_.isEmpty()
 				&& !(singleMapping && !allResults.isEmpty()));
-		
+
 		// Flush the interface
 		km_.getInterface().flush();
-		
+
 		// Clean up any loose pending articles (theoretically shouldn't
 		// happen).
 		cleanupPending(pendingArts, pendingConcepts);
@@ -807,7 +807,7 @@ public class ConceptMiningTask implements Runnable {
 			staticReverseMap(cmt, input);
 		else if (!input.equals("exit"))
 			staticMap(cmt, input);
-		
+
 		IOManager.getInstance().flush();
 	}
 
@@ -1044,27 +1044,31 @@ public class ConceptMiningTask implements Runnable {
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 
 		String input = null;
+		StringBuilder article = null;
+		try {
+			// Process the args
+			for (int i = 0; i < args.length; i++) {
+				if (args[i].equals("-i")) {
+					System.out.println("Interactive mode enabled.");
+					InteractiveMode.interactiveMode_ = true;
+					input = "interactive";
+				} else if (args[i].equals("-r")) {
+					i++;
+					KnowledgeMiner.runID_ = Integer.parseInt(args[i]);
+					KnowledgeMiner
+							.readInOntologyMappings(KnowledgeMiner.runID_);
+				} else {
+					if (article == null)
+						article = new StringBuilder(args[i]);
+					else
+						article.append(" " + args[i]);
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		do {
 			try {
-				// Process the args
-				StringBuilder article = null;
-				for (int i = 0; i < args.length; i++) {
-					if (args[i].equals("-i")) {
-						System.out.println("Interactive mode enabled.");
-						InteractiveMode.interactiveMode_ = true;
-						input = "interactive";
-					} else if (args[i].equals("-r")) {
-						i++;
-						KnowledgeMiner.runID_ = Integer.parseInt(args[i]);
-						KnowledgeMiner
-								.readInOntologyMappings(KnowledgeMiner.runID_);
-					} else {
-						if (article == null)
-							article = new StringBuilder(args[i]);
-						else
-							article.append(" " + args[i]);
-					}
-				}
 				if (article != null) {
 					int artID = ResourceAccess.requestWMISocket()
 							.getArticleByTitle(article.toString());

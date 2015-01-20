@@ -225,9 +225,9 @@ public class IOManager {
 			mappingChain_.write(chain + "\n");
 	}
 
-	public void writeRemovedConstant(String constant) throws IOException {
+	public void writeRemovedAssertion(DefiniteAssertion removedAssertion) throws IOException {
 		if (removed_ != null)
-			removed_.write(constant + "\n");
+			removed_.write(removedAssertion + "\n");
 	}
 
 	/**

@@ -4,6 +4,7 @@
 package knowledgeMiner;
 
 import graph.core.CommonConcepts;
+import io.IOManager;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
@@ -327,6 +328,11 @@ public class ConceptModule extends MinedInformation implements
 			int assertionID = ontology.findEdgeIDByArgs((Object[]) assertion
 					.asArgs());
 			if (ontology.unassert(null, assertionID)) {
+				try {
+					IOManager.getInstance().writeRemovedAssertion(assertion);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 				LoggerFactory.getLogger(getClass()).info("UNASSERTED:\t{}",
 						assertion);
 			}
@@ -682,7 +688,10 @@ public class ConceptModule extends MinedInformation implements
 		try {
 			switch (getState()) {
 			case UNMINED:
-				output = "MINING: " + article;
+				if (concept == null)
+					output = "MINING: " + article;
+				else
+					output = "MINING: " + article + " (<= " + concept + ")";
 				break;
 			case UNMAPPED:
 				if (cycToWiki_)
