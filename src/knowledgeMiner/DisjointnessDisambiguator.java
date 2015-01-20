@@ -167,9 +167,6 @@ public class DisjointnessDisambiguator {
 		if (InteractiveMode.interactiveMode_) {
 			currentAssertionGrid_.findNConjoint(
 					InteractiveMode.NUM_DISAMBIGUATED, ontology);
-			caseNumber_ = ConceptMiningTask.interactiveInterface_
-					.interactiveDisambiguation(conceptModule,
-							currentAssertionGrid_, ontology);
 			consistentAssertions_ = currentAssertionGrid_
 					.getAssertions(caseNumber_);
 		} else {

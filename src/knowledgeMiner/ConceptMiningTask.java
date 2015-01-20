@@ -351,16 +351,12 @@ public class ConceptMiningTask implements Runnable {
 			case UNMAPPED:
 				// If unmapped: Map article to cm
 				Collection<ConceptModule> mappings = mapConcept(cm, false);
-				interactiveInterface_.interactiveMap(cm, mappings, wmi_,
-						ontology_);
 				addProcessables(mappings, singleMapping, cm.isCycToWiki(),
 						false);
 				break;
 			case MAPPED:
 				// If mapped: Map in reverse
 				Collection<ConceptModule> revMappings = mapConcept(cm, true);
-				interactiveInterface_.interactiveMap(cm, revMappings, wmi_,
-						ontology_);
 				addProcessables(revMappings, singleMapping, !cm.isCycToWiki(),
 						false);
 				break;
@@ -500,6 +496,8 @@ public class ConceptMiningTask implements Runnable {
 			// Firstly, record the mapping
 			String articleTitle = wmi_.getPageTitle(concept.getArticle(), true);
 			IOManager.getInstance().writeMapping(concept, articleTitle);
+			
+			// TODO Interactive - manual evaluation if correct mapping
 
 			// TODO Remove all KM assertions no longer produced by KM
 
@@ -512,9 +510,6 @@ public class ConceptMiningTask implements Runnable {
 			}
 
 			concept.setState(1.0, MiningState.ASSERTED);
-
-			ConceptMiningTask.interactiveInterface_.interactiveAssertion(
-					concept, wmi_, ontology_);
 
 			// Update the mining heuristics
 			for (MiningHeuristic mh : KnowledgeMiner.getInstance().getMiner()

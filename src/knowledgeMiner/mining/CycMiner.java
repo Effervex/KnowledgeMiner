@@ -132,8 +132,6 @@ public class CycMiner {
 			logger_.info("Mining {} with {}", info, mh.toString());
 			MinedInformation mined = mh.mineArticle(conceptModule,
 					informationRequested, wmi, ontology);
-			ConceptMiningTask.interactiveInterface_.interactiveMining(mined,
-					mh, wmi, ontology);
 			info.mergeInformation(mined);
 		}
 		conceptModule.mergeInformation(info);

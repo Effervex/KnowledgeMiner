@@ -3,6 +3,8 @@
  ******************************************************************************/
 package knowledgeMiner.mining.wikipedia;
 
+import org.apache.commons.lang3.StringUtils;
+
 import graph.module.NLPToSyntaxModule;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
@@ -12,6 +14,7 @@ import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.mining.SentenceParserHeuristic;
 import util.wikipedia.WikiParser;
 import cyc.CycConstants;
 import cyc.StringConcept;
@@ -82,22 +85,30 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 		}
 
 		// Create taxonomic data from title
-//		 if (isCollection && informationRequested(informationRequested,
-//		 InformationType.TAXONOMIC) && title.contains(" ")) {
-//		 // Set up a sentence with the title as the parent
-//		 String lowerCaseTitle = title;
-//		 // IF the second character is alphabetical, and lowercase,
-//		 // uncapitalise the title so the parser is not confused.
-//		 if (Character.isAlphabetic(title.charAt(1))
-//		 && !Character.isUpperCase(title.charAt(1)))
-//		 lowerCaseTitle = StringUtils.uncapitalize(lowerCaseTitle);
-//		 String sentence = SentenceParserHeuristic.SENTENCE_PREFIX
-//		 + lowerCaseTitle + ".";
-//		 miner_.mineSentence(sentence, false, info, this, ontology, wmi);
-//		 // TODO Might need to prune out self-referential strings
-//		 }
-		
-		// TODO Also set context as taxonomic parent 'Duality (song) is a song'
+//		if (isCollection
+//				&& informationRequested(informationRequested,
+//						InformationType.TAXONOMIC)) {
+//			String context = wmi.getPageTitleContext(article);
+//			if (!context.isEmpty()) {
+//				// Extract the context and set as parent
+//				String sentence = SentenceParserHeuristic.SENTENCE_PREFIX
+//						+ context + ".";
+//				miner_.mineSentence(sentence, false, info, this, ontology, wmi);
+//			}
+//			if (title.contains(" ")) {
+//				// Set up a sentence with the title as the parent
+//				String lowerCaseTitle = title;
+//				// IF the second character is alphabetical, and lowercase,
+//				// uncapitalise the title so the parser is not confused.
+//				if (Character.isAlphabetic(title.charAt(1))
+//						&& !Character.isUpperCase(title.charAt(1)))
+//					lowerCaseTitle = StringUtils.uncapitalize(lowerCaseTitle);
+//				String sentence = SentenceParserHeuristic.SENTENCE_PREFIX
+//						+ lowerCaseTitle + ".";
+//				miner_.mineSentence(sentence, false, info, this, ontology, wmi);
+//				// TODO Might need to prune out self-referential strings
+//			}
+//		}
 	}
 
 }

@@ -594,6 +594,7 @@ public class ConceptModule extends MinedInformation implements
 					concept_, type_).makeAssertion(concept_, ontology);
 
 		if (!KnowledgeMiner.mappingRun_) {
+			// TODO Interactive - manual evaluation of assertions (with skippable option)
 			// Perform the removals
 			performAssertionRemoval(ontology);
 
