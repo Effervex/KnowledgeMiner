@@ -3,8 +3,6 @@
  ******************************************************************************/
 package knowledgeMiner.mining.wikipedia;
 
-import org.apache.commons.lang3.StringUtils;
-
 import graph.module.NLPToSyntaxModule;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
@@ -14,7 +12,6 @@ import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
-import knowledgeMiner.mining.SentenceParserHeuristic;
 import util.wikipedia.WikiParser;
 import cyc.CycConstants;
 import cyc.StringConcept;

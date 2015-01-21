@@ -1684,6 +1684,7 @@ public class WMISocket extends KMSocket {
 		return getRecursiveCategories(pageID, true);
 	}
 
+	@SuppressWarnings("unchecked")
 	private Collection<Integer> getRecursiveCategories(int pageID,
 			boolean subCategories) throws IOException {
 		if (pageID == -1)

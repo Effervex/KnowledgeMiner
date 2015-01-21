@@ -496,8 +496,9 @@ public class ConceptMiningTask implements Runnable {
 			// Firstly, record the mapping
 			String articleTitle = wmi_.getPageTitle(concept.getArticle(), true);
 			IOManager.getInstance().writeMapping(concept, articleTitle);
-			
-			// TODO Interactive - manual evaluation if correct mapping
+
+			// Interactive - manual evaluation if correct mapping
+			interactiveInterface_.evaluateMapping(concept);
 
 			// TODO Remove all KM assertions no longer produced by KM
 
@@ -737,6 +738,8 @@ public class ConceptMiningTask implements Runnable {
 				&& !(singleMapping && !allResults.isEmpty()));
 
 		// Flush the interface
+		if (InteractiveMode.interactiveMode_)
+			interactiveInterface_.saveEvaluations();
 		km_.getInterface().flush();
 
 		// Clean up any loose pending articles (theoretically shouldn't

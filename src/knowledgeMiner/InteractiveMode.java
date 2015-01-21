@@ -10,216 +10,237 @@
  ******************************************************************************/
 package knowledgeMiner;
 
-import io.ontology.OntologySocket;
-import io.resources.WMISocket;
-
 import java.io.BufferedReader;
-import java.io.IOException;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import knowledgeMiner.mining.DefiniteAssertion;
-import knowledgeMiner.mining.HeuristicProvenance;
-import knowledgeMiner.mining.MinedAssertion;
-import knowledgeMiner.mining.MinedInformation;
-import knowledgeMiner.mining.MiningHeuristic;
-import knowledgeMiner.mining.PartialAssertion;
+import cyc.OntologyConcept;
 
-import org.apache.commons.lang3.StringUtils;
-
-import cyc.CycConstants;
-
+/**
+ * A class for allowing a user ot interactively evaluate if results are correct
+ * or not. Has the ability to load and save existing evaluations to
+ * automatically evaluate results during processing.
+ */
 public class InteractiveMode {
 	public static final int NUM_DISAMBIGUATED = 3;
+
+	public static final File MAPPINGS_FILE = new File("evaluatedMappings.txt");
+	public static final File ASSERTIONS_FILE = new File(
+			"evaluatedAssertions.txt");
 
 	/** If the mapping/mining should involve the user. */
 	public static boolean interactiveMode_ = false;
 
-	private int SKIP_ALL = 0;
-	private int SKIP_MINE = 1;
-	private int SKIP_MAP = 2;
-	private int SKIP_REVERSE_MAP = 3;
-	private int SKIP_DISAM = 4;
-
-	private ConcurrentHashMap<Integer, Integer> skip_;
-
+	/** Input and output streams. */
 	private BufferedReader in = new BufferedReader(new InputStreamReader(
 			System.in));
 	private PrintStream out = System.out;
 
+	/** The evaluated mappings. */
+	private Map<ConceptModule, Boolean> mappings_;
+	private Map<DefiniteAssertion, Boolean> additions_;
+	private Map<DefiniteAssertion, Boolean> removals_;
+
+	/** If mappings are skipped. */
+	private int skipMapping_ = 0;
+
+	/** If assertion additions are skipped. */
+	private int skipAssertionAddition_ = 0;
+
+	/** If assertion removals are skipped. */
+	private int skipAssertionRemoval_ = 0;
+
+	/** Predicates that are ignored for evaluation. */
+	private Set<OntologyConcept> ignoredAdditionPreds_;
+	private Set<OntologyConcept> ignoredRemovalPreds_;
+
 	public InteractiveMode() {
-		skip_ = new ConcurrentHashMap<>();
+		// TODO Liam: This is basically for loading existing mapping/assertion
+		// evaluation results
+
+		// Load the mappings and assertions
+		mappings_ = loadMappingEvaluations();
+		additions_ = loadAdditionEvaluations();
+		removals_ = loadRemovalEvaluations();
+		ignoredAdditionPreds_ = loadIgnoredAdditionPreds();
+		ignoredRemovalPreds_ = loadIgnoredRemovalPreds();
+		// TODO Save mappings
 	}
 
-	public void interactiveMining(MinedInformation mined,
-			MiningHeuristic heuristic, WMISocket wmi, OntologySocket ontology) {
-		if (!interactiveMode_ || shouldSkip(mined.getArticle(), SKIP_MINE))
-			return;
-
-		try {
-			String title = wmi.getPageTitle(mined.getArticle(), true);
-			out.println("'" + title + "' standing: " + mined.getStanding()
-					+ " [" + heuristic + "]");
-			Collection<PartialAssertion> assertions = mined.getAssertions();
-
-			// For every assertion queue
-			for (PartialAssertion pa : assertions) {
-				HeuristicProvenance provenance = pa.getProvenance();
-				out.println("From source: " + provenance + ":");
-
-				// Display the assertions and prompt user to select.
-				Collection<PartialAssertion> flattened = PartialAssertion
-						.flattenHierarchy(pa);
-				String input = "";
-				do {
-					int i = 1;
-					for (PartialAssertion assertion : flattened) {
-						String assertionStr = assertion.toPrettyString();
-						out.println(i++ + ":\t" + assertionStr + ":"
-								+ assertion.getWeight());
-					}
-					if (i == 2)
-						out.print("Select correct assertion (1, (S)kip): ");
-					else
-						out.print("Select correct assertion (1-" + (i - 1)
-								+ ", (S)kip): ");
-					input = in.readLine().toLowerCase();
-
-					// Store the selected assertion as a concrete assertion.
-					if (StringUtils.isNumeric(input)) {
-						int index = Integer.parseInt(input) - 1;
-						MinedAssertion selected = assertions
-								.toArray(new MinedAssertion[assertions.size()])[index];
-						assertions.remove(selected);
-						mined.addAssertion(selected);
-					} else if (input.startsWith("s")) {
-						if (skip(mined.getArticle(), SKIP_MINE))
-							return;
-					}
-				} while (!input.isEmpty() && !assertions.isEmpty());
-			}
-		} catch (Exception e) {
-		}
+	protected Set<OntologyConcept> loadIgnoredRemovalPreds() {
+		// TODO Liam: Implement this (or load some other way)
+		return null;
 	}
 
-	public void interactiveMap(ConceptModule mappingInput,
-			Collection<ConceptModule> mapped, WMISocket wmi,
-			OntologySocket ontology) {
-		int phase = (mappingInput.getState() == MiningState.UNMAPPED) ? SKIP_MAP
-				: SKIP_REVERSE_MAP;
-		if (!interactiveMode_ || shouldSkip(mappingInput.getArticle(), phase))
-			return;
-
-		try {
-			// List the mappings, allowing the user to pick the one to use.
-			int i = 1;
-			out.println("Mappings for " + mappingInput + ":");
-			for (ConceptModule cm : mapped)
-				out.println(i++ + ":\t" + cm);
-
-			if (i == 2)
-				out.print("Select correct mapping (1, (S)kip): ");
-			else
-				out.print("Select correct mapping (1-" + (i - 1)
-						+ ", (S)kip): ");
-
-			String input = in.readLine().toLowerCase();
-			if (StringUtils.isNumeric(input)) {
-				int index = Integer.parseInt(input) - 1;
-				ConceptModule selected = mapped
-						.toArray(new ConceptModule[mapped.size()])[index];
-				mapped.remove(selected);
-				selected.setState(1.0000001, selected.getState());
-				mapped.add(selected);
-			} else if (input.startsWith("s")) {
-				if (skip(mappingInput.getArticle(), phase))
-					return;
-			}
-		} catch (Exception e) {
-		}
+	protected HashSet<OntologyConcept> loadIgnoredAdditionPreds() {
+		// TODO Liam: Implement this (or load some other way)
+		return new HashSet<>();
 	}
 
-	public int interactiveDisambiguation(ConceptModule concept,
-			AssertionGrid assertionGrid, OntologySocket ontology) {
-		if (!interactiveMode_ || shouldSkip(concept.getArticle(), SKIP_DISAM))
-			return 0;
-
-		try {
-			// Create interactive selection of disjoint cases
-			int i = 0;
-			for (i = 0; i < NUM_DISAMBIGUATED; i++) {
-				Collection<DefiniteAssertion> assertions = assertionGrid
-						.getAssertions(i);
-				if (assertions == null)
-					break;
-				Collection<DefiniteAssertion> isas = new ArrayList<>();
-				Collection<DefiniteAssertion> genls = new ArrayList<>();
-				for (DefiniteAssertion assertion : assertions) {
-					if (assertion.getRelation().equals(
-							CycConstants.ISA.getConcept()))
-						isas.add(assertion);
-					if (assertion.getRelation().equals(
-							CycConstants.GENLS.getConcept()))
-						genls.add(assertion);
-				}
-				if (!isas.isEmpty()) {
-					out.print("Isa:");
-					for (MinedAssertion isa : isas)
-						out.print(" " + isa.getArgs()[1]);
-					out.println();
-				}
-				if (!genls.isEmpty()) {
-					out.print("Genls:");
-					for (MinedAssertion genl : genls)
-						out.print(" " + genl.getArgs()[1]);
-					out.println();
-				}
-			}
-
-			if (i == 1)
-				out.print("Select correct consistent facts (1, (S)kip): ");
-			else
-				out.print("Select correct mapping (1-" + i + ", (S)kip): ");
-
-			String input = in.readLine().toLowerCase();
-			if (StringUtils.isNumeric(input)) {
-				return Integer.parseInt(input) - 1;
-			} else if (input.startsWith("s")) {
-				if (skip(concept.getArticle(), SKIP_DISAM))
-					return 0;
-			}
-		} catch (Exception e) {
-		}
-		return 0;
+	protected Map<DefiniteAssertion, Boolean> loadRemovalEvaluations() {
+		// TODO Liam: Implement this (or load some other way)
+		return null;
 	}
 
-	private boolean shouldSkip(Integer article, int phase) {
-		return skip_.containsKey(article)
-				&& (skip_.get(article) == phase || skip_.get(article) == 0);
+	protected HashMap<DefiniteAssertion, Boolean> loadAdditionEvaluations() {
+		// TODO Liam: Implement this (or load some other way)
+		return new HashMap<>();
 	}
 
-	private boolean skip(int article, int phase) throws IOException {
-		out.print("Skip (A)ll or Skip (P)hase? ");
-		String input = in.readLine().toLowerCase();
-		if (input.startsWith("a")) {
-			skip_.put(article, SKIP_ALL);
-			return true;
-		}
-		if (input.startsWith("p")) {
-			skip_.put(article, phase);
-			return true;
-		}
-		return false;
+	protected HashMap<ConceptModule, Boolean> loadMappingEvaluations() {
+		// TODO Liam: Implement this (or load some other way)
+		return new HashMap<>();
+	}
+	
+	public void saveEvaluations() {
+		// TODO Liam: Implement this (or save some other way)
 	}
 
-	public void interactiveAssertion(ConceptModule concept, WMISocket wmi_,
-			OntologySocket ontology_) {
+	/**
+	 * Evaluates a mapping - it is either true or false. Users can also opt to
+	 * skip.
+	 *
+	 * @param concept
+	 *            The concept to evaluate.
+	 */
+	public void evaluateMapping(ConceptModule concept) {
 		if (!interactiveMode_)
 			return;
+		skipMapping_--;
+		if (skipMapping_ > 0)
+			return;
 
-		skip_.remove(concept.getArticle());
+		// Check prior results
+		ConceptModule duplicate = new ConceptModule(concept.getConcept(),
+				concept.getArticle(), concept.getModuleWeight(),
+				concept.isCycToWiki());
+		Boolean known = mappings_.get(duplicate);
+		if (known != null) {
+			out.println(known + ": " + duplicate);
+			return;
+		}
+
+		// Ask user
+		out.print("EVALUATE MAPPING: " + duplicate.toPrettyString()
+				+ ": (T)rue, (F)alse, (S)kip, (SS)kip 10, (SSS)kip 100, "
+				+ "Skip (A)ll?\n > ");
+		try {
+			String input = in.readLine();
+			if (input.equalsIgnoreCase("T")) {
+				mappings_.put(duplicate, true);
+			} else if (input.equalsIgnoreCase("F")) {
+				mappings_.put(duplicate, false);
+			} else if (input.equalsIgnoreCase("SS")) {
+				skipMapping_ = 10;
+			} else if (input.equalsIgnoreCase("SSS")) {
+				skipMapping_ = 100;
+			} else if (input.equalsIgnoreCase("A")) {
+				skipMapping_ = Integer.MAX_VALUE;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Evaluates an assertion removal - it is either true or false (good or
+	 * bad). Users can also opt to skip particular types of assertions, or just
+	 * general skip.
+	 *
+	 * @param assertion
+	 *            The assertion being removed.
+	 */
+	public void evaluateRemoval(DefiniteAssertion assertion) {
+		if (!interactiveMode_)
+			return;
+		if (ignoredRemovalPreds_.contains(assertion.getRelation()))
+			return;
+		skipAssertionRemoval_--;
+		if (skipAssertionRemoval_ > 0)
+			return;
+
+		// Check prior results
+		Boolean known = removals_.get(assertion);
+		if (known != null) {
+			out.println(known + ": " + assertion);
+			return;
+		}
+
+		// Ask user
+		out.print("EVALUATE REMOVAL: " + assertion.toPrettyString()
+				+ ": (T)rue, (F)alse, (S)kip, (SS)kip 10, (SSS)kip 100, "
+				+ "Skip (A)ll, (I)gnore predicate?\n > ");
+		try {
+			String input = in.readLine();
+			if (input.equalsIgnoreCase("T")) {
+				removals_.put(assertion, true);
+			} else if (input.equalsIgnoreCase("F")) {
+				removals_.put(assertion, false);
+			} else if (input.equalsIgnoreCase("SS")) {
+				skipAssertionRemoval_ = 10;
+			} else if (input.equalsIgnoreCase("SSS")) {
+				skipAssertionRemoval_ = 100;
+			} else if (input.equalsIgnoreCase("A")) {
+				skipAssertionRemoval_ = Integer.MAX_VALUE;
+			} else if (input.equalsIgnoreCase("I")) {
+				ignoredRemovalPreds_.add(assertion.getRelation());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Evaluates an assertion addition - it is either true or false (good or
+	 * bad). Users can also opt to skip particular types of assertions, or just
+	 * general skip.
+	 *
+	 * @param assertion
+	 *            The assertion being added.
+	 */
+	public void evaluateAddition(DefiniteAssertion assertion) {
+		if (!interactiveMode_)
+			return;
+		if (ignoredAdditionPreds_.contains(assertion.getRelation()))
+			return;
+		skipAssertionAddition_--;
+		if (skipAssertionAddition_ > 0)
+			return;
+
+		// Check prior results
+		Boolean known = additions_.get(assertion);
+		if (known != null) {
+			out.println(known + ": " + assertion);
+			return;
+		}
+
+		// Ask user
+		out.print("EVALUATE ADDITION: " + assertion.toPrettyString()
+				+ ": (T)rue, (F)alse, (S)kip, (SS)kip 10, (SSS)kip 100, "
+				+ "Skip (A)ll, (I)gnore predicate?\n > ");
+		try {
+			String input = in.readLine();
+			if (input.equalsIgnoreCase("T")) {
+				additions_.put(assertion, true);
+			} else if (input.equalsIgnoreCase("F")) {
+				additions_.put(assertion, false);
+			} else if (input.equalsIgnoreCase("SS")) {
+				skipAssertionAddition_ = 10;
+			} else if (input.equalsIgnoreCase("SSS")) {
+				skipAssertionAddition_ = 100;
+			} else if (input.equalsIgnoreCase("A")) {
+				skipAssertionAddition_ = Integer.MAX_VALUE;
+			} else if (input.equalsIgnoreCase("I")) {
+				ignoredAdditionPreds_.add(assertion.getRelation());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

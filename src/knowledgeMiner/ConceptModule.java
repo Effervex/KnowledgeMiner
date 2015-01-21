@@ -297,8 +297,9 @@ public class ConceptModule extends MinedInformation implements
 		Collection<Integer> assertionIDs = new ArrayList<>();
 		for (DefiniteAssertion assertion : getConcreteAssertions()) {
 			int id = assertion.makeAssertion(concept_, ontology);
-			if (id != -1)
+			if (id != -1) {
 				assertionIDs.add(id);
+			}
 		}
 
 		// Check type has not changed. If so, start again, checking after every
@@ -448,16 +449,26 @@ public class ConceptModule extends MinedInformation implements
 			addDeletedAssertion(assertion);
 		miningWeight_ = dd_.getConjointWeight();
 		try {
-		if (createdConcept_) {
-			if (dd_.isCollection())
-				type_ = CycConstants.COLLECTION.getConcept();
-			else
-				type_ = CycConstants.INDIVIDUAL.getConcept();
-		} else {
-			type_ = determineType(ontology);
-		}
+			if (createdConcept_) {
+				if (dd_.isCollection())
+					type_ = CycConstants.COLLECTION.getConcept();
+				else
+					type_ = CycConstants.INDIVIDUAL.getConcept();
+			} else {
+				type_ = determineType(ontology);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+
+		// Perform evaluation if interactive mode on
+		if (InteractiveMode.interactiveMode_) {
+			for (DefiniteAssertion assertion : getConcreteAssertions())
+				ConceptMiningTask.interactiveInterface_
+						.evaluateAddition(assertion);
+			for (DefiniteAssertion removed : deletedAssertions_)
+				ConceptMiningTask.interactiveInterface_
+						.evaluateRemoval(removed);
 		}
 
 		return miningWeight_;
@@ -594,7 +605,6 @@ public class ConceptModule extends MinedInformation implements
 					concept_, type_).makeAssertion(concept_, ontology);
 
 		if (!KnowledgeMiner.mappingRun_) {
-			// TODO Interactive - manual evaluation of assertions (with skippable option)
 			// Perform the removals
 			performAssertionRemoval(ontology);
 

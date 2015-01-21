@@ -62,7 +62,7 @@ public class DisjointnessDisambiguator {
 			MappableConcept coreConcept, OntologySocket ontology, WMISocket wmi) {
 		coreAssertionGrid_ = new AssertionGrid(assertions, coreConcept,
 				ontology, wmi);
-//		System.out.println(coreAssertionGrid_);
+		// System.out.println(coreAssertionGrid_);
 	}
 
 	private Collection<DefiniteAssertion> getExistingAssertions(
@@ -123,8 +123,8 @@ public class DisjointnessDisambiguator {
 			Collection<DefiniteAssertion> existingAssertions,
 			boolean assertionRemoval, OntologySocket ontology) {
 		if (conceptModule.isCreatedConcept())
-			return new AssertionGrid(coreAssertionGrid_, conceptModule.getConcept(),
-					conceptModule.getStanding(),
+			return new AssertionGrid(coreAssertionGrid_,
+					conceptModule.getConcept(), conceptModule.getStanding(),
 					new ArrayList<DefiniteAssertion>(0), ASSERTION_REMOVAL);
 		else {
 			WeightedStanding standing = new WeightedStanding(
@@ -159,21 +159,14 @@ public class DisjointnessDisambiguator {
 			caseNumber_ = -1;
 			return;
 		}
-		
+
 		Collection<DefiniteAssertion> existingAssertions = getExistingAssertions(
 				conceptModule, ontology);
 		currentAssertionGrid_ = integrateGroundTruths(conceptModule,
 				existingAssertions, ASSERTION_REMOVAL, ontology);
-		if (InteractiveMode.interactiveMode_) {
-			currentAssertionGrid_.findNConjoint(
-					InteractiveMode.NUM_DISAMBIGUATED, ontology);
-			consistentAssertions_ = currentAssertionGrid_
-					.getAssertions(caseNumber_);
-		} else {
-			consistentAssertions_ = currentAssertionGrid_
-					.findMaximalConjoint(ontology);
-			caseNumber_ = 0;
-		}
+		consistentAssertions_ = currentAssertionGrid_
+				.findMaximalConjoint(ontology);
+		caseNumber_ = 0;
 
 		// Note the removed assertions
 		logger_.trace("Added " + consistentAssertions_.size());

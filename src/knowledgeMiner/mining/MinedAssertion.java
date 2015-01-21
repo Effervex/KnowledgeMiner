@@ -163,11 +163,6 @@ public abstract class MinedAssertion extends WeightedInformation implements
 		MinedAssertion other = (MinedAssertion) obj;
 		if (!Arrays.equals(args_, other.args_))
 			return false;
-		if (microtheory_ == null) {
-			if (other.microtheory_ != null)
-				return false;
-		} else if (!microtheory_.equals(other.microtheory_))
-			return false;
 		if (relation_ == null) {
 			if (other.relation_ != null)
 				return false;
@@ -198,8 +193,6 @@ public abstract class MinedAssertion extends WeightedInformation implements
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + Arrays.hashCode(args_);
-		result = prime * result
-				+ ((microtheory_ == null) ? 0 : microtheory_.hashCode());
 		result = prime * result
 				+ ((relation_ == null) ? 0 : relation_.hashCode());
 		return result;
