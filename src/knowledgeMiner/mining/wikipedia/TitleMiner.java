@@ -12,6 +12,10 @@ import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.mining.SentenceParserHeuristic;
+
+import org.apache.commons.lang3.StringUtils;
+
 import util.wikipedia.WikiParser;
 import cyc.CycConstants;
 import cyc.StringConcept;
@@ -82,8 +86,7 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 		}
 
 		// Create taxonomic data from title
-//		if (isCollection
-//				&& informationRequested(informationRequested,
+//		if (informationRequested(informationRequested,
 //						InformationType.TAXONOMIC)) {
 //			String context = wmi.getPageTitleContext(article);
 //			if (!context.isEmpty()) {
@@ -92,7 +95,7 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 //						+ context + ".";
 //				miner_.mineSentence(sentence, false, info, this, ontology, wmi);
 //			}
-//			if (title.contains(" ")) {
+//			if (isCollection && title.contains(" ")) {
 //				// Set up a sentence with the title as the parent
 //				String lowerCaseTitle = title;
 //				// IF the second character is alphabetical, and lowercase,
