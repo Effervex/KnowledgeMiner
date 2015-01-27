@@ -1,7 +1,2 @@
-MINING: 'Meshuggah' (w=1.0)
- MAPPING: 'Meshuggah':[M] (w=1.0)
-  REVERSE_MAPPING: 'Meshuggah':[M] => Meshuggah[NEW] (w=0.5)
-   DISAMBIGUATING: Meshuggah[NEW] <=> 'Meshuggah':[M] (w=0.5)
-    ASSERTING: Meshuggah[NEW] <=> 'Meshuggah':[CM] (w=0.3801468611535017)
-     COMPLETE: Meshuggah[NEW] <=> 'Meshuggah':[CM] (w=0.3801468611535017)
+
 

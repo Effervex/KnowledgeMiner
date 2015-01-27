@@ -53,7 +53,7 @@ public class ConceptMiningTask implements Runnable {
 	private static final int BIG_ENOUGH = 40000000;
 
 	/** The chance that a child is created. */
-	private static final float CHILD_CREATION_CHANCE = .5f;
+	private static final float CHILD_CREATION_THRESHOLD = .5f;
 
 	private final static Logger logger_ = LoggerFactory
 			.getLogger(ConceptMiningTask.class);
@@ -289,7 +289,7 @@ public class ConceptMiningTask implements Runnable {
 					wmi_.getPageTitle(article, true), null, ontology_);
 			if (newConcept != null) {
 				ConceptModule newCM = new ConceptModule(newConcept, article,
-						CHILD_CREATION_CHANCE, false);
+						CHILD_CREATION_THRESHOLD, false);
 				logger_.debug("New concept created: " + newCM + ".");
 				newCM.mergeInformation(cm);
 				return newCM;
@@ -498,7 +498,7 @@ public class ConceptMiningTask implements Runnable {
 			IOManager.getInstance().writeMapping(concept, articleTitle);
 
 			// Interactive - manual evaluation if correct mapping
-			interactiveInterface_.evaluateMapping(concept);
+			interactiveInterface_.evaluateMapping(concept.toPrettyString());
 
 			// TODO Remove all KM assertions no longer produced by KM
 
@@ -805,6 +805,9 @@ public class ConceptMiningTask implements Runnable {
 			staticReverseMap(cmt, input);
 		else if (!input.equals("exit"))
 			staticMap(cmt, input);
+		
+		if (InteractiveMode.interactiveMode_)
+			interactiveInterface_.saveEvaluations();
 
 		IOManager.getInstance().flush();
 	}

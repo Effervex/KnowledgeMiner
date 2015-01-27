@@ -187,7 +187,8 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 			List<Integer> arts = wmi.getArticleByTitle(potentialTitles
 					.toArray(new String[potentialTitles.size()]));
 			UtilityMethods.removeNegOnes(arts);
-			if (arts.size() == 1)
+			HashSet<Integer> artSet = new HashSet<>(arts);
+			if (artSet.size() == 1)
 				return arts.get(0);
 		} catch (Exception e) {
 			e.printStackTrace();

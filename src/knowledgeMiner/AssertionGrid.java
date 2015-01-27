@@ -660,7 +660,16 @@ public class AssertionGrid {
 			if (assertion.isHierarchical()) {
 				// Check collection first
 				boolean asserted = false;
+				// If a collection, the predicate is/can be genls, and is not
+				// disjoint with existing genls
+				OntologyConcept relation = assertion.getRelation();
 				if (isaCollection_
+						&& (relation
+								.equals(CycConstants.ISA_GENLS.getConcept()) || ontology
+								.evaluate(null,
+										CommonConcepts.GENLPREDS.getID(),
+										relation.getIdentifier(),
+										CommonConcepts.GENLS.getID()))
 						&& !isDisjoint(assertion.getArgs()[1], genlsTruth_,
 								ontology)) {
 					assertion.makeParentageAssertion(TermStanding.COLLECTION);
@@ -670,8 +679,15 @@ public class AssertionGrid {
 					asserted = true;
 				}
 
-				// Check isa relationship as a backup.
+				// If predicate is/can be isa, and is not disjoint with existing
+				// isa
 				if (!asserted
+						&& (relation
+								.equals(CycConstants.ISA_GENLS.getConcept()) || ontology
+								.evaluate(null,
+										CommonConcepts.GENLPREDS.getID(),
+										relation.getIdentifier(),
+										CommonConcepts.ISA.getID()))
 						&& !isDisjoint(assertion.getArgs()[1], isaTruth_,
 								ontology)) {
 					assertion.makeParentageAssertion(TermStanding.INDIVIDUAL);
