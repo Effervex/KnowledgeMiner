@@ -120,6 +120,8 @@ public class AssertionGrid {
 			for (int i = oldLength; i < newLength; i++) {
 				assertionGrid_[i] = new DefiniteAssertion[] { iter.next() };
 				proportionVector_[i] = proportion;
+				// TODO This may be an error. It will assume there is at least
+				// one mining assertion consistent with the existing assertions
 				usedSeeds_[i] = new boolean[] { true };
 				weightGrid_[i] = new double[] { 1 };
 			}
