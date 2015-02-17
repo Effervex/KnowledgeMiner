@@ -53,7 +53,7 @@ public class ConceptMiningTask implements Runnable {
 	private static final int BIG_ENOUGH = 40000000;
 
 	/** The chance that a child is created. */
-	private static final float CHILD_CREATION_THRESHOLD = .5f;
+	private static final float CHILD_CREATION_THRESHOLD = .1f;
 
 	private final static Logger logger_ = LoggerFactory
 			.getLogger(ConceptMiningTask.class);
@@ -510,7 +510,7 @@ public class ConceptMiningTask implements Runnable {
 				assertedConcepts_.add(concept);
 			}
 
-			concept.setState(1.0, MiningState.ASSERTED);
+			concept.setState(1.0f, MiningState.ASSERTED);
 
 			// Update the mining heuristics
 			for (MiningHeuristic mh : KnowledgeMiner.getInstance().getMiner()
@@ -553,7 +553,7 @@ public class ConceptMiningTask implements Runnable {
 				if (concept.getArticle() == -1)
 					return mapped;
 				// Term is new, just automatically return reverse mapping.
-				concept.setState(1.0, MiningState.REVERSE_MAPPED);
+				concept.setState(1.0f, MiningState.REVERSE_MAPPED);
 				mapped.add(concept);
 				return mapped;
 			}
@@ -568,7 +568,7 @@ public class ConceptMiningTask implements Runnable {
 						.mapCycToWikipedia(cycTerm, null, wmi_, ontology_);
 				for (Integer article : articles) {
 					ConceptModule cm = new ConceptModule(cycTerm, article,
-							articles.getWeight(article), true);
+							(float) articles.getWeight(article), true);
 					cm.mergeInformation(concept);
 					mapped.add(cm);
 				}
@@ -579,7 +579,7 @@ public class ConceptMiningTask implements Runnable {
 						.mapWikipediaToCyc(articleID, wmi_, ontology_);
 				for (OntologyConcept term : terms) {
 					ConceptModule cm = new ConceptModule(term, articleID,
-							terms.getWeight(term), false);
+							(float) terms.getWeight(term), false);
 					cm.mergeInformation(concept);
 					mapped.add(cm);
 				}
@@ -851,7 +851,7 @@ public class ConceptMiningTask implements Runnable {
 		try {
 			int articleID = cmt.wmi_.getArticleByTitle(article.trim());
 			cm = new ConceptModule(articleID);
-			cm.setState(1.0, MiningState.REVERSE_MAPPED);
+			cm.setState(1.0f, MiningState.REVERSE_MAPPED);
 		} catch (IOException e) {
 			System.err.println("No article by that title!");
 			return;
@@ -914,7 +914,7 @@ public class ConceptMiningTask implements Runnable {
 		try {
 			int articleID = cmt.wmi_
 					.getArticleByTitle(split[(cycIndex + 1) % 2].trim());
-			cm = new ConceptModule(cycTerm, articleID, 1.0, cycIndex == 0);
+			cm = new ConceptModule(cycTerm, articleID, 1.0f, cycIndex == 0);
 		} catch (IOException e) {
 			System.err.println("No article by that title!");
 			return;

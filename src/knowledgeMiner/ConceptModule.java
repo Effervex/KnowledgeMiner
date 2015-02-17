@@ -37,7 +37,7 @@ public class ConceptModule extends MinedInformation implements
 		Comparable<ConceptModule> {
 	private static final long serialVersionUID = 1L;
 
-	private static final double UNMINED_CONFIDENCE = 0.5;
+	private static final float UNMINED_CONFIDENCE = 0.5f;
 
 	/**
 	 * A set of assertions that take effect if the concept meets the parent
@@ -61,7 +61,7 @@ public class ConceptModule extends MinedInformation implements
 	private transient boolean disambiguated_ = false;
 
 	/** The weight of the mapping between the concept and article [0-1] */
-	private double mappingWeight_ = -1;
+	private float mappingWeight_ = -1;
 
 	/**
 	 * A set of parents that, if this concept is a member of, will trigger the
@@ -76,7 +76,7 @@ public class ConceptModule extends MinedInformation implements
 	private OntologyConcept type_ = null;
 
 	/** The weight of the mapping between the concept and article [0-1] */
-	protected double miningWeight_ = 1;
+	protected float miningWeight_ = 1;
 
 	/**
 	 * Constructor for a new ConceptModule using just an article ID.
@@ -88,7 +88,7 @@ public class ConceptModule extends MinedInformation implements
 		super(articleID);
 		state_ = MiningState.UNMAPPED;
 		cycToWiki_ = false;
-		mappingWeight_ = 1.0;
+		mappingWeight_ = 1.0f;
 	}
 
 	/**
@@ -110,7 +110,7 @@ public class ConceptModule extends MinedInformation implements
 		this(articleID);
 		state_ = MiningState.UNMAPPED;
 		addParentDetails(parents, autoAssertions);
-		mappingWeight_ = 1.0;
+		mappingWeight_ = 1.0f;
 	}
 
 	/**
@@ -126,7 +126,7 @@ public class ConceptModule extends MinedInformation implements
 			createdConcept_ = term.getID() == OntologySocket.NON_EXISTENT_ID;
 		state_ = MiningState.UNMAPPED;
 		cycToWiki_ = true;
-		mappingWeight_ = 1.0;
+		mappingWeight_ = 1.0f;
 		deletedAssertions_ = new ArrayList<>();
 	}
 
@@ -143,7 +143,7 @@ public class ConceptModule extends MinedInformation implements
 	 *            The direction of the mapping.
 	 */
 	public ConceptModule(OntologyConcept concept, Integer article,
-			double weight, boolean cycToWiki) {
+			float weight, boolean cycToWiki) {
 		super(article);
 		concept_ = concept;
 		mappingWeight_ = weight;
@@ -382,7 +382,7 @@ public class ConceptModule extends MinedInformation implements
 		state_ = MiningState.UNMAPPED;
 		dd_ = null;
 		disambiguated_ = false;
-		mappingWeight_ = 1.0;
+		mappingWeight_ = 1.0f;
 		miningWeight_ = 1;
 	}
 
@@ -530,7 +530,7 @@ public class ConceptModule extends MinedInformation implements
 	 * 
 	 * @return The weight of the information.
 	 */
-	public double getModuleWeight() {
+	public float getModuleWeight() {
 		if (mappingWeight_ == -1)
 			return 0;
 		else if (miningWeight_ == -1)
@@ -670,7 +670,7 @@ public class ConceptModule extends MinedInformation implements
 		getConcreteParentageAssertions().clear();
 	}
 
-	public void setState(double weight, MiningState state) {
+	public void setState(float weight, MiningState state) {
 		state_ = state;
 		if (state.equals(MiningState.ASSERTED))
 			return;

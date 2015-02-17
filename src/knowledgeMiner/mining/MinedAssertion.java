@@ -10,6 +10,7 @@ import io.ontology.OntologySocket;
 import java.io.Serializable;
 import java.util.Arrays;
 
+import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import cyc.AssertionArgument;
 import cyc.CycConstants;
 import cyc.MappableConcept;
@@ -134,11 +135,19 @@ public abstract class MinedAssertion extends WeightedInformation implements
 						.getTemporalContext().toString());
 		}
 
-		isHierarchical_ = relation_.equals(CycConstants.ISA_GENLS.getConcept())
-				|| ontology.evaluate(null, CommonConcepts.GENLPREDS.getID(),
-						relation.getIdentifier(), CommonConcepts.ISA.getID())
-				|| ontology.evaluate(null, CommonConcepts.GENLPREDS.getID(),
-						relation.getIdentifier(), CommonConcepts.GENLS.getID());
+		if (relation instanceof TextMappedConcept)
+			isHierarchical_ = false;
+		else
+			isHierarchical_ = relation_.equals(CycConstants.ISA_GENLS
+					.getConcept())
+					|| ontology.evaluate(null,
+							CommonConcepts.GENLPREDS.getID(),
+							relation.getIdentifier(),
+							CommonConcepts.ISA.getID())
+					|| ontology.evaluate(null,
+							CommonConcepts.GENLPREDS.getID(),
+							relation.getIdentifier(),
+							CommonConcepts.GENLS.getID());
 	}
 
 	@Override

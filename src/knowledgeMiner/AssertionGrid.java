@@ -412,10 +412,10 @@ public class AssertionGrid {
 			// ambiguity), with standing weights
 			if (cases_.isEmpty()
 					|| seedWeight > cases_.peek().getPotentialWeight()) {
-				double collWeight = standing_
+				float collWeight = standing_
 						.getLaplaceNormalisedWeight(TermStanding.COLLECTION);
-				double indvWeight = standing_
-						.getLaplaceNormalisedWeight(TermStanding.INDIVIDUAL) + 0.01;
+				float indvWeight = standing_
+						.getLaplaceNormalisedWeight(TermStanding.INDIVIDUAL) + 0.01f;
 				// System.out.println(concept_ + ":" + collWeight + " " +
 				// indvWeight);
 				DisjointCase dc = new DisjointCase(row_, column_, true,
@@ -478,7 +478,7 @@ public class AssertionGrid {
 		return disjointCases_[caseNum].getAssertions();
 	}
 
-	public double getCaseWeight(int caseNum) {
+	public float getCaseWeight(int caseNum) {
 		if (disjointCases_[caseNum] == null)
 			return -1;
 		return Math.min(disjointCases_[caseNum].getPotentialWeight(), 1);
@@ -525,11 +525,11 @@ public class AssertionGrid {
 		private ArrayList<Double> assertionWeights_;
 		private int caseRow_;
 		private boolean[] completed_;
-		private double completedWeight_;
+		private float completedWeight_;
 		private Collection<OntologyConcept> genlsTruth_;
 		private boolean isaCollection_;
 		private Collection<OntologyConcept> isaTruth_;
-		private double standingWeight_;
+		private float standingWeight_;
 
 		/**
 		 * Constructor for a new DisjointCase which progressively identifies
@@ -547,7 +547,7 @@ public class AssertionGrid {
 		 *            The genls truths.
 		 */
 		public DisjointCase(int row, int column, boolean isaCollection,
-				double standingWeight, OntologySocket ontology) {
+				float standingWeight, OntologySocket ontology) {
 			if (standingWeight <= 0) {
 				completedWeight_ = -1;
 				return;
@@ -579,8 +579,8 @@ public class AssertionGrid {
 
 		}
 
-		private double calculatePotentialWeight() {
-			double weight = 0;
+		private float calculatePotentialWeight() {
+			float weight = 0;
 			for (int x = 0; x < completed_.length; x++) {
 				if (!completed_[x] && getWeight(x, caseRow_) > 0)
 					weight += getWeight(x, caseRow_) * proportionVector_[x];
@@ -829,10 +829,10 @@ public class AssertionGrid {
 		 * 
 		 * @return The weight of the case.
 		 */
-		public double getPotentialWeight() {
+		public float getPotentialWeight() {
 			if (completedWeight_ == -1)
 				return -1;
-			double value = completedWeight_ + calculatePotentialWeight();
+			float value = completedWeight_ + calculatePotentialWeight();
 			// Adjust the concept weight to ignore the existing assertions.
 			if (conceptIsaTruths_ == null && conceptGenlTruths_ == null)
 				value -= 1;

@@ -209,7 +209,7 @@ public class CycMiner {
 
 				ConceptModule conceptModule = null;
 				cycTerm = new OntologyConcept(input);
-				conceptModule = new ConceptModule(cycTerm, article, 1.0, true);
+				conceptModule = new ConceptModule(cycTerm, article, 1.0f, true);
 
 				// Select the mapping algorithm
 				System.out.println("Select mining heuristic:");

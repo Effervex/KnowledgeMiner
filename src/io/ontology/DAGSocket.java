@@ -294,8 +294,10 @@ public class DAGSocket extends OntologySocket {
 				if (!split[i].startsWith("(")
 						&& !StringUtils.isNumeric(split[i]))
 					continue;
+
 				// Alias check.
 				if (allowAliases
+						|| split[i].startsWith("(")
 						|| findConceptByID(Integer.parseInt(split[i]))
 								.equalsIgnoreCase(name)) {
 					OntologyConcept concept = OntologyConcept

@@ -178,7 +178,7 @@ public class DisjointnessDisambiguator {
 			removedAssertions_ = CollectionUtils.EMPTY_COLLECTION;
 	}
 
-	public double getConjointWeight() {
+	public float getConjointWeight() {
 		if (caseNumber_ == -1)
 			return 0;
 		return currentAssertionGrid_.getCaseWeight(caseNumber_);

@@ -23,7 +23,7 @@ public class WeightedStanding implements Mergeable<WeightedStanding>, Serializab
 	private static final long serialVersionUID = 1L;
 
 	/** The weights of Individual and Collection. */
-	private double[] weights_ = new double[TermStanding.values().length];
+	private float[] weights_ = new float[TermStanding.values().length];
 
 	/** The provenence of learned weighting information. */
 	@SuppressWarnings("unchecked")
@@ -31,7 +31,7 @@ public class WeightedStanding implements Mergeable<WeightedStanding>, Serializab
 			.values().length];
 
 	/** The total summed weight of individuals and collections. */
-	private double totalWeight_;
+	private float totalWeight_;
 
 	public WeightedStanding() {
 		totalWeight_ = 0;
@@ -121,7 +121,7 @@ public class WeightedStanding implements Mergeable<WeightedStanding>, Serializab
 		return weights_[termStanding.ordinal()];
 	}
 	
-	public double getLaplaceNormalisedWeight(TermStanding termStanding) {
+	public float getLaplaceNormalisedWeight(TermStanding termStanding) {
 		return (weights_[termStanding.ordinal()] + 1) / (totalWeight_ + 2);
 	}
 

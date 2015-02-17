@@ -54,40 +54,40 @@ public class CycMinerTest {
 	public void testMineArticle() throws Exception {
 		// Pure data
 		ConceptModule mapping = new ConceptModule(new OntologyConcept("Lenat"),
-				wmi_.getArticleByTitle("Douglas Lenat"), 1d, true);
+				wmi_.getArticleByTitle("Douglas Lenat"), 1f, true);
 		miner_.mineArticle(mapping, MinedInformation.ALL_TYPES, wmi_, cyc_);
 
 		mapping = new ConceptModule(new OntologyConcept("RickWakeman"),
-				wmi_.getArticleByTitle("Rick Wakeman"), 1d, true);
+				wmi_.getArticleByTitle("Rick Wakeman"), 1f, true);
 		miner_.mineArticle(mapping, MinedInformation.ALL_TYPES, wmi_, cyc_);
 
 		// Problem assertion
 		mapping = new ConceptModule(new OntologyConcept("Lawyer"),
-				wmi_.getArticleByTitle("Lawyer"), 1d, true);
+				wmi_.getArticleByTitle("Lawyer"), 1f, true);
 		miner_.mineArticle(mapping, MinedInformation.ALL_TYPES, wmi_, cyc_);
 
 		// Problem assertion
 		// mapping = new ConceptModule(new CycConcept("Nationalism",
-		// wmi_.getArticleByTitle("Nationalism"), 1d);
+		// wmi_.getArticleByTitle("Nationalism"), 1f);
 		// miner_.mineArticle(mapping);
 
 		// Child mining
 		mapping = new ConceptModule(new OntologyConcept("Flea"),
-				wmi_.getArticleByTitle("Flea"), 1d, true);
+				wmi_.getArticleByTitle("Flea"), 1f, true);
 		miner_.mineArticle(mapping, MinedInformation.ALL_TYPES, wmi_, cyc_);
 
 		// A LOT of children
 		mapping = new ConceptModule(new OntologyConcept("Dentist"),
-				wmi_.getArticleByTitle("Dentist"), 1d, true);
+				wmi_.getArticleByTitle("Dentist"), 1f, true);
 		miner_.mineArticle(mapping, MinedInformation.ALL_TYPES, wmi_, cyc_);
 
 		// Exception
 		mapping = new ConceptModule(new OntologyConcept("Temperature"),
-				wmi_.getArticleByTitle("Temperature"), 1d, true);
+				wmi_.getArticleByTitle("Temperature"), 1f, true);
 		miner_.mineArticle(mapping, MinedInformation.ALL_TYPES, wmi_, cyc_);
 
 		mapping = new ConceptModule(new OntologyConcept("NeutronStar"),
-				wmi_.getArticleByTitle("Neutron Star"), 1d, true);
+				wmi_.getArticleByTitle("Neutron Star"), 1f, true);
 		miner_.mineArticle(mapping, MinedInformation.ALL_TYPES, wmi_, cyc_);
 	}
 }
