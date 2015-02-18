@@ -440,6 +440,7 @@ public class AssertionGrid {
 		disjointCases_ = null;
 	}
 
+	@SuppressWarnings("unchecked")
 	public Collection<DefiniteAssertion> findMaximalConjoint(
 			OntologySocket ontology) {
 		findNConjoint(1, ontology);
@@ -461,11 +462,13 @@ public class AssertionGrid {
 		do {
 			DisjointCase dc = requestDisjointCase(ontology);
 			// No assertions left!
-			if (dc == null)
+			if (dc == null) {
+				disjointCases_ = Arrays.copyOf(disjointCases_, caseNum);
 				return;
+			}
 			// DC not yet completed.
 			if (!dc.isCompleted()) {
-				dc.processRow(ontology);
+				dc.processRow(ontology); 
 				if (dc.isCompleted())
 					disjointCases_[caseNum++] = dc;
 				else
@@ -530,6 +533,7 @@ public class AssertionGrid {
 		private boolean isaCollection_;
 		private Collection<OntologyConcept> isaTruth_;
 		private float standingWeight_;
+		private DefiniteAssertion seedAssertion_;
 
 		/**
 		 * Constructor for a new DisjointCase which progressively identifies
@@ -576,7 +580,8 @@ public class AssertionGrid {
 			// If seed assertion is invalid
 			if (completedWeight_ == 0)
 				completedWeight_ = -1;
-
+			else
+				seedAssertion_ = allAssertions_.get(allAssertions_.size() - 1);
 		}
 
 		private float calculatePotentialWeight() {
@@ -878,8 +883,16 @@ public class AssertionGrid {
 				if (assertion == null)
 					continue;
 				checkDisjointness(assertion, x, caseRow_, ontology);
+				
+				// Check next row - if empty, set as completed
+				if (caseRow_ + 1 == assertionGrid_[x].length)
+					completed_[x] = true;
 			}
 			caseRow_++;
+		}
+
+		public DefiniteAssertion getSeedAssertion() {
+			return seedAssertion_;
 		}
 
 		@Override
@@ -891,5 +904,13 @@ public class AssertionGrid {
 			else
 				return "I:" + allAssertions_.toString();
 		}
+	}
+
+	public int getNumCases() {
+		return disjointCases_.length;
+	}
+
+	public DefiniteAssertion getSeedAssertion(int i) {
+		return disjointCases_[i].getSeedAssertion();
 	}
 }

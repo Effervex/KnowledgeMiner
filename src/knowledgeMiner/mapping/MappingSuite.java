@@ -115,6 +115,8 @@ public class MappingSuite<Source, Target> {
 			OntologySocket ontology,
 			Collection<Class<? extends MappingHeuristic<Source, Target>>> disabledHeuristics) {
 		// If the term is already mapped, return the article.
+		// TODO Try disabling this for memory and to see if it makes much of a
+		// performance difference.
 		WeightedSet<Target> knownMapping = getAddCachedMapping(source, null);
 		if (knownMapping != null)
 			return knownMapping;

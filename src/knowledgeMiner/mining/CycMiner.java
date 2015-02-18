@@ -14,10 +14,7 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
-import knowledgeMiner.ConceptMiningTask;
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
@@ -51,8 +48,6 @@ public class CycMiner {
 
 	/** The sentence parser. */
 	private SentenceParserHeuristic sentenceParser_;
-
-	public Map<MiningHeuristic, Long> heuristicTime = new HashMap<>();
 
 	/**
 	 * An initialisation constructor for the mining aspect of KnowledgeMiner.
