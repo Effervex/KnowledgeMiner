@@ -22,7 +22,7 @@ public class WMIAccess extends KMAccess<WMISocket> {
 	 */
 	public WMIAccess(int port) throws UnknownHostException, IOException {
 		super(port);
-		cacheMapActive_ = true;
+		cacheMapActive_ = false;
 	}
 
 	@Override

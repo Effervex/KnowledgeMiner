@@ -20,8 +20,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
@@ -82,6 +84,8 @@ public class AssertionGrid {
 	/** The weights of the assertions in a grid format for quick access. */
 	private double[][] weightGrid_;
 
+	private Map<Pair<String, String>, Boolean> disjointQueries_;
+
 	/**
 	 * Constructor for a new AssertionGrid extending an existing one.
 	 * 
@@ -120,9 +124,7 @@ public class AssertionGrid {
 			for (int i = oldLength; i < newLength; i++) {
 				assertionGrid_[i] = new DefiniteAssertion[] { iter.next() };
 				proportionVector_[i] = proportion;
-				// TODO This may be an error. It will assume there is at least
-				// one mining assertion consistent with the existing assertions
-				usedSeeds_[i] = new boolean[] { true };
+				usedSeeds_[i] = new boolean[] { false };
 				weightGrid_[i] = new double[] { 1 };
 			}
 			conceptIsaTruths_ = null;
@@ -340,11 +342,27 @@ public class AssertionGrid {
 
 	private boolean isDisjoint(OntologyConcept testCollection,
 			Collection<OntologyConcept> truths, OntologySocket ontology) {
+		String testID = testCollection.getIdentifier();
 		for (OntologyConcept truth : truths) {
-			// Is disjoint?
-			if (ontology.evaluate(null, CommonConcepts.DISJOINTWITH.getID(),
-					testCollection.getIdentifier(), truth.getIdentifier())) {
-				return true;
+			String truthID = truth.getIdentifier();
+			if (testID.equals(truthID))
+				continue;
+
+			// Check cache
+			Pair<String, String> disjCase = null;
+			if (testID.compareTo(truthID) < 0)
+				disjCase = new Pair<String, String>(testID, truthID);
+			else
+				disjCase = new Pair<String, String>(truthID, testID);
+			if (disjointQueries_.containsKey(disjCase)) {
+				if (disjointQueries_.get(disjCase))
+					return true;
+			} else {
+				boolean result = ontology.evaluate(null,
+						CommonConcepts.DISJOINTWITH.getID(), testID, truthID);
+				disjointQueries_.put(disjCase, result);
+				if (result)
+					return true;
 			}
 		}
 		return false;
@@ -438,6 +456,7 @@ public class AssertionGrid {
 		column_ = 0;
 		cases_ = new PriorityQueue<>();
 		disjointCases_ = null;
+		disjointQueries_ = new HashMap<>();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -468,7 +487,7 @@ public class AssertionGrid {
 			}
 			// DC not yet completed.
 			if (!dc.isCompleted()) {
-				dc.processRow(ontology); 
+				dc.processRow(ontology);
 				if (dc.isCompleted())
 					disjointCases_[caseNum++] = dc;
 				else
@@ -883,10 +902,6 @@ public class AssertionGrid {
 				if (assertion == null)
 					continue;
 				checkDisjointness(assertion, x, caseRow_, ontology);
-				
-				// Check next row - if empty, set as completed
-				if (caseRow_ + 1 == assertionGrid_[x].length)
-					completed_[x] = true;
 			}
 			caseRow_++;
 		}

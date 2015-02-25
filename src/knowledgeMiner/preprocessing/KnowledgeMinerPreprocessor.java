@@ -291,7 +291,7 @@ public class KnowledgeMinerPreprocessor {
 	public boolean isProcessed(String heuristicName, int id) {
 		if (overwriteMode_ || !ENABLE_PREPROCESSING)
 			return false;
-		return getLoadHeuristicResult(heuristicName, id) != null;
+		return makeFilename(heuristicName, id).exists();
 	}
 
 	/**

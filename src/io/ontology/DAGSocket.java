@@ -145,8 +145,15 @@ public class DAGSocket extends OntologySocket {
 
 	@Override
 	public int assertToOntology(String microtheory, Object... arguments) {
-		String edge = "(" + StringUtils.join(arguments, " ").trim() + ")";
+		String edge = null;
+		if (arguments.length == 1 && arguments[0] instanceof String
+				&& arguments[0].toString().matches("\\(.+?\\)"))
+			edge = (String) arguments[0];
+		else {
+			edge = "(" + StringUtils.join(arguments, " ").trim() + ")";
+		}
 		edge = noNewLine(edge);
+
 		try {
 			String args = null;
 			if (microtheory != null)
