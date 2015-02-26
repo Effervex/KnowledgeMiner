@@ -18,7 +18,6 @@ import java.io.LineNumberReader;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -75,8 +74,6 @@ public class KnowledgeMiner {
 
 	public static int runID_ = -1;
 
-	private CountDownLatch completedLatch_;
-
 	/** The last index to seed with. */
 	private int endCount_ = -1;
 
@@ -86,7 +83,11 @@ public class KnowledgeMiner {
 	/** A map linking heuristic strings to their heuristics. */
 	private Map<String, Object> heuristicStringMap_;
 
-	private int index_ = 0;
+	/** The current seed index. */
+	private int seedIndex_ = 0;
+
+	/** The number of completed seeds. */
+	private int numComplete_;
 
 	private ConceptThreadInterface interface_;
 
@@ -100,8 +101,6 @@ public class KnowledgeMiner {
 	private CycMiner miner_;
 
 	private OntologySocket ontology_;
-
-	private int poolLimit_;
 
 	private CycPreprocessor preprocessor_;
 
@@ -160,32 +159,27 @@ public class KnowledgeMiner {
 		}
 	}
 
-	protected synchronized void readArticle() {
-		if (executor_.getQueue().size() >= poolLimit_)
-			return;
-
+	protected ConceptModule readArticle() {
 		int artId = -1;
 		while (artId == -1) {
 			try {
 				if (fileInput_ != null) {
 					String in = fileInput_.readLine();
 					if (in == null) {
-						completedLatch_.countDown();
-						return;
+						return null;
 					} else
 						in = in.split("\t")[0];
 					artId = Integer.parseInt(in);
-					index_++;
+					seedIndex_++;
 				} else {
-					artId = wiki_.getNextArticle((int) index_);
+					artId = wiki_.getNextArticle((int) seedIndex_);
 
 					if (artId == -1
 							|| (seededCount_ >= endCount_ && endCount_ != -1)) {
-						completedLatch_.countDown();
-						return;
+						return null;
 					}
 
-					index_ = artId;
+					seedIndex_ = artId;
 				}
 				String type = wiki_.getPageType(artId);
 				if (!type.equals(WMISocket.TYPE_ARTICLE)
@@ -196,13 +190,10 @@ public class KnowledgeMiner {
 			}
 		}
 
-		processConcept(new ConceptMiningTask(new ConceptModule(artId)));
+		return new ConceptModule(artId);
 	}
 
-	protected synchronized void readConcept() {
-		if (executor_.getQueue().size() >= poolLimit_)
-			return;
-
+	protected ConceptModule readConcept() {
 		OntologyConcept concept = null;
 		int id = -1;
 		while (concept == null) {
@@ -211,21 +202,19 @@ public class KnowledgeMiner {
 				if (fileInput_ != null) {
 					String in = fileInput_.readLine();
 					if (in == null) {
-						completedLatch_.countDown();
-						return;
+						return null;
 					} else
 						in = in.split("\t")[0];
 					id = Integer.parseInt(in);
-					index_++;
+					seedIndex_++;
 				} else {
-					id = ontology_.getNextNode(index_);
+					id = ontology_.getNextNode(seedIndex_);
 					if (id == -1
 							|| (seededCount_ >= endCount_ && endCount_ != -1)) {
-						completedLatch_.countDown();
-						return;
+						return null;
 					}
 
-					index_ = id;
+					seedIndex_ = id;
 				}
 
 				// Check if the concept is valid (according to post processors)
@@ -243,7 +232,7 @@ public class KnowledgeMiner {
 			}
 		}
 
-		processConcept(new ConceptMiningTask(new ConceptModule(concept)));
+		return new ConceptModule(concept);
 	}
 
 	/**
@@ -290,26 +279,21 @@ public class KnowledgeMiner {
 	public void mapAllResource(String resourceName, int startIndex, int end,
 			String filename) throws Exception {
 		readInputFile(filename);
-		index_ = startIndex;
+		seedIndex_ = startIndex;
 		endCount_ = end;
 		startTime_ = System.currentTimeMillis();
-		poolLimit_ = executor_.getMaximumPoolSize();
 
-		completedLatch_ = new CountDownLatch(poolLimit_);
-		poolLimit_ *= 2;
-		for (int i = 0; i < poolLimit_; i++) {
+		// Load up the executor with a list of article/concept IDs
+		ConceptModule cm = null;
+		do {
 			if (resourceName.equals(RESOURCE_WIKIPEDIA))
-				readArticle();
+				cm = readArticle();
 			else if (resourceName.equals(RESOURCE_ONTOLOGY))
-				readConcept();
-		}
+				cm = readConcept();
+			processConcept(new ConceptMiningTask(cm));
+		} while (cm != null);
 
-		completedLatch_.await();
-		while (executor_.getActiveCount() > 0) {
-			Thread.sleep(10000);
-			LoggerFactory.getLogger(getClass()).info(
-					"Awaiting completion of threads.");
-		}
+		executor_.shutdown();
 		System.out.println("Done!");
 		statusUpdate();
 	}
@@ -361,14 +345,13 @@ public class KnowledgeMiner {
 		long elapsedTime = System.currentTimeMillis() - startTime_;
 		StringBuilder builder = new StringBuilder(
 				UtilityMethods.toTimeFormat(elapsedTime) + " runtime. Mapped "
-						+ ConceptMiningTask.assertedCount_
-						+ ". Current index at " + index_);
+						+ ConceptMiningTask.assertedCount_ + ". Completed "
+						+ numComplete_ + " seeds");
 		if (fileInput_ != null) {
-			float percent = (1f * index_) / numLines_;
+			float percent = (1f * numComplete_) / numLines_;
 			long remaining = (long) (elapsedTime / percent) - elapsedTime;
 			DecimalFormat format = new DecimalFormat("##0.00");
-			builder.append("/" + numLines_ + " ("
-					+ format.format(percent * 100) + "%). ETA "
+			builder.append(" (" + format.format(percent * 100) + "%). ETA "
 					+ UtilityMethods.toTimeFormat(remaining));
 		}
 		System.out
@@ -587,13 +570,14 @@ public class KnowledgeMiner {
 	}
 
 	private class ProcessConceptTask<V> extends FutureTask<V> {
+
 		public ProcessConceptTask(Runnable runnable, V result) {
 			super(runnable, result);
 		}
 
 		@Override
 		protected void done() {
-			readArticle();
+			numComplete_++;
 		}
 
 	}
