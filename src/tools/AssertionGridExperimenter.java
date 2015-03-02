@@ -14,9 +14,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.TreeMap;
 
 import knowledgeMiner.AssertionGrid;
 import knowledgeMiner.KnowledgeMiner;
@@ -62,42 +62,6 @@ public class AssertionGridExperimenter {
 		ontology_ = ResourceAccess.requestOntologySocket();
 		wmi_ = ResourceAccess.requestWMISocket();
 		assertions_ = new ArrayList<>();
-	}
-
-	public static void compareClusters(File before, File after, File diffFile)
-			throws IOException {
-		// Read the clusters in
-		MultiMap<String, String> clusterMapA = readClusterFile(before);
-		MultiMap<String, String> clusterMapB = readClusterFile(after);
-
-		// Deintersect
-		MultiMap<String, String> diffMap = MultiMap.createSortedSetMultiMap();
-		Collection<String> keys = new HashSet<>(clusterMapA.keySet());
-		keys.addAll(clusterMapB.keySet());
-		for (String key : keys) {
-			if (clusterMapA.containsKey(key) && !clusterMapB.containsKey(key))
-				diffMap.putCollection(key, clusterMapA.get(key));
-			else if (!clusterMapA.containsKey(key)
-					&& clusterMapB.containsKey(key))
-				diffMap.putCollection(key, clusterMapB.get(key));
-			else
-				diffMap.putCollection(key, CollectionUtils.disjunction(
-						clusterMapA.get(key), clusterMapB.get(key)));
-		}
-
-		// Output the diff
-		BufferedWriter writer = new BufferedWriter(new FileWriter(diffFile));
-		for (String key : diffMap.keySet()) {
-			for (String diff : diffMap.get(key)) {
-				writer.write(key + "\t");
-				if (clusterMapA.get(key).contains(diff))
-					writer.write("-");
-				else
-					writer.write("+");
-				writer.write(diff + "\n");
-			}
-		}
-		writer.close();
 	}
 
 	/**
@@ -213,7 +177,7 @@ public class AssertionGridExperimenter {
 	 */
 	private void saveResults(File outFile, File outCountsFile)
 			throws IOException {
-		Map<String, Integer> assertionCount = new HashMap<>();
+		Map<String, Integer> assertionCount = new TreeMap<>();
 		BufferedWriter writer = new BufferedWriter(new FileWriter(outFile));
 		writer.write("Seed\tAssertions\tProvenance\tWeight\n");
 		int numCases = disambiguatedGrid_.getNumCases();
@@ -241,31 +205,13 @@ public class AssertionGridExperimenter {
 		}
 		writer.close();
 
-		// Outputting the assertion counts
+		Map<String, Integer> sortedCount = UtilityMethods.sortByValue(assertionCount);
 		writer = new BufferedWriter(new FileWriter(outCountsFile));
-		for (String assertion : assertionCount.keySet()) {
+		for (String assertion : sortedCount.keySet()) {
 			writer.write(assertion + "\t" + assertionCount.get(assertion)
 					+ "\n");
 		}
 		writer.close();
-	}
-
-	protected static MultiMap<String, String> readClusterFile(File clusterFile)
-			throws FileNotFoundException, IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(clusterFile));
-
-		// Read in the files and clusters, then deintersect
-		MultiMap<String, String> clusterMap = MultiMap
-				.createSortedSetMultiMap();
-		// Skip header
-		String line = reader.readLine();
-		while ((line = reader.readLine()) != null) {
-			String[] split = line.split("\t");
-			clusterMap.put(split[0], split[1]);
-		}
-
-		reader.close();
-		return clusterMap;
 	}
 
 	/**
@@ -314,26 +260,6 @@ public class AssertionGridExperimenter {
 				existingAssertions, assertionRemoval);
 		disambiguatedGrid_.findNConjoint(10000, ontology_);
 		return disambiguatedGrid_.getNumCases();
-	}
-
-	public static void main(String[] args) {
-		// Four args
-		// Input term file
-		// Output cluster file
-		// Input disjoint assertion file
-		// Disjoint relation threshold
-		// Disjoint intra-relation threshold
-		// Output diff file
-		if (args.length != 6) {
-			System.err.println("Experimenter requires input term "
-					+ "file, output file, input disjoint assertions, "
-					+ "relation threshold, intra-relation threshold"
-					+ "and output diff file!");
-			System.exit(1);
-		}
-
-		AssertionGridExperimenter experimenter = new AssertionGridExperimenter();
-		experimenter.run(args);
 	}
 
 	public void run(String[] args) {
@@ -404,5 +330,81 @@ public class AssertionGridExperimenter {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	protected static MultiMap<String, String> readClusterFile(File clusterFile)
+			throws FileNotFoundException, IOException {
+		BufferedReader reader = new BufferedReader(new FileReader(clusterFile));
+
+		// Read in the files and clusters, then deintersect
+		MultiMap<String, String> clusterMap = MultiMap
+				.createSortedSetMultiMap();
+		// Skip header
+		String line = reader.readLine();
+		while ((line = reader.readLine()) != null) {
+			String[] split = line.split("\t");
+			clusterMap.put(split[0], split[1]);
+		}
+
+		reader.close();
+		return clusterMap;
+	}
+
+	public static void compareClusters(File before, File after, File diffFile)
+			throws IOException {
+		// Read the clusters in
+		MultiMap<String, String> clusterMapA = readClusterFile(before);
+		MultiMap<String, String> clusterMapB = readClusterFile(after);
+
+		// Deintersect
+		MultiMap<String, String> diffMap = MultiMap.createSortedSetMultiMap();
+		Collection<String> keys = new HashSet<>(clusterMapA.keySet());
+		keys.addAll(clusterMapB.keySet());
+		for (String key : keys) {
+			if (clusterMapA.containsKey(key) && !clusterMapB.containsKey(key))
+				diffMap.putCollection(key, clusterMapA.get(key));
+			else if (!clusterMapA.containsKey(key)
+					&& clusterMapB.containsKey(key))
+				diffMap.putCollection(key, clusterMapB.get(key));
+			else
+				diffMap.putCollection(key, CollectionUtils.disjunction(
+						clusterMapA.get(key), clusterMapB.get(key)));
+		}
+
+		// Output the diff
+		BufferedWriter writer = new BufferedWriter(new FileWriter(diffFile));
+		for (String key : diffMap.keySet()) {
+			for (String diff : diffMap.get(key)) {
+				writer.write(key + "\t");
+				// If the key is in clusterMapA, but it is not in clusterMapB
+				if (clusterMapA.containsKey(key)
+						&& clusterMapA.get(key).contains(diff))
+					writer.write("-");
+				else
+					writer.write("+");
+				writer.write(diff + "\n");
+			}
+		}
+		writer.close();
+	}
+
+	public static void main(String[] args) {
+		// Four args
+		// Input term file
+		// Output cluster file
+		// Input disjoint assertion file
+		// Disjoint relation threshold
+		// Disjoint intra-relation threshold
+		// Output diff file
+		if (args.length != 6) {
+			System.err.println("Experimenter requires input term "
+					+ "file, output file, input disjoint assertions, "
+					+ "relation threshold, intra-relation threshold"
+					+ "and output diff file!");
+			System.exit(1);
+		}
+
+		AssertionGridExperimenter experimenter = new AssertionGridExperimenter();
+		experimenter.run(args);
 	}
 }

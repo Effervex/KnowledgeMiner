@@ -126,32 +126,58 @@ public abstract class OntologySocket extends KMSocket {
 		if (!inOntology(concept.getConceptName()))
 			return true;
 
-		if (isa(concept.getIdentifier(), CommonConcepts.PREDICATE.getID())) {
-			// It needs at least one typed argument
-			String argIsa = "(" + CommonConcepts.ARGISA.getID() + " "
-					+ concept.getIdentifier() + " ?X ?Y)";
-			String argGenl = "(" + CommonConcepts.ARGGENL.getID() + " "
-					+ concept.getIdentifier() + " ?X ?Y)";
-			if (!query(null, CommonConcepts.OR.getID(), argIsa, argGenl)
-					.startsWith("0"))
-				return false;
-		} else {
-			// Need more than Individual as a parent
-			Collection<OntologyConcept> parentCols = quickQuery(
-					CommonQuery.MINISA, concept.getIdentifier());
-			if (parentCols.size() > 1)
-				return false;
-			else if (!parentCols.isEmpty()
-					&& !evaluate(null, CommonConcepts.GENLS.getID(),
-							CommonConcepts.INDIVIDUAL.getID(), parentCols
-									.iterator().next().getIdentifier()))
-				return false;
-
-			int numAssertions = getAllAssertions(concept.getID(), -1).size();
-			if (numAssertions > 2)
+		for (CommonConcepts cc : CommonConcepts.values()) {
+			if (concept.getConceptName().equals(cc.getNodeName()))
 				return false;
 		}
-		return true;
+
+		if (isa(concept.getIdentifier(), CommonConcepts.PREDICATE.getID())) {
+			Collection<String[]> assertions = getAllAssertions(concept, 1);
+			if (!assertions.isEmpty())
+				return false;
+
+			// Predicate needs to have some form of definition to it
+			assertions = getAllAssertions(concept, 2);
+			for (String[] assertion : assertions) {
+				OntologyConcept oc = OntologyConcept
+						.parseArgument(assertion[0]);
+				if (oc.getConceptName().matches("arg.*Isa")
+						|| oc.getConceptName().matches("arg.*Genl")
+						|| oc.getIdentifier().equals(
+								CommonConcepts.GENLPREDS.getNodeName()))
+					return false;
+			}
+
+			return true;
+		}
+
+		if (getAllAssertions(concept.getIdentifier(), -1).size() > 1)
+			return false;
+
+		// Need more than Individual as a parent
+		Collection<OntologyConcept> parentCols = quickQuery(CommonQuery.MINISA,
+				concept.getIdentifier());
+		if (parentCols.size() > 1)
+			return false;
+		else if (parentCols.size() == 0)
+			return true;
+		else {
+			OntologyConcept parent = parentCols.iterator().next();
+			if (parent.getIdentifier().equals(
+					CommonConcepts.INDIVIDUAL.getNodeName())
+					|| parent.getIdentifier().equals(
+							CommonConcepts.COLLECTION.getNodeName())
+					|| parent.getIdentifier().equals(
+							CommonConcepts.THING.getNodeName())
+					|| parent.getIdentifier().equals(
+							CommonConcepts.FUNCTION.getNodeName())
+					|| parent.getIdentifier().equals(
+							CommonConcepts.PREDICATE.getNodeName())
+					|| parent.getIdentifier().equals(
+							CommonConcepts.BINARY_PREDICATE.getNodeName()))
+				return true;
+		}
+		return false;
 	}
 
 	public abstract List<String> justify(Object... assertionArgs);

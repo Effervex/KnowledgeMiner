@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import util.UtilityMethods;
 import cyc.OntologyConcept;
@@ -37,41 +38,39 @@ public class CycPreprocessor {
 	 */
 	public CycPreprocessor() {
 		ResourceAccess.newInstance();
-		preprocessors_ = new ArrayList<>(3);
+		preprocessors_ = new ArrayList<>();
 		preprocessors_.add(new RemoveUseless());
-		preprocessors_.add(new UglyString());
 	}
 
 	public void preprocess(ThreadPoolExecutor executor) throws Exception {
 		System.out.println("Preprocessing KM. Please wait.");
 
-		OntologySocket cyc = ResourceAccess.requestOntologySocket();
+		OntologySocket ontology = ResourceAccess.requestOntologySocket();
 
 		// Check for preprocessed file
 		if (PREPROCESSED.exists()) {
-			loadPreprocessCommands(cyc);
+			loadPreprocessCommands(ontology);
 			return;
 		}
 
 		count_ = 0;
+		total_ = ontology.getNumConstants();
 		startTime_ = System.currentTimeMillis();
 
-		int count = 0;
-		total_ = cyc.getNumConstants();
-		int index = 0;
-		while (count < total_) {
+		int index = ontology.getNextNode(0);
+		while (index != -1) {
 			// Read in a constant
-			String constant = cyc.findConceptByID(index++);
+			String constant = ontology.findConceptByID(index++);
 			if (constant == null)
 				continue;
-			count++;
+			index = ontology.getNextNode(index);
 
 			executor.execute(new PreprocessingTask(new OntologyConcept(constant,
 					index - 1)));
 		}
-
-		while (executor.getActiveCount() > 0)
-			Thread.sleep(5000);
+		
+		executor.shutdown();
+		executor.awaitTermination(24, TimeUnit.HOURS);
 
 		System.out.println("Complete! " + count_ + " concepts processed.");
 	}

@@ -40,7 +40,6 @@ public enum CycConstants {
 	SYNONYM_RELATION("wikipediaArticleSynonym"),
 	SYNONYM_RELATION_CANONICAL("wikipediaArticleName-Canonical"),
 	SYNONYMOUS_EXTERNAL_CONCEPT("synonymousExternalConcept"),
-	UGLY_PRED("uglyString"),
 	UNCLASSIFIED_CONCEPT("KnowledgeMinerUnclassified"),
 	UNIVERSAL_VOCAB_MT("UniversalVocabularyMt"),
 	URLFN("URLFn"),
@@ -183,11 +182,6 @@ public enum CycConstants {
 				"Denotes a Wikipedia specific infobox value name that is synonymous with this predicate.",
 				CommonConcepts.TERM_STRING.getID(),
 				CommonConcepts.PREDICATE.getID(), ontologySocket);
-		lexicalPredicate(
-				UGLY_PRED.getConcept(),
-				"A simple deconstructed string composed of a subset the constant name.",
-				CommonConcepts.TERM_STRING.getID(),
-				CommonConcepts.THING.getID(), ontologySocket);
 		ontologySocket
 				.createAndAssert(
 						MAPPING_CONFIDENCE.getConceptName(),

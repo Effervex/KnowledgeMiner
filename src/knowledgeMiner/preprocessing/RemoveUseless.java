@@ -3,89 +3,70 @@
  ******************************************************************************/
 package knowledgeMiner.preprocessing;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
+
 import graph.core.CommonConcepts;
-import io.IOManager;
+import graph.core.CycDAG;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import com.google.common.base.Predicate;
-
 import cyc.OntologyConcept;
 
 /**
+ * Removes useless concepts from the ontology. This is defined by concepts that
+ * contribute little to no ontological definitions.
  * 
  * @author Sam Sarjant
  */
 public class RemoveUseless implements Preprocessor {
-	private static final Pattern SPECIALISED_CONSTANT_PATTERN = Pattern
-			.compile("\\w+:.+");
-	private Collection<Predicate<OntologyConcept>> uselessQualifiers_;
-
-	public RemoveUseless() {
-		uselessQualifiers_ = new ArrayList<>();
-		uselessQualifiers_.add(new SpecialisedConstants());
-		uselessQualifiers_.add(new InfolessPredicate());
-	}
-
 	@Override
-	public void processTerm(OntologyConcept term) throws Exception {
-		for (Predicate<OntologyConcept> qualifier : uselessQualifiers_) {
-			if (qualifier.apply(term)) {
-				ResourceAccess.requestOntologySocket().removeConcept(
-						term.getID());
-				return;
+	public void processTerm(OntologyConcept concept) {
+		OntologySocket ontology = ResourceAccess.requestOntologySocket();
+		try {
+			if (shouldRemove(concept, ontology)) {
+				System.out.println("Removing " + concept.getConceptName());
+				ontology.removeConcept(concept);
 			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
 	/**
-	 * Removes constants that are part of a specialised aspect of Cyc (e.g.
-	 * neuroLex:, oboGo:...). Any strings that match the word-colon-word
-	 * pattern.
-	 * 
-	 * @author Sam Sarjant
+	 * An inner method for returning a boolean to remove.
+	 *
+	 * @param concept
+	 *            The concept to check.
+	 * @param ontology
+	 *            The ontology access.
+	 * @return True if the concept should be removed.
+	 * @throws Exception
+	 *             Should something go awry...
 	 */
-	private class SpecialisedConstants implements Predicate<OntologyConcept> {
-		@Override
-		public boolean apply(OntologyConcept constant) {
-			if (!constant.isFunction()) {
-				Matcher m = SPECIALISED_CONSTANT_PATTERN.matcher(constant
-						.getConceptName());
-				return m.matches();
-			}
-			return false;
-		}
+	private boolean shouldRemove(OntologyConcept concept,
+			OntologySocket ontology) throws Exception {
+		if (ontology.isInfoless(concept))
+			return true;
+
+		return false;
 	}
 
-	/**
-	 * Removes predicates that have no information about their arguments.
-	 * 
-	 * @author Sam Sarjant
-	 */
-	private class InfolessPredicate implements Predicate<OntologyConcept> {
-		@Override
-		public boolean apply(OntologyConcept constant) {
+	public static void main(String[] args) {
+		ResourceAccess.newInstance();
+		OntologySocket ontology = ResourceAccess.requestOntologySocket();
+		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+		while (true) {
 			try {
-				OntologySocket ontology = ResourceAccess
-						.requestOntologySocket();
-				if (ontology.isa(constant.getIdentifier(),
-						CommonConcepts.PREDICATE.getID())
-						&& ontology.isInfoless(constant)
-						&& ontology.query(
-								null,
-								CommonConcepts.ASSERTED_SENTENCE.getID(),
-								"(" + CommonConcepts.GENLPREDS.getID() + " "
-										+ constant.getIdentifier() + " ?X)")
-								.startsWith("0"))
-					return true;
+				String str = in.readLine();
+				OntologyConcept concept = new OntologyConcept(str);
+				if (ontology.isInfoless(concept))
+					System.out.println("true");
+				else
+					System.out.println("false");
 			} catch (Exception e) {
+				e.printStackTrace();
 			}
-			return false;
 		}
 	}
 }

@@ -220,7 +220,7 @@ public class IOManager {
 		}
 	}
 
-	public void writeMappingChain(String chain) throws IOException {
+	public synchronized void writeMappingChain(String chain) throws IOException {
 		if (mappingChain_ != null)
 			mappingChain_.write(chain + "\n");
 	}

@@ -103,9 +103,10 @@ public class DAGSocket extends OntologySocket {
 
 	@Override
 	protected boolean parseProofResult(String result) {
-		if (result.startsWith("-1") || result.startsWith("0"))
+		if (result.matches("\\d+\\|T\\|.+"))
+			return true;
+		else
 			return false;
-		return true;
 	}
 
 	@Override

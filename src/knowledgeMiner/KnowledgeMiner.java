@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import knowledgeMiner.debugInterface.ConceptThreadInterface;
 import knowledgeMiner.debugInterface.MappingChainInterface;
@@ -294,6 +295,7 @@ public class KnowledgeMiner {
 		} while (cm != null);
 
 		executor_.shutdown();
+		executor_.awaitTermination(30, TimeUnit.DAYS);
 		System.out.println("Done!");
 		statusUpdate();
 	}
