@@ -306,13 +306,13 @@ public class ConceptModule extends MinedInformation implements
 		// step
 		if (determineType(ontology) != type_) {
 			for (Integer id : assertionIDs)
-				ontology.unassert(null, id);
+				ontology.unassert(null, id, true);
 
 			for (DefiniteAssertion assertion : getConcreteAssertions()) {
 				int id = assertion.makeAssertion(concept_, ontology);
 				if (id != -1) {
 					if (determineType(ontology) != type_)
-						ontology.unassert(null, id);
+						ontology.unassert(null, id, true);
 				}
 			}
 		}
@@ -328,7 +328,7 @@ public class ConceptModule extends MinedInformation implements
 		for (DefiniteAssertion assertion : deletedAssertions_) {
 			int assertionID = ontology.findEdgeIDByArgs((Object[]) assertion
 					.asArgs());
-			if (ontology.unassert(null, assertionID)) {
+			if (ontology.unassert(null, assertionID, false)) {
 				try {
 					IOManager.getInstance().writeRemovedAssertion(assertion);
 				} catch (IOException e) {

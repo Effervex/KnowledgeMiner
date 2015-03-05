@@ -204,7 +204,7 @@ public abstract class OntologySocket extends KMSocket {
 		return NLPToSyntaxModule.textToConcept(words);
 	}
 
-	public abstract boolean unassert(String microtheory, int assertionID);
+	public abstract boolean unassert(String microtheory, int assertionID, boolean forceRemove);
 
 	public boolean isValidArg(Object predicate, Object concept, int argNum) {
 		if (predicate.equals(CycConstants.ISA_GENLS.getConcept()

@@ -139,12 +139,17 @@ public class AssertionGridExperimenter {
 	 * @throws IOException
 	 *             Should something go awry.
 	 */
-	private void readTaxonomicTerms(File termFile) throws IOException {
+	private void readTaxonomicTerms(File termFile, boolean directCollections)
+			throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(termFile));
 
 		String line = null;
 		while ((line = reader.readLine()) != null) {
-			Collection<OntologyConcept> colls = disambiguateToCollection(line);
+			Collection<OntologyConcept> colls = new ArrayList<>();
+			if (directCollections)
+				colls.add(new OntologyConcept(line));
+			else
+				colls = disambiguateToCollection(line);
 			if (colls.isEmpty()) {
 				System.out.println("WARNING: '" + line
 						+ "' did not disambiguate into a collection(s).");
@@ -152,12 +157,19 @@ public class AssertionGridExperimenter {
 			}
 			HeuristicProvenance provenance = new HeuristicProvenance(
 					"AssertionGridHeuristic", line);
-			PartialAssertion parentAssertion = new PartialAssertion();
-			for (OntologyConcept concept : colls) {
-				PartialAssertion pa = new PartialAssertion(
-						CycConstants.ISA_GENLS.getConcept(), provenance,
-						MAPPABLE_STAND_IN, concept);
-				parentAssertion.addSubAssertion(pa);
+			PartialAssertion parentAssertion = null;
+			if (colls.size() == 1)
+				parentAssertion = new PartialAssertion(
+						CycConstants.ISA.getConcept(), provenance,
+						MAPPABLE_STAND_IN, colls.iterator().next());
+			else {
+				parentAssertion = new PartialAssertion();
+				for (OntologyConcept concept : colls) {
+					PartialAssertion pa = new PartialAssertion(
+							CycConstants.ISA_GENLS.getConcept(), provenance,
+							MAPPABLE_STAND_IN, concept);
+					parentAssertion.addSubAssertion(pa);
+				}
 			}
 			assertions_.add(parentAssertion);
 		}
@@ -205,7 +217,8 @@ public class AssertionGridExperimenter {
 		}
 		writer.close();
 
-		Map<String, Integer> sortedCount = UtilityMethods.sortByValue(assertionCount);
+		Map<String, Integer> sortedCount = UtilityMethods
+				.sortByValue(assertionCount);
 		writer = new BufferedWriter(new FileWriter(outCountsFile));
 		for (String assertion : sortedCount.keySet()) {
 			writer.write(assertion + "\t" + assertionCount.get(assertion)
@@ -266,22 +279,23 @@ public class AssertionGridExperimenter {
 		try {
 			// Set up files
 			File termFile = new File(args[0]);
-			File outFile1 = new File(args[1] + "1");
+			boolean directCollection = args[1].equalsIgnoreCase("T");
+			File outFile1 = new File(args[2] + "1");
 			File outCounts1 = new File(outFile1.getParent(),
 					"assertionsCounts1.txt");
-			File outFile2 = new File(args[1] + "2");
+			File outFile2 = new File(args[2] + "2");
 			File outCounts2 = new File(outFile2.getParent(),
 					"assertionsCounts2.txt");
-			File disjointFile = new File(args[2]);
-			float relationThreshold = Float.parseFloat(args[3]);
-			float intraRelationThreshold = Float.parseFloat(args[4]);
-			File diffFile = new File(args[5]);
+			File disjointFile = new File(args[3]);
+			float relationThreshold = Float.parseFloat(args[4]);
+			float intraRelationThreshold = Float.parseFloat(args[5]);
+			File diffFile = new File(args[6]);
 
 			if (!outFile1.exists() || !outFile2.exists()) {
 				// Read and disambiguate the terms
 				System.out.print("Disambiguating terms to taxonomic "
 						+ "assertions...");
-				readTaxonomicTerms(termFile);
+				readTaxonomicTerms(termFile, directCollection);
 				System.out.println(" Done!");
 
 				// Build the grid and resolve
@@ -396,8 +410,9 @@ public class AssertionGridExperimenter {
 		// Disjoint relation threshold
 		// Disjoint intra-relation threshold
 		// Output diff file
-		if (args.length != 6) {
-			System.err.println("Experimenter requires input term "
+		if (args.length != 7) {
+			System.err.println("Experimenter requires input term, "
+					+ "boolean isDirectCollectionFile, "
 					+ "file, output file, input disjoint assertions, "
 					+ "relation threshold, intra-relation threshold"
 					+ "and output diff file!");

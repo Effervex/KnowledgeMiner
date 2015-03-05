@@ -139,7 +139,7 @@ public class TripleDisambiguator {
 							consistent = false;
 					}
 
-					ontology_.unassert(null, edgeID);
+					ontology_.unassert(null, edgeID, true);
 					triple.markConsistent(consistent);
 				}
 

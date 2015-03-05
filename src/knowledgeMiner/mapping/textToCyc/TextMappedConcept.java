@@ -28,9 +28,8 @@ public class TextMappedConcept extends MappableConcept {
 	@Override
 	protected WeightedSet<OntologyConcept> mapThingInternal(CycMapper mapper,
 			WMISocket wmi, OntologySocket ontology) {
-		// TODO Warning, allowDirectSearch has been forced to true
 		return mapper.mapTextToCyc((String) mappableThing_, false, false,
-				preProcessText_, true, wmi, ontology);
+				preProcessText_, allowDirectSearch_, wmi, ontology);
 	}
 
 	@Override

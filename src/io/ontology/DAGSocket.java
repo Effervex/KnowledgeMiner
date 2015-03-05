@@ -103,10 +103,9 @@ public class DAGSocket extends OntologySocket {
 
 	@Override
 	protected boolean parseProofResult(String result) {
-		if (result.matches("\\d+\\|T\\|.+"))
+		if (result.matches("\\d+\\|T\\|.*"))
 			return true;
-		else
-			return false;
+		return false;
 	}
 
 	@Override
@@ -650,17 +649,19 @@ public class DAGSocket extends OntologySocket {
 	}
 
 	@Override
-	public boolean unassert(String microtheory, int assertionID) {
+	public boolean unassert(String microtheory, int assertionID,
+			boolean forceRemove) {
 		try {
 			clearCachedArticles();
-			String args = assertionID + "";
+			String args = assertionID + " ";
+			args += (forceRemove) ? "T" : "F";
 			IOManager.getInstance().writeCycOperation("removeedge " + args);
 			return command("removeedge", args, false).startsWith("1");
 		} catch (Exception e) {
 			logger_.error("unassert: {}, {}", assertionID,
 					Arrays.toString(e.getStackTrace()));
 			if (restartConnection()) {
-				boolean result = unassert(microtheory, assertionID);
+				boolean result = unassert(microtheory, assertionID, forceRemove);
 				canRestart_ = true;
 				return result;
 			}

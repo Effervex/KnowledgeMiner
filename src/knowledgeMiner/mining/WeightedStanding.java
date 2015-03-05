@@ -4,22 +4,20 @@
 package knowledgeMiner.mining;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
 import knowledgeMiner.TermStanding;
 import util.Mergeable;
-import cyc.CycConstants;
-import cyc.MappableConcept;
 
 /**
  * A class representing the evidence of standing gathered.
  * 
  * @author Sam Sarjant
  */
-public class WeightedStanding implements Mergeable<WeightedStanding>, Serializable {
+public class WeightedStanding implements Mergeable<WeightedStanding>,
+		Serializable {
 	private static final long serialVersionUID = 1L;
 
 	/** The weights of Individual and Collection. */
@@ -52,11 +50,29 @@ public class WeightedStanding implements Mergeable<WeightedStanding>, Serializab
 	@Override
 	public boolean mergeInformation(WeightedStanding otherInfo)
 			throws Exception {
-		for (int i = 0; i < weights_.length; i++) {
-			weights_[i] += otherInfo.weights_[i];
-			if (i != TermStanding.UNKNOWN.ordinal())
-				totalWeight_ += otherInfo.weights_[i];
+		if (totalWeight_ == 0) {
+			// Check if new
+			weights_ = Arrays.copyOf(otherInfo.weights_, weights_.length);
+			totalWeight_ = otherInfo.totalWeight_;
+			heuristicProvenance_ = Arrays
+					.copyOf(otherInfo.heuristicProvenance_,
+							heuristicProvenance_.length);
+			return true;
 		}
+		
+		// Normalise and merge.
+		normaliseViaGlobal(null);
+		WeightedStanding copy = new WeightedStanding(otherInfo);
+		copy.normaliseViaGlobal(null);
+		for (int i = 0; i < weights_.length; i++) {
+			weights_[i] += copy.weights_[i];
+			if (copy.heuristicProvenance_[i] != null) {
+				if (heuristicProvenance_[i] == null)
+					heuristicProvenance_[i] = new HashSet<>();
+				heuristicProvenance_[i].addAll(copy.heuristicProvenance_[i]);
+			}
+		}
+		totalWeight_ += copy.totalWeight_;
 		return true;
 	}
 
@@ -78,51 +94,17 @@ public class WeightedStanding implements Mergeable<WeightedStanding>, Serializab
 		return true;
 	}
 
-	public Collection<PartialAssertion> asAssertions(MappableConcept coreConcept) {
-		Collection<PartialAssertion> assertions = new ArrayList<>();
-		double indvWeight = weights_[TermStanding.INDIVIDUAL.ordinal()] + 1;
-		double collWeight = weights_[TermStanding.COLLECTION.ordinal()] + 1;
-		double totalWeight = totalWeight_ + 2;
-
-		// A weighted assertion for Individual and Collection
-		if (indvWeight > 0) {
-			HeuristicProvenance joinedProv = HeuristicProvenance
-					.joinProvenance(heuristicProvenance_[TermStanding.INDIVIDUAL
-							.ordinal()]);
-			PartialAssertion indvAssertion = new PartialAssertion(
-					CycConstants.ISA.getConcept(), joinedProv, coreConcept,
-					CycConstants.INDIVIDUAL.getConcept());
-			indvAssertion.setWeight(indvWeight / totalWeight);
-			assertions.add(indvAssertion);
-		}
-		if (collWeight > 0) {
-			HeuristicProvenance joinedProv = HeuristicProvenance
-					.joinProvenance(heuristicProvenance_[TermStanding.COLLECTION
-							.ordinal()]);
-			PartialAssertion collAssertion = new PartialAssertion(
-					CycConstants.ISA.getConcept(), joinedProv, coreConcept,
-					CycConstants.COLLECTION.getConcept());
-			collAssertion.setWeight(collWeight / totalWeight);
-			assertions.add(collAssertion);
-		}
-		return assertions;
-	}
-
 	@Override
 	public String toString() {
-		double indvWeight = weights_[TermStanding.INDIVIDUAL.ordinal()] + 1;
-		double collWeight = weights_[TermStanding.COLLECTION.ordinal()] + 1;
-		double totalWeight = totalWeight_ + 2;
+		float indvWeight = weights_[TermStanding.INDIVIDUAL.ordinal()] + 1;
+		float collWeight = weights_[TermStanding.COLLECTION.ordinal()] + 1;
+		float totalWeight = totalWeight_ + 2;
 		return "IND:" + (indvWeight / totalWeight) + ", COLL:"
 				+ (collWeight / totalWeight);
 	}
 
-	public double getActualWeight(TermStanding termStanding) {
+	public float getActualWeight(TermStanding termStanding) {
 		return weights_[termStanding.ordinal()];
-	}
-	
-	public float getLaplaceNormalisedWeight(TermStanding termStanding) {
-		return (weights_[termStanding.ordinal()] + 1) / (totalWeight_ + 2);
 	}
 
 	public boolean isIndividual() {
@@ -135,5 +117,38 @@ public class WeightedStanding implements Mergeable<WeightedStanding>, Serializab
 		if (totalWeight_ == 0)
 			return true;
 		return weights_[TermStanding.COLLECTION.ordinal()] > 0;
+	}
+
+	public float getRawWeight(TermStanding type) {
+		return weights_[type.ordinal()];
+	}
+
+	public float getNormalisedWeight(TermStanding type) {
+		return (weights_[type.ordinal()] + 1) / (totalWeight_ + 2);
+	}
+
+	public void normaliseViaGlobal(WeightedStanding global) {
+		if (totalWeight_ == 0 || (totalWeight_ == 1 && global == null))
+			return;
+
+		if (global == null || global.totalWeight_ > 0) {
+			// Divide the normalised weight by the global normalised weight
+			float sum = 0;
+			float globalIndv = (global != null) ? global
+					.getNormalisedWeight(TermStanding.INDIVIDUAL) : 1;
+			weights_[TermStanding.INDIVIDUAL.ordinal()] = getNormalisedWeight(TermStanding.INDIVIDUAL)
+					/ globalIndv;
+			sum += weights_[TermStanding.INDIVIDUAL.ordinal()];
+			float globalColl = (global != null) ? global
+					.getNormalisedWeight(TermStanding.COLLECTION) : 1;
+			weights_[TermStanding.COLLECTION.ordinal()] = getNormalisedWeight(TermStanding.COLLECTION)
+					/ globalColl;
+			sum += weights_[TermStanding.COLLECTION.ordinal()];
+
+			// Normalise the sums
+			weights_[TermStanding.INDIVIDUAL.ordinal()] /= sum;
+			weights_[TermStanding.COLLECTION.ordinal()] /= sum;
+			totalWeight_ = 1;
+		}
 	}
 }

@@ -68,7 +68,7 @@ public class AssertionGrid {
 	private DisjointCase[] disjointCases_;
 
 	/** The proportions of every assertion queue, based on hierarchy. */
-	private Double[] proportionVector_;
+	private Float[] proportionVector_;
 
 	/** The current row to seed. */
 	private int row_;
@@ -82,7 +82,7 @@ public class AssertionGrid {
 	private boolean[][] usedSeeds_;
 
 	/** The weights of the assertions in a grid format for quick access. */
-	private double[][] weightGrid_;
+	private float[][] weightGrid_;
 
 	private Map<Pair<String, String>, Boolean> disjointQueries_;
 
@@ -119,13 +119,13 @@ public class AssertionGrid {
 			instantiateAssertionGrid(existingGrid, newLength, coreConcept_,
 					concept_);
 
-			double proportion = 1.0 / existingAssertions.size();
+			float proportion = 1f / existingAssertions.size();
 			Iterator<DefiniteAssertion> iter = existingAssertions.iterator();
 			for (int i = oldLength; i < newLength; i++) {
 				assertionGrid_[i] = new DefiniteAssertion[] { iter.next() };
 				proportionVector_[i] = proportion;
 				usedSeeds_[i] = new boolean[] { false };
-				weightGrid_[i] = new double[] { 1 };
+				weightGrid_[i] = new float[] { 1 };
 			}
 			conceptIsaTruths_ = null;
 			conceptGenlTruths_ = null;
@@ -183,8 +183,8 @@ public class AssertionGrid {
 	private void buildAssertionGrid(Collection<PartialAssertion> assertions,
 			OntologySocket ontology, WMISocket wmi) {
 		ArrayList<MinedAssertion[]> assertionGrid = new ArrayList<>();
-		ArrayList<double[]> weightGrid = new ArrayList<>();
-		ArrayList<Double> proportion = new ArrayList<>();
+		ArrayList<float[]> weightGrid = new ArrayList<>();
+		ArrayList<Float> proportion = new ArrayList<>();
 		ArrayList<Pair<Integer, Integer>> coords = new ArrayList<>();
 
 		// Build the Assertion Queues
@@ -207,19 +207,19 @@ public class AssertionGrid {
 
 		assertionGrid_ = assertionGrid.toArray(new MinedAssertion[assertionGrid
 				.size()][]);
-		weightGrid_ = weightGrid.toArray(new double[weightGrid.size()][]);
+		weightGrid_ = weightGrid.toArray(new float[weightGrid.size()][]);
 		usedSeeds_ = new boolean[weightGrid_.length][];
 		for (int x = 0; x < weightGrid_.length; x++) {
 			usedSeeds_[x] = new boolean[weightGrid_[x].length];
 		}
-		proportionVector_ = proportion.toArray(new Double[proportion.size()]);
+		proportionVector_ = proportion.toArray(new Float[proportion.size()]);
 		seedStack_ = coords.toArray(new Pair[coords.size()]);
 		Arrays.sort(seedStack_, new Comparator<Pair<Integer, Integer>>() {
 			@Override
 			public int compare(Pair<Integer, Integer> arg0,
 					Pair<Integer, Integer> arg1) {
 				// Weight first
-				int result = -Double.compare(
+				int result = -Float.compare(
 						weightGrid_[arg0.objA_][arg0.objB_],
 						weightGrid_[arg1.objA_][arg1.objB_]);
 				if (result != 0)
@@ -260,7 +260,7 @@ public class AssertionGrid {
 		return pa.expand(excluded, mapper, ontology, wmi);
 	}
 
-	private double findAvailableSeed() {
+	private float findAvailableSeed() {
 		if (usedSeeds_ == null)
 			return -1;
 		int i = 0;
@@ -283,7 +283,7 @@ public class AssertionGrid {
 		return (DefiniteAssertion) assertionGrid_[x][y];
 	}
 
-	private double getWeight(int x, int y) {
+	private float getWeight(int x, int y) {
 		if (x >= weightGrid_.length)
 			return 0;
 		if (y >= weightGrid_[x].length)
@@ -389,18 +389,18 @@ public class AssertionGrid {
 	 */
 	private void recurseBuild(AssertionQueue aq, int offset,
 			ArrayList<MinedAssertion[]> assertionGrid,
-			ArrayList<double[]> weightGrid, ArrayList<Double> proportion,
-			double fraction, ArrayList<Pair<Integer, Integer>> coords) {
+			ArrayList<float[]> weightGrid, ArrayList<Float> proportion,
+			float fraction, ArrayList<Pair<Integer, Integer>> coords) {
 		int size = aq.size();
 		// Add the current AQ
 		int x = assertionGrid.size();
 		if (size > 0) {
 			MinedAssertion[] assertions = new MinedAssertion[size + offset];
-			double[] weights = new double[size + offset];
+			float[] weights = new float[size + offset];
 			int i = offset;
 			for (MinedAssertion ma : aq) {
 				assertions[i] = ma;
-				weights[i] = aq.getWeight(ma);
+				weights[i] = (float) aq.getWeight(ma);
 				coords.add(new Pair<Integer, Integer>(x, i));
 				i++;
 			}
@@ -417,12 +417,12 @@ public class AssertionGrid {
 	}
 
 	private DisjointCase requestDisjointCase(OntologySocket ontology) {
-		double bestStanding = Math.max(
-				standing_.getLaplaceNormalisedWeight(TermStanding.COLLECTION),
-				standing_.getLaplaceNormalisedWeight(TermStanding.INDIVIDUAL));
+		float bestStanding = Math.max(
+				standing_.getNormalisedWeight(TermStanding.COLLECTION),
+				standing_.getNormalisedWeight(TermStanding.INDIVIDUAL));
 		do {
 			// Seed a new case
-			double seedWeight = findAvailableSeed() * bestStanding;
+			float seedWeight = findAvailableSeed();
 			if (seedWeight < 0 && cases_.isEmpty())
 				return null;
 
@@ -430,10 +430,13 @@ public class AssertionGrid {
 			// ambiguity), with standing weights
 			if (cases_.isEmpty()
 					|| seedWeight > cases_.peek().getPotentialWeight()) {
-				float collWeight = standing_
-						.getLaplaceNormalisedWeight(TermStanding.COLLECTION);
-				float indvWeight = standing_
-						.getLaplaceNormalisedWeight(TermStanding.INDIVIDUAL) + 0.01f;
+				// Always slight bias against Collection.
+				float collWeight = Math.min(standing_
+						.getNormalisedWeight(TermStanding.COLLECTION)
+						/ bestStanding, 1) - 0.0001f;
+				float indvWeight = Math.min(standing_
+						.getNormalisedWeight(TermStanding.INDIVIDUAL)
+						/ bestStanding, 1);
 				// System.out.println(concept_ + ":" + collWeight + " " +
 				// indvWeight);
 				DisjointCase dc = new DisjointCase(row_, column_, true,
@@ -544,7 +547,7 @@ public class AssertionGrid {
 
 	private class DisjointCase implements Comparable<DisjointCase> {
 		private ArrayList<DefiniteAssertion> allAssertions_;
-		private ArrayList<Double> assertionWeights_;
+		private ArrayList<Float> assertionWeights_;
 		private int caseRow_;
 		private boolean[] completed_;
 		private float completedWeight_;
@@ -801,7 +804,7 @@ public class AssertionGrid {
 				return 0;
 
 			// Greater potential weight first
-			int result = -Double.compare(getPotentialWeight(),
+			int result = -Float.compare(getPotentialWeight(),
 					arg0.getPotentialWeight());
 			if (result != 0)
 				return result;

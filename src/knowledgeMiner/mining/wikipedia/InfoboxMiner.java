@@ -48,8 +48,8 @@ public abstract class InfoboxMiner extends WikipediaArticleMiningHeuristic {
 	 * @param heuristicName
 	 *            The name of the subclass infobox miner.
 	 */
-	public InfoboxMiner(boolean usePrecomputed, CycMapper mapper, CycMiner miner, String heuristicName,
-			File mappingsFilename) {
+	public InfoboxMiner(boolean usePrecomputed, CycMapper mapper,
+			CycMiner miner, String heuristicName, File mappingsFilename) {
 		super(usePrecomputed, mapper, miner);
 		try {
 			mappingsFile_ = mappingsFilename;

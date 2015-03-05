@@ -24,6 +24,7 @@ import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
 import knowledgeMiner.mining.WeightedInformation;
+import knowledgeMiner.mining.WeightedStanding;
 
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +58,8 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 			.compile("(?:.+?:)?(\\S+\\.\\w+)");
 
 	private static final PartialAssertion IGNORABLE_ASSERTION = new PartialAssertion();
+
+	private static final String GLOBAL_RELATION_COUNT = "__GLOBAL_COUNT__";
 
 	/** Example articles per relation. */
 	private MultiMap<String, Integer> exampleArticles_ = MultiMap
@@ -148,13 +151,17 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 		if (infoboxTypes.isEmpty())
 			return;
 
+		WeightedStanding global = getStanding(GLOBAL_RELATION_COUNT);
 		for (InfoboxData infobox : infoboxTypes) {
 			Map<String, String> infoboxRelations = infobox
 					.getInfoboxRelations();
 
 			for (String relation : infoboxRelations.keySet()) {
 				// Determine the standing.
-				info.addStandingInformation(getStanding(relation));
+				// Normalise the standing to the global count
+				WeightedStanding local = new WeightedStanding(getStanding(relation));
+				local.normaliseViaGlobal(global);
+				info.addStandingInformation(local);
 
 				// Extract info from the relation
 				PartialAssertion assertion = parseRelation(relation,
@@ -269,6 +276,7 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 		// Run through every infobox relation
 		try {
 			List<InfoboxData> infoTypes = wmi.getInfoboxData(info.getArticle());
+			recordStanding(GLOBAL_RELATION_COUNT, actualStanding);
 			for (InfoboxData infobox : infoTypes) {
 				Map<String, String> relations = infobox.getInfoboxRelations();
 				for (String relation : relations.keySet()) {

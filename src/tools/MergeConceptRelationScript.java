@@ -227,7 +227,7 @@ public class MergeConceptRelationScript {
 				}
 			}
 
-			ontology_.unassert(null, edgeID);
+			ontology_.unassert(null, edgeID, true);
 			outputArray[TripleMetrics.VALID_CYC.ordinal()] = "T";
 		}
 	}
