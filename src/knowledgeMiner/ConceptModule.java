@@ -301,6 +301,22 @@ public class ConceptModule extends MinedInformation implements
 				assertionIDs.add(id);
 			}
 		}
+		//
+		// // Check type has not changed. If so, start again, checking after
+		// every
+		// // step
+		// if (determineType(ontology) != type_) {
+		// for (Integer id : assertionIDs)
+		// ontology.unassert(null, id, true);
+		//
+		// for (DefiniteAssertion assertion : getConcreteAssertions()) {
+		// int id = assertion.makeAssertion(concept_, ontology);
+		// if (id != -1) {
+		// if (determineType(ontology) != type_)
+		// ontology.unassert(null, id, true);
+		// }
+		// }
+		// }
 	}
 
 	/**
@@ -452,8 +468,8 @@ public class ConceptModule extends MinedInformation implements
 				ConceptMiningTask.interactiveInterface_
 						.evaluateAddition(assertion.toPrettyString());
 			for (DefiniteAssertion removed : deletedAssertions_)
-				ConceptMiningTask.interactiveInterface_
-						.evaluateRemoval(removed.toPrettyString());
+				ConceptMiningTask.interactiveInterface_.evaluateRemoval(removed
+						.toPrettyString());
 		}
 
 		return miningWeight_;
