@@ -73,7 +73,7 @@ public class AssertionGrid {
 	/** The current row to seed. */
 	private int row_;
 	/** A stack of starting seeds, from highest weighted to least. */
-	private Pair<Integer, Integer>[] seedStack_;
+	private ArrayList<Pair<Integer, Integer>> seedStack_;
 
 	/** The standing of the concept. */
 	private WeightedStanding standing_;
@@ -106,7 +106,6 @@ public class AssertionGrid {
 			Collection<DefiniteAssertion> existingAssertions,
 			boolean assertionRemoval) {
 		// Common stuff first
-		seedStack_ = existingGrid.seedStack_;
 		concept_ = concept;
 		coreConcept_ = existingGrid.coreConcept_;
 		standing_ = standing;
@@ -115,6 +114,7 @@ public class AssertionGrid {
 			return;
 		int oldLength = existingGrid.assertionGrid_.length;
 		if (assertionRemoval && !existingAssertions.isEmpty()) {
+			seedStack_ = new ArrayList<>(existingGrid.seedStack_);
 			int newLength = oldLength + existingAssertions.size();
 			instantiateAssertionGrid(existingGrid, newLength, coreConcept_,
 					concept_);
@@ -126,10 +126,13 @@ public class AssertionGrid {
 				proportionVector_[i] = proportion;
 				usedSeeds_[i] = new boolean[] { false };
 				weightGrid_[i] = new float[] { 1 };
+				seedStack_.add(new Pair<Integer, Integer>(i, 0));
 			}
+			Collections.sort(seedStack_, new SeedComparator());
 			conceptIsaTruths_ = null;
 			conceptGenlTruths_ = null;
 		} else {
+			seedStack_ = existingGrid.seedStack_;
 			// Non-assertion-removal
 			instantiateAssertionGrid(existingGrid, oldLength, coreConcept_,
 					concept_);
@@ -179,13 +182,12 @@ public class AssertionGrid {
 	 * @param wmi
 	 *            The WMI access.
 	 */
-	@SuppressWarnings("unchecked")
 	private void buildAssertionGrid(Collection<PartialAssertion> assertions,
 			OntologySocket ontology, WMISocket wmi) {
 		ArrayList<MinedAssertion[]> assertionGrid = new ArrayList<>();
 		ArrayList<float[]> weightGrid = new ArrayList<>();
 		ArrayList<Float> proportion = new ArrayList<>();
-		ArrayList<Pair<Integer, Integer>> coords = new ArrayList<>();
+		seedStack_ = new ArrayList<>();
 
 		// Build the Assertion Queues
 		Collection<AssertionQueue> aqs = new ArrayList<>();
@@ -203,7 +205,7 @@ public class AssertionGrid {
 		// Iterate through
 		for (AssertionQueue aq : aqs)
 			recurseBuild(aq, 0, assertionGrid, weightGrid, proportion,
-					1f / aqs.size(), coords);
+					1f / aqs.size(), seedStack_);
 
 		assertionGrid_ = assertionGrid.toArray(new MinedAssertion[assertionGrid
 				.size()][]);
@@ -213,30 +215,30 @@ public class AssertionGrid {
 			usedSeeds_[x] = new boolean[weightGrid_[x].length];
 		}
 		proportionVector_ = proportion.toArray(new Float[proportion.size()]);
-		seedStack_ = coords.toArray(new Pair[coords.size()]);
-		Arrays.sort(seedStack_, new Comparator<Pair<Integer, Integer>>() {
-			@Override
-			public int compare(Pair<Integer, Integer> arg0,
-					Pair<Integer, Integer> arg1) {
-				// Weight first
-				int result = -Float.compare(
-						weightGrid_[arg0.objA_][arg0.objB_],
-						weightGrid_[arg1.objA_][arg1.objB_]);
-				if (result != 0)
-					return result;
+		Collections.sort(seedStack_, new SeedComparator());
+	}
 
-				// Then row
-				result = Integer.compare(arg0.objB_, arg1.objB_);
-				if (result != 0)
-					return result;
+	private class SeedComparator implements Comparator<Pair<Integer, Integer>> {
+		@Override
+		public int compare(Pair<Integer, Integer> arg0,
+				Pair<Integer, Integer> arg1) {
+			// Weight first
+			int result = -Float.compare(weightGrid_[arg0.objA_][arg0.objB_],
+					weightGrid_[arg1.objA_][arg1.objB_]);
+			if (result != 0)
+				return result;
 
-				// Then column
-				result = Integer.compare(arg0.objA_, arg1.objA_);
-				if (result != 0)
-					return result;
-				return 0;
-			}
-		});
+			// Then row
+			result = Integer.compare(arg0.objB_, arg1.objB_);
+			if (result != 0)
+				return result;
+
+			// Then column
+			result = Integer.compare(arg0.objA_, arg1.objA_);
+			if (result != 0)
+				return result;
+			return 0;
+		}
 	}
 
 	/**
@@ -264,13 +266,13 @@ public class AssertionGrid {
 		if (usedSeeds_ == null)
 			return -1;
 		int i = 0;
-		while (usedSeeds_[seedStack_[i].objA_][seedStack_[i].objB_]) {
+		while (usedSeeds_[seedStack_.get(i).objA_][seedStack_.get(i).objB_]) {
 			i++;
-			if (i >= seedStack_.length)
+			if (i >= seedStack_.size())
 				return -1;
 		}
-		row_ = seedStack_[i].objB_;
-		column_ = seedStack_[i].objA_;
+		row_ = seedStack_.get(i).objB_;
+		column_ = seedStack_.get(i).objA_;
 		return weightGrid_[column_][row_];
 	}
 
@@ -431,12 +433,12 @@ public class AssertionGrid {
 			if (cases_.isEmpty()
 					|| seedWeight > cases_.peek().getPotentialWeight()) {
 				// Always slight bias against Collection.
-				float collWeight = Math.min(standing_
-						.getNormalisedWeight(TermStanding.COLLECTION)
-						/ bestStanding, 1) - 0.0001f;
-				float indvWeight = Math.min(standing_
-						.getNormalisedWeight(TermStanding.INDIVIDUAL)
-						/ bestStanding, 1);
+				float collWeight = Math.min(
+						standing_.getNormalisedWeight(TermStanding.COLLECTION)
+								/ bestStanding, 1) - 0.0001f;
+				float indvWeight = Math.min(
+						standing_.getNormalisedWeight(TermStanding.INDIVIDUAL)
+								/ bestStanding, 1);
 				// System.out.println(concept_ + ":" + collWeight + " " +
 				// indvWeight);
 				DisjointCase dc = new DisjointCase(row_, column_, true,
@@ -476,7 +478,23 @@ public class AssertionGrid {
 		return Collections.EMPTY_LIST;
 	}
 
+	/**
+	 * Finds N cases of consistent assertions from the assertion grid, where
+	 * these N cases represent the highest weighted clusters. If there are less
+	 * than N cases, this returns when the case is found.
+	 *
+	 * @param numDisambiguated
+	 *            N, the number of cases to be found
+	 * @param ontology
+	 *            The ontology access.
+	 */
 	public void findNConjoint(int numDisambiguated, OntologySocket ontology) {
+		// TODO Major problem - simple checks for disjointness and arg
+		// constraints isn't enough - there is now negation, collection orders,
+		// cycles, etc. These will not be retained when we do finally assert,
+		// but this means the case weight is not indicative of the final
+		// assertions.
+
 		// Iterate through the assertions in a priority queue until completed
 		resetMetrics();
 		disjointCases_ = new DisjointCase[numDisambiguated];

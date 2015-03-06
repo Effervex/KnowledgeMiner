@@ -2,7 +2,7 @@ package tools;
 
 import graph.core.CommonConcepts;
 import io.ResourceAccess;
-import io.ontology.OntologySocket;
+import io.ontology.DAGSocket;
 import io.resources.WMISocket;
 
 import java.io.BufferedReader;
@@ -15,8 +15,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import knowledgeMiner.AssertionGrid;
 import knowledgeMiner.KnowledgeMiner;
@@ -43,6 +46,7 @@ import cyc.OntologyConcept;
  * @author Sam Sarjant
  */
 public class AssertionGridExperimenter {
+	private static final String TEST_CONCEPT = "TestConcept";
 	private static final String EXPERIMENT_MICROTHEORY = "AssertionGridExperimentMt";
 	/** The dummy concept to replace. */
 	private static final MappableConcept MAPPABLE_STAND_IN = new TextMappedConcept(
@@ -53,13 +57,13 @@ public class AssertionGridExperimenter {
 	private AssertionGrid coreGrid_;
 	private AssertionGrid disambiguatedGrid_;
 	/** The ontology access. */
-	private OntologySocket ontology_;
+	private DAGSocket ontology_;
 	/** The WMI access. */
 	private WMISocket wmi_;
 
 	public AssertionGridExperimenter() {
 		KnowledgeMiner.newInstance("Enwiki_20110722");
-		ontology_ = ResourceAccess.requestOntologySocket();
+		ontology_ = (DAGSocket) ResourceAccess.requestOntologySocket();
 		wmi_ = ResourceAccess.requestWMISocket();
 		assertions_ = new ArrayList<>();
 	}
@@ -124,6 +128,9 @@ public class AssertionGridExperimenter {
 						split[0]);
 				if (result < 0)
 					System.out.println("Could not assert " + split[0]);
+				else
+					ontology_.setProperty(result, false, "disjWeight", split[8]
+							+ ":" + split[14]);
 			}
 		}
 
@@ -268,7 +275,7 @@ public class AssertionGridExperimenter {
 		if (coreGrid_ == null)
 			buildGrid();
 
-		OntologyConcept concept = new OntologyConcept("TestConcept");
+		OntologyConcept concept = new OntologyConcept(TEST_CONCEPT);
 		disambiguatedGrid_ = new AssertionGrid(coreGrid_, concept, standing,
 				existingAssertions, assertionRemoval);
 		disambiguatedGrid_.findNConjoint(10000, ontology_);
@@ -364,7 +371,7 @@ public class AssertionGridExperimenter {
 		return clusterMap;
 	}
 
-	public static void compareClusters(File before, File after, File diffFile)
+	public void compareClusters(File before, File after, File diffFile)
 			throws IOException {
 		// Read the clusters in
 		MultiMap<String, String> clusterMapA = readClusterFile(before);
@@ -386,6 +393,13 @@ public class AssertionGridExperimenter {
 		}
 
 		// Output the diff
+		Pattern collPattern = Pattern.compile("\\(isa " + TEST_CONCEPT
+				+ " (.+)\\)");
+		try {
+			ontology_.command("set", "/env/pretty only", false);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		BufferedWriter writer = new BufferedWriter(new FileWriter(diffFile));
 		for (String key : diffMap.keySet()) {
 			for (String diff : diffMap.get(key)) {
@@ -396,7 +410,30 @@ public class AssertionGridExperimenter {
 					writer.write("-");
 				else
 					writer.write("+");
-				writer.write(diff + "\n");
+				writer.write(diff + "\t");
+
+				// Write the disjoint edge that blocks it
+				Matcher m = collPattern.matcher(key);
+				m.find();
+				String seedConcept = m.group(1);
+				m = collPattern.matcher(diff);
+				m.find();
+				String disjConcept = m.group(1);
+
+				// Damn, this isn't going to work. The disjoint relationships
+				// are to the CLUSTER, not the seed.
+				List<String> justify = ontology_.justify(
+						CommonConcepts.DISJOINTWITH.getID(), seedConcept,
+						disjConcept);
+				for (String justStr : justify) {
+					if (justStr.startsWith("(disjointWith")) {
+						writer.write(justStr + "\t");
+						writer.write(ontology_.getProperty(justStr, false,
+								"disjWeight"));
+						break;
+					}
+				}
+				writer.write("\n");
 			}
 		}
 		writer.close();
