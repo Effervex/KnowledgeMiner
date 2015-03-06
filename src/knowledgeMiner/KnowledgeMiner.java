@@ -291,7 +291,8 @@ public class KnowledgeMiner {
 				cm = readArticle();
 			else if (resourceName.equals(RESOURCE_ONTOLOGY))
 				cm = readConcept();
-			processConcept(new ConceptMiningTask(cm));
+			if (cm != null)
+				processConcept(new ConceptMiningTask(cm));
 		} while (cm != null);
 
 		executor_.shutdown();
