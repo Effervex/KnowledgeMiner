@@ -1,0 +1,7 @@
+MINING: '(Where Do I Begin?) Love Story' (w=1.0)
+ MAPPING: '(Where Do I Begin?) Love Story':[M] (w=1.0)
+  REVERSE_MAPPING: '(Where Do I Begin?) Love Story':[M] => WhereDoIBegin-LoveStory[NEW] (w=0.1)
+   DISAMBIGUATING: WhereDoIBegin-LoveStory[NEW] <=> '(Where Do I Begin?) Love Story':[M] (w=0.1)
+    ASSERTING: WhereDoIBegin-LoveStory[NEW] <=> '(Where Do I Begin?) Love Story':[CM] (w=0.1)
+     COMPLETE: WhereDoIBegin-LoveStory[NEW] <=> '(Where Do I Begin?) Love Story':[CM] (w=0.1)
+

@@ -466,10 +466,10 @@ public class ConceptModule extends MinedInformation implements
 		if (InteractiveMode.interactiveMode_) {
 			for (DefiniteAssertion assertion : getConcreteAssertions())
 				ConceptMiningTask.interactiveInterface_
-						.evaluateAddition(assertion.toPrettyString());
+						.evaluateAddition(assertion);
 			for (DefiniteAssertion removed : deletedAssertions_)
-				ConceptMiningTask.interactiveInterface_.evaluateRemoval(removed
-						.toPrettyString());
+				ConceptMiningTask.interactiveInterface_
+						.evaluateRemoval(removed);
 		}
 
 		return miningWeight_;

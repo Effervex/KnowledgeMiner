@@ -498,7 +498,7 @@ public class ConceptMiningTask implements Runnable {
 			IOManager.getInstance().writeMapping(concept, articleTitle);
 
 			// Interactive - manual evaluation if correct mapping
-			interactiveInterface_.evaluateMapping(concept.toPrettyString());
+			interactiveInterface_.evaluateMapping(concept);
 
 			// TODO Remove all KM assertions no longer produced by KM
 
@@ -805,7 +805,7 @@ public class ConceptMiningTask implements Runnable {
 			staticReverseMap(cmt, input);
 		else if (!input.equals("exit"))
 			staticMap(cmt, input);
-		
+
 		if (InteractiveMode.interactiveMode_)
 			interactiveInterface_.saveEvaluations();
 
@@ -974,10 +974,16 @@ public class ConceptMiningTask implements Runnable {
 			return null;
 		// If the name is valid and non-existing, return
 		String ontName = ontology.toOntologyFormat(text);
-		if (ontology.validConstantName(ontName)
-				&& ontology.findConceptByName(ontName, false, true, false)
-						.isEmpty())
-			return new OntologyConcept(ontName);
+		if (ontology.validConstantName(ontName)) {
+			if (ontology.findConceptByName(ontName, false, true, false)
+					.isEmpty())
+				return new OntologyConcept(ontName);
+		} else {
+			// If the name isn't valid for whatever reason
+			ontName = "Concept_" + ontName;
+			if (!ontology.validConstantName(ontName))
+				ontName = "Concept";
+		}
 
 		// If we have context, use it
 		if (context != null) {
@@ -1120,7 +1126,7 @@ public class ConceptMiningTask implements Runnable {
 				System.err.println("No such constant!");
 				return null;
 			}
-		} else if (term.startsWith("(")) {
+		} else if (term.startsWith("(") && term.endsWith(")")) {
 			OntologyConcept cycTerm = new OntologyConcept(term);
 			if (ontology.inOntology(cycTerm))
 				cm = new ConceptModule(cycTerm);

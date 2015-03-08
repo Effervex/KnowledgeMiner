@@ -67,11 +67,13 @@ public class AssertionGrid {
 
 	private DisjointCase[] disjointCases_;
 
+	private Map<Pair<String, String>, Boolean> disjointQueries_;
+
 	/** The proportions of every assertion queue, based on hierarchy. */
 	private Float[] proportionVector_;
-
 	/** The current row to seed. */
 	private int row_;
+
 	/** A stack of starting seeds, from highest weighted to least. */
 	private ArrayList<Pair<Integer, Integer>> seedStack_;
 
@@ -83,8 +85,6 @@ public class AssertionGrid {
 
 	/** The weights of the assertions in a grid format for quick access. */
 	private float[][] weightGrid_;
-
-	private Map<Pair<String, String>, Boolean> disjointQueries_;
 
 	/**
 	 * Constructor for a new AssertionGrid extending an existing one.
@@ -216,29 +216,6 @@ public class AssertionGrid {
 		}
 		proportionVector_ = proportion.toArray(new Float[proportion.size()]);
 		Collections.sort(seedStack_, new SeedComparator());
-	}
-
-	private class SeedComparator implements Comparator<Pair<Integer, Integer>> {
-		@Override
-		public int compare(Pair<Integer, Integer> arg0,
-				Pair<Integer, Integer> arg1) {
-			// Weight first
-			int result = -Float.compare(weightGrid_[arg0.objA_][arg0.objB_],
-					weightGrid_[arg1.objA_][arg1.objB_]);
-			if (result != 0)
-				return result;
-
-			// Then row
-			result = Integer.compare(arg0.objB_, arg1.objB_);
-			if (result != 0)
-				return result;
-
-			// Then column
-			result = Integer.compare(arg0.objA_, arg1.objA_);
-			if (result != 0)
-				return result;
-			return 0;
-		}
 	}
 
 	/**
@@ -527,6 +504,14 @@ public class AssertionGrid {
 		return Math.min(disjointCases_[caseNum].getPotentialWeight(), 1);
 	}
 
+	public int getNumCases() {
+		return disjointCases_.length;
+	}
+
+	public DefiniteAssertion getSeedAssertion(int i) {
+		return disjointCases_[i].getSeedAssertion();
+	}
+
 	public boolean isCollection(int caseNum) {
 		return disjointCases_[caseNum].isaCollection_;
 	}
@@ -572,8 +557,8 @@ public class AssertionGrid {
 		private Collection<OntologyConcept> genlsTruth_;
 		private boolean isaCollection_;
 		private Collection<OntologyConcept> isaTruth_;
-		private float standingWeight_;
 		private DefiniteAssertion seedAssertion_;
+		private float standingWeight_;
 
 		/**
 		 * Constructor for a new DisjointCase which progressively identifies
@@ -884,6 +869,10 @@ public class AssertionGrid {
 			return value * standingWeight_;
 		}
 
+		public DefiniteAssertion getSeedAssertion() {
+			return seedAssertion_;
+		}
+
 		@Override
 		public int hashCode() {
 			final int prime = 31;
@@ -927,10 +916,6 @@ public class AssertionGrid {
 			caseRow_++;
 		}
 
-		public DefiniteAssertion getSeedAssertion() {
-			return seedAssertion_;
-		}
-
 		@Override
 		public String toString() {
 			if (completedWeight_ == -1)
@@ -942,11 +927,26 @@ public class AssertionGrid {
 		}
 	}
 
-	public int getNumCases() {
-		return disjointCases_.length;
-	}
+	private class SeedComparator implements Comparator<Pair<Integer, Integer>> {
+		@Override
+		public int compare(Pair<Integer, Integer> arg0,
+				Pair<Integer, Integer> arg1) {
+			// Weight first
+			int result = -Float.compare(weightGrid_[arg0.objA_][arg0.objB_],
+					weightGrid_[arg1.objA_][arg1.objB_]);
+			if (result != 0)
+				return result;
 
-	public DefiniteAssertion getSeedAssertion(int i) {
-		return disjointCases_[i].getSeedAssertion();
+			// Then row
+			result = Integer.compare(arg0.objB_, arg1.objB_);
+			if (result != 0)
+				return result;
+
+			// Then column
+			result = Integer.compare(arg0.objA_, arg1.objA_);
+			if (result != 0)
+				return result;
+			return 0;
+		}
 	}
 }
