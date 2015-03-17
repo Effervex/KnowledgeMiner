@@ -18,9 +18,9 @@ import cyc.OntologyConcept;
 import cyc.CycConstants;
 
 public abstract class OntologySocket extends KMSocket {
+	public static final int NON_EXISTENT_ID = -56434;
 	protected boolean ephemeral_;
 	protected boolean forceConstraints_;
-	public static final int NON_EXISTENT_ID = -56434;
 
 	public OntologySocket(KMAccess<? extends KMSocket> access) {
 		super(access);
@@ -31,9 +31,6 @@ public abstract class OntologySocket extends KMSocket {
 	}
 
 	protected abstract boolean parseProofResult(String result);
-
-	public abstract Collection<String[]> getAllAssertions(Object concept,
-			int argPos, Object... exceptPredicates);
 
 	public abstract int assertToOntology(String microtheory,
 			Object... arguments);
@@ -58,6 +55,9 @@ public abstract class OntologySocket extends KMSocket {
 		}
 	}
 
+	public abstract String dagToText(Object dagObject, String type,
+			boolean markup);
+
 	public boolean evaluate(String microtheory, Object... queryArgs) {
 		String result = query(microtheory, queryArgs);
 		return parseProofResult(result);
@@ -68,18 +68,21 @@ public abstract class OntologySocket extends KMSocket {
 	public abstract Collection<OntologyConcept> findConceptByName(String name,
 			boolean caseSensitive, boolean exactString, boolean allowAliases);
 
-	public abstract Collection<OntologyConcept> findFilteredConceptByName(
-			String name, boolean caseSensitive, boolean exactString,
-			boolean allowAliases, Object... queryArgs);
-
 	public abstract String[] findEdgeByID(int id);
 
 	public abstract int findEdgeIDByArgs(Object... edgeArgs);
+
+	public abstract Collection<OntologyConcept> findFilteredConceptByName(
+			String name, boolean caseSensitive, boolean exactString,
+			boolean allowAliases, Object... queryArgs);
 
 	public boolean genls(Object instance, Object collection) {
 		return evaluate(null, CommonConcepts.GENLS.getID(), instance,
 				collection);
 	}
+
+	public abstract Collection<String[]> getAllAssertions(Object concept,
+			int argPos, Object... exceptPredicates);
 
 	public abstract int getConceptID(String term);
 
@@ -89,13 +92,13 @@ public abstract class OntologySocket extends KMSocket {
 
 	public abstract int getNextEdge(int id);
 
-	public abstract int getPrevEdge(int id);
-
 	public abstract int getNextNode(int id);
 
-	public abstract int getPrevNode(int id);
-
 	public abstract int getNumConstants();
+
+	public abstract int getPrevEdge(int id);
+
+	public abstract int getPrevNode(int id);
 
 	public abstract String getProperty(Object nodeEdge, boolean isNode,
 			String propKey);
@@ -180,6 +183,22 @@ public abstract class OntologySocket extends KMSocket {
 		return false;
 	}
 
+	public boolean isValidArg(Object predicate, Object concept, int argNum) {
+		if (predicate.equals(CycConstants.ISA_GENLS.getConcept()
+				.getIdentifier())) {
+			if (concept.toString().startsWith("\"")
+					&& concept.toString().endsWith("\""))
+				return false;
+			if (argNum == 1 || isa(concept, CommonConcepts.COLLECTION.getID()))
+				return true;
+			return false;
+		}
+		if (!isa(predicate, "Relation"))
+			return false;
+
+		return true;
+	}
+
 	public abstract List<String> justify(Object... assertionArgs);
 
 	public abstract String query(String microtheory, Object... queryArgs);
@@ -204,23 +223,8 @@ public abstract class OntologySocket extends KMSocket {
 		return NLPToSyntaxModule.textToConcept(words);
 	}
 
-	public abstract boolean unassert(String microtheory, int assertionID, boolean forceRemove);
-
-	public boolean isValidArg(Object predicate, Object concept, int argNum) {
-		if (predicate.equals(CycConstants.ISA_GENLS.getConcept()
-				.getIdentifier())) {
-			if (concept.toString().startsWith("\"")
-					&& concept.toString().endsWith("\""))
-				return false;
-			if (argNum == 1 || isa(concept, CommonConcepts.COLLECTION.getID()))
-				return true;
-			return false;
-		}
-		if (!isa(predicate, "Relation"))
-			return false;
-
-		return true;
-	}
+	public abstract boolean unassert(String microtheory, int assertionID,
+			boolean forceRemove);
 
 	public abstract boolean validConstantName(String cycTerm);
 }

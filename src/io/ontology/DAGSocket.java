@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -28,6 +29,7 @@ import cyc.OntologyConcept;
 public class DAGSocket extends OntologySocket {
 	/** The default port number for the DAG. */
 	private static final int DAG_PORT = 2426;
+	private static final String DELIMITER = "!Y^e#";
 	private Logger logger_ = LoggerFactory.getLogger(DAGSocket.class);
 
 	public DAGSocket(DAGAccess access) {
@@ -102,48 +104,6 @@ public class DAGSocket extends OntologySocket {
 	}
 
 	@Override
-	protected boolean parseProofResult(String result) {
-		if (result.matches("\\d+\\|T\\|.*"))
-			return true;
-		return false;
-	}
-
-	@Override
-	public Collection<String[]> getAllAssertions(Object concept, int argPos,
-			Object... exceptPredicates) {
-		Collection<String[]> assertions = new ArrayList<>();
-		StringBuilder arguments = new StringBuilder(concept.toString());
-		try {
-			if (argPos != -1)
-				arguments.append(" (" + argPos + ")");
-			for (Object pred : exceptPredicates)
-				arguments.append(" " + pred + " (-1)");
-			String result = command("findedges",
-					noNewLine(arguments.toString()), true);
-
-			String[] split = result.split("\\|");
-			if (Integer.parseInt(split[0]) <= 0)
-				return assertions;
-			for (int i = 1; i < split.length; i++) {
-				assertions.add(findEdgeByID(Integer.parseInt(split[i])));
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println("Error getting all assertions for " + concept
-					+ " (" + argPos + ")");
-			logger_.error("allAssertions: {}:{}, {}", concept, argPos,
-					Arrays.toString(e.getStackTrace()));
-			if (restartConnection()) {
-				Collection<String[]> result = getAllAssertions(concept, argPos,
-						exceptPredicates);
-				canRestart_ = true;
-				return result;
-			}
-		}
-		return assertions;
-	}
-
-	@Override
 	public int assertToOntology(String microtheory, Object... arguments) {
 		String edge = null;
 		if (arguments.length == 1 && arguments[0] instanceof String
@@ -177,6 +137,26 @@ public class DAGSocket extends OntologySocket {
 			}
 			return -1;
 		}
+	}
+
+	/**
+	 * Sends a batch command string to the DAG. It should be in a standard
+	 * recognisable format.
+	 *
+	 * @param batchCommand
+	 *            The command to run in the batch.
+	 * @param arguments
+	 *            The arguments for each line for the batch command.
+	 * @return An array of results for each of the arguments.
+	 */
+	public String[] batchCommand(String batchCommand, String... arguments) {
+		StringBuilder command = new StringBuilder("batch " + batchCommand + " "
+				+ DELIMITER + "\n");
+		command.append(StringUtils.join(arguments, "\n"));
+		command.append("\n" + DELIMITER);
+		String result = querySocket(NLPToSyntaxModule.convertToAscii(command
+				.toString()));
+		return result.split(Pattern.quote(DELIMITER));
 	}
 
 	/**
@@ -238,6 +218,39 @@ public class DAGSocket extends OntologySocket {
 		}
 	}
 
+	/**
+	 * Transforms a DAG object into a plain text string. Object can be a Node,
+	 * Edge, Query, or even Marked Up text.
+	 *
+	 * @param dagObject
+	 *            The object to transform.
+	 * @param type
+	 *            The type of transformation.
+	 * @param markup
+	 *            If the output should be marked up.
+	 * @return A string representation of the object (or null if invalid).
+	 */
+	@Override
+	public String dagToText(Object dagObject, String type, boolean markup) {
+		String args = type + " " + dagObject.toString() + " "
+				+ ((markup) ? "T" : "F");
+		try {
+			String result = command("dagtotext", args, false);
+			if (result.startsWith("1|")) {
+				return result.substring(2);
+			}
+		} catch (Exception e) {
+			logger_.error("dagtotext: {}, {}, {}, {}", dagObject, type, markup,
+					Arrays.toString(e.getStackTrace()));
+			if (restartConnection()) {
+				String result = dagToText(dagObject, type, markup);
+				canRestart_ = true;
+				return result;
+			}
+		}
+		return null;
+	}
+
 	@Override
 	public String findConceptByID(int id) {
 		String result;
@@ -265,6 +278,51 @@ public class DAGSocket extends OntologySocket {
 			boolean caseSensitive, boolean exactString, boolean allowAliases) {
 		return findFilteredConceptByName(name, caseSensitive, exactString,
 				allowAliases);
+	}
+
+	@Override
+	public String[] findEdgeByID(int id) {
+		String result;
+		try {
+			result = command("edge", id + "", false);
+			String[] split = result.split("\\|");
+			ArrayList<String> nodes = UtilityMethods.split(
+					UtilityMethods.shrinkString(split[1], 1), ' ');
+			return nodes.toArray(new String[nodes.size()]);
+		} catch (Exception e) {
+			logger_.error("findEdgeByID: {}, {}", id,
+					Arrays.toString(e.getStackTrace()));
+			if (restartConnection()) {
+				String[] result2 = findEdgeByID(id);
+				canRestart_ = true;
+				return result2;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public int findEdgeIDByArgs(Object... edgeArgs) {
+		StringBuilder arguments = new StringBuilder();
+		for (int i = 0; i < edgeArgs.length; i++)
+			if (edgeArgs[i] != null)
+				arguments.append(edgeArgs[i] + " (" + (i + 1) + ") ");
+		try {
+			String result = command("findedges", arguments.toString().trim(),
+					true);
+			String[] split = result.split("\\|");
+			if (split.length == 2 && split[0].equals("1"))
+				return Integer.parseInt(split[1]);
+		} catch (Exception e) {
+			logger_.error("findEdgeIDByArgs: {}, {}", edgeArgs,
+					Arrays.toString(e.getStackTrace()));
+			if (restartConnection()) {
+				int result = findEdgeIDByArgs(edgeArgs);
+				canRestart_ = true;
+				return result;
+			}
+		}
+		return -1;
 	}
 
 	@Override
@@ -328,48 +386,38 @@ public class DAGSocket extends OntologySocket {
 	}
 
 	@Override
-	public String[] findEdgeByID(int id) {
-		String result;
+	public Collection<String[]> getAllAssertions(Object concept, int argPos,
+			Object... exceptPredicates) {
+		Collection<String[]> assertions = new ArrayList<>();
+		StringBuilder arguments = new StringBuilder(concept.toString());
 		try {
-			result = command("edge", id + "", false);
-			String[] split = result.split("\\|");
-			ArrayList<String> nodes = UtilityMethods.split(
-					UtilityMethods.shrinkString(split[1], 1), ' ');
-			return nodes.toArray(new String[nodes.size()]);
-		} catch (Exception e) {
-			logger_.error("findEdgeByID: {}, {}", id,
-					Arrays.toString(e.getStackTrace()));
-			if (restartConnection()) {
-				String[] result2 = findEdgeByID(id);
-				canRestart_ = true;
-				return result2;
-			}
-		}
-		return null;
-	}
+			if (argPos != -1)
+				arguments.append(" (" + argPos + ")");
+			for (Object pred : exceptPredicates)
+				arguments.append(" " + pred + " (-1)");
+			String result = command("findedges",
+					noNewLine(arguments.toString()), true);
 
-	@Override
-	public int findEdgeIDByArgs(Object... edgeArgs) {
-		StringBuilder arguments = new StringBuilder();
-		for (int i = 0; i < edgeArgs.length; i++)
-			if (edgeArgs[i] != null)
-				arguments.append(edgeArgs[i] + " (" + (i + 1) + ") ");
-		try {
-			String result = command("findedges", arguments.toString().trim(),
-					true);
 			String[] split = result.split("\\|");
-			if (split.length == 2 && split[0].equals("1"))
-				return Integer.parseInt(split[1]);
+			if (Integer.parseInt(split[0]) <= 0)
+				return assertions;
+			for (int i = 1; i < split.length; i++) {
+				assertions.add(findEdgeByID(Integer.parseInt(split[i])));
+			}
 		} catch (Exception e) {
-			logger_.error("findEdgeIDByArgs: {}, {}", edgeArgs,
+			e.printStackTrace();
+			System.err.println("Error getting all assertions for " + concept
+					+ " (" + argPos + ")");
+			logger_.error("allAssertions: {}:{}, {}", concept, argPos,
 					Arrays.toString(e.getStackTrace()));
 			if (restartConnection()) {
-				int result = findEdgeIDByArgs(edgeArgs);
+				Collection<String[]> result = getAllAssertions(concept, argPos,
+						exceptPredicates);
 				canRestart_ = true;
 				return result;
 			}
 		}
-		return -1;
+		return assertions;
 	}
 
 	@Override
@@ -430,6 +478,22 @@ public class DAGSocket extends OntologySocket {
 	}
 
 	@Override
+	public int getNumConstants() {
+		try {
+			return Integer.parseInt(command("numnodes", "", false));
+		} catch (Exception e) {
+			logger_.error("getNumConstants: {}",
+					Arrays.toString(e.getStackTrace()));
+			if (restartConnection()) {
+				int result = getNumConstants();
+				canRestart_ = true;
+				return result;
+			}
+		}
+		return -1;
+	}
+
+	@Override
 	public int getPrevEdge(int id) {
 		try {
 			return Integer.parseInt(command("prevedge", id + "", false));
@@ -456,22 +520,6 @@ public class DAGSocket extends OntologySocket {
 					Arrays.toString(e.getStackTrace()));
 			if (restartConnection()) {
 				int result = getPrevNode(id);
-				canRestart_ = true;
-				return result;
-			}
-		}
-		return -1;
-	}
-
-	@Override
-	public int getNumConstants() {
-		try {
-			return Integer.parseInt(command("numnodes", "", false));
-		} catch (Exception e) {
-			logger_.error("getNumConstants: {}",
-					Arrays.toString(e.getStackTrace()));
-			if (restartConnection()) {
-				int result = getNumConstants();
 				canRestart_ = true;
 				return result;
 			}
@@ -516,6 +564,27 @@ public class DAGSocket extends OntologySocket {
 	}
 
 	@Override
+	public boolean isValidArg(Object predicate, Object concept, int argNum) {
+		if (!super.isValidArg(predicate, concept, argNum))
+			return false;
+
+		try {
+			return command("validarg",
+					predicate + " " + argNum + " " + concept, true).startsWith(
+					"1");
+		} catch (Exception e) {
+			logger_.error("validArg: {}:{}:{}, {}", predicate, concept, argNum,
+					Arrays.toString(e.getStackTrace()));
+			if (restartConnection()) {
+				boolean result = isValidArg(predicate, concept, argNum);
+				canRestart_ = true;
+				return result;
+			}
+		}
+		return false;
+	}
+
+	@Override
 	public List<String> justify(Object... assertionArgs) {
 		List<String> justification = new ArrayList<>();
 		try {
@@ -539,6 +608,13 @@ public class DAGSocket extends OntologySocket {
 			}
 		}
 		return justification;
+	}
+
+	@Override
+	public boolean parseProofResult(String result) {
+		if (result.trim().matches("\\d+\\|T\\|.*"))
+			return true;
+		return false;
 	}
 
 	@Override
@@ -662,27 +738,6 @@ public class DAGSocket extends OntologySocket {
 					Arrays.toString(e.getStackTrace()));
 			if (restartConnection()) {
 				boolean result = unassert(microtheory, assertionID, forceRemove);
-				canRestart_ = true;
-				return result;
-			}
-		}
-		return false;
-	}
-
-	@Override
-	public boolean isValidArg(Object predicate, Object concept, int argNum) {
-		if (!super.isValidArg(predicate, concept, argNum))
-			return false;
-
-		try {
-			return command("validarg",
-					predicate + " " + argNum + " " + concept, true).startsWith(
-					"1");
-		} catch (Exception e) {
-			logger_.error("validArg: {}:{}:{}, {}", predicate, concept, argNum,
-					Arrays.toString(e.getStackTrace()));
-			if (restartConnection()) {
-				boolean result = isValidArg(predicate, concept, argNum);
 				canRestart_ = true;
 				return result;
 			}

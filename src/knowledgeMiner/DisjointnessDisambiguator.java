@@ -68,6 +68,8 @@ public class DisjointnessDisambiguator {
 	private Collection<DefiniteAssertion> getExistingAssertions(
 			ConceptModule conceptModule, OntologySocket ontology) {
 		Collection<DefiniteAssertion> existingAssertions = new ArrayList<>();
+		
+		// TODO Get ALL type-bound assertions!
 
 		// For every ISA
 		OntologyConcept concept = conceptModule.getConcept();

@@ -24,6 +24,8 @@ import java.util.Collection;
 public class HeuristicProvenance implements Serializable {
 	private static final long serialVersionUID = 1L;
 
+	public static final String PROVENANCE = "provenance";
+
 	/** The heuristic. */
 	private String heuristicStr_;
 

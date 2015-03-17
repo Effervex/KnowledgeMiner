@@ -15,10 +15,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import knowledgeMiner.AssertionGrid;
@@ -198,7 +196,7 @@ public class AssertionGridExperimenter {
 			throws IOException {
 		Map<String, Integer> assertionCount = new TreeMap<>();
 		BufferedWriter writer = new BufferedWriter(new FileWriter(outFile));
-		writer.write("Seed\tAssertions\tProvenance\tWeight\n");
+		writer.write("Cluster #\tSeed\tAssertions\tProvenance\tWeight\n");
 		int numCases = disambiguatedGrid_.getNumCases();
 		for (int i = 0; i < numCases; i++) {
 			float caseWeight = disambiguatedGrid_.getCaseWeight(i);
@@ -206,13 +204,11 @@ public class AssertionGridExperimenter {
 					.getAssertions(i);
 			for (DefiniteAssertion assertion : assertions) {
 				String prettyString = assertion.toPrettyString();
-				writer.write(disambiguatedGrid_.getSeedAssertion(i)
-						.toPrettyString()
+				writer.write(i
 						+ "\t"
-						+ prettyString
-						+ "\t"
-						+ assertion.getProvenance().toString()
-						+ "\t"
+						+ disambiguatedGrid_.getSeedAssertion(i)
+								.toPrettyString() + "\t" + prettyString + "\t"
+						+ assertion.getProvenance().toString() + "\t"
 						+ caseWeight + "\n");
 
 				Integer count = assertionCount.get(prettyString);
@@ -298,7 +294,8 @@ public class AssertionGridExperimenter {
 			float intraRelationThreshold = Float.parseFloat(args[5]);
 			File diffFile = new File(args[6]);
 
-			if (!outFile1.exists() || !outFile2.exists()) {
+			if (!outFile1.exists() || !outFile2.exists()
+					|| outFile1.length() == 0 || outFile2.length() == 0) {
 				// Read and disambiguate the terms
 				System.out.print("Disambiguating terms to taxonomic "
 						+ "assertions...");
@@ -313,7 +310,7 @@ public class AssertionGridExperimenter {
 				System.out.println("Cluster files exist - "
 						+ "skipping term disambiguation.");
 
-			if (!outFile1.exists()) {
+			if (!outFile1.exists() || outFile1.length() == 0) {
 				System.out.print("Disambiguating grid into clusters "
 						+ "(pre-assert)...");
 				outFile1.createNewFile();
@@ -324,13 +321,13 @@ public class AssertionGridExperimenter {
 				System.out.println("Pre-assert cluster file exists - "
 						+ "skipping pre-assert clustering.");
 
-			if (!outFile2.exists()) {
-				// Read in and assert disjointness
-				System.out.print("Enacting assertions from assertion file...");
-				readDisjointFile(disjointFile, relationThreshold,
-						intraRelationThreshold);
-				System.out.println(" Done!");
+			// Read in and assert disjointness
+			System.out.print("Enacting assertions from assertion file...");
+			readDisjointFile(disjointFile, relationThreshold,
+					intraRelationThreshold);
+			System.out.println(" Done!");
 
+			if (!outFile2.exists() || outFile2.length() == 0) {
 				// Restart
 				System.out.print("Disambiguating grid into clusters "
 						+ "(post-assert)...");
@@ -364,7 +361,7 @@ public class AssertionGridExperimenter {
 		String line = reader.readLine();
 		while ((line = reader.readLine()) != null) {
 			String[] split = line.split("\t");
-			clusterMap.put(split[0], split[1]);
+			clusterMap.put(split[1], split[2]);
 		}
 
 		reader.close();
@@ -393,13 +390,6 @@ public class AssertionGridExperimenter {
 		}
 
 		// Output the diff
-		Pattern collPattern = Pattern.compile("\\(isa " + TEST_CONCEPT
-				+ " (.+)\\)");
-		try {
-			ontology_.command("set", "/env/pretty only", false);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 		BufferedWriter writer = new BufferedWriter(new FileWriter(diffFile));
 		for (String key : diffMap.keySet()) {
 			for (String diff : diffMap.get(key)) {
@@ -410,30 +400,7 @@ public class AssertionGridExperimenter {
 					writer.write("-");
 				else
 					writer.write("+");
-				writer.write(diff + "\t");
-
-				// Write the disjoint edge that blocks it
-				Matcher m = collPattern.matcher(key);
-				m.find();
-				String seedConcept = m.group(1);
-				m = collPattern.matcher(diff);
-				m.find();
-				String disjConcept = m.group(1);
-
-				// Damn, this isn't going to work. The disjoint relationships
-				// are to the CLUSTER, not the seed.
-				List<String> justify = ontology_.justify(
-						CommonConcepts.DISJOINTWITH.getID(), seedConcept,
-						disjConcept);
-				for (String justStr : justify) {
-					if (justStr.startsWith("(disjointWith")) {
-						writer.write(justStr + "\t");
-						writer.write(ontology_.getProperty(justStr, false,
-								"disjWeight"));
-						break;
-					}
-				}
-				writer.write("\n");
+				writer.write(diff + "\n");
 			}
 		}
 		writer.close();

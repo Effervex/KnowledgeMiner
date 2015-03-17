@@ -465,11 +465,11 @@ public class ConceptModule extends MinedInformation implements
 		// Perform evaluation if interactive mode on
 		if (InteractiveMode.interactiveMode_) {
 			for (DefiniteAssertion assertion : getConcreteAssertions())
-				ConceptMiningTask.interactiveInterface_
-						.evaluateAddition(assertion);
+				ConceptMiningTask.interactiveInterface_.evaluateAddition(
+						assertion, ontology);
 			for (DefiniteAssertion removed : deletedAssertions_)
-				ConceptMiningTask.interactiveInterface_
-						.evaluateRemoval(removed);
+				ConceptMiningTask.interactiveInterface_.evaluateRemoval(
+						removed, ontology);
 		}
 
 		return miningWeight_;

@@ -30,8 +30,6 @@ public class DefiniteAssertion extends MinedAssertion {
 		super(existing);
 	}
 
-	private static final String PROVENANCE = "provenance";
-
 	private static final long NEWLY_CREATED_EPSILON = 20000;
 
 	public String asPredicate() {
@@ -155,7 +153,7 @@ public class DefiniteAssertion extends MinedAssertion {
 			IOManager.getInstance().writeAssertion(substitute, this);
 			// Add provenance data
 			if (heuristic_ != null)
-				ontology.setProperty(assertionID_, false, PROVENANCE,
+				ontology.setProperty(assertionID_, false, HeuristicProvenance.PROVENANCE,
 						heuristic_.toString());
 			// Add run ID data
 			if (KnowledgeMiner.runID_ != -1)
