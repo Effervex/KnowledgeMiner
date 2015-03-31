@@ -246,8 +246,8 @@ public class TextProcessScript {
 		}
 
 		// Print the map
-		for (String s : samples.keySet()) {
-			out.write(StringUtils.join(samples.get(s), '\t') + "\n");
+		for (Map.Entry<String, Object[]> entry : samples.entrySet()) {
+			out.write(StringUtils.join(entry.getValue(), '\t') + "\n");
 		}
 	}
 

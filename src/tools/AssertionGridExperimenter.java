@@ -17,7 +17,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.regex.Pattern;
 
 import knowledgeMiner.AssertionGrid;
 import knowledgeMiner.KnowledgeMiner;
@@ -223,9 +222,8 @@ public class AssertionGridExperimenter {
 		Map<String, Integer> sortedCount = UtilityMethods
 				.sortByValue(assertionCount);
 		writer = new BufferedWriter(new FileWriter(outCountsFile));
-		for (String assertion : sortedCount.keySet()) {
-			writer.write(assertion + "\t" + assertionCount.get(assertion)
-					+ "\n");
+		for (Map.Entry<String, Integer> entry : sortedCount.entrySet()) {
+			writer.write(entry.getKey() + "\t" + entry.getValue() + "\n");
 		}
 		writer.close();
 	}
@@ -391,12 +389,12 @@ public class AssertionGridExperimenter {
 
 		// Output the diff
 		BufferedWriter writer = new BufferedWriter(new FileWriter(diffFile));
-		for (String key : diffMap.keySet()) {
-			for (String diff : diffMap.get(key)) {
-				writer.write(key + "\t");
+		for (Map.Entry<String, Collection<String>> entry : diffMap.entrySet()) {
+			for (String diff : entry.getValue()) {
+				writer.write(entry.getKey() + "\t");
 				// If the key is in clusterMapA, but it is not in clusterMapB
-				if (clusterMapA.containsKey(key)
-						&& clusterMapA.get(key).contains(diff))
+				if (clusterMapA.containsKey(entry.getKey())
+						&& entry.getValue().contains(diff))
 					writer.write("-");
 				else
 					writer.write("+");

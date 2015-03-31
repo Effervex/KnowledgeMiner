@@ -100,8 +100,8 @@ public abstract class WikipediaArticleMiningHeuristic extends MiningHeuristic {
 			return coreInfo;
 
 		// Record mined info for all referenced article
-		for (Integer art : partitions.keySet()) {
-			MinedInformation artInfo = partitions.get(art);
+		for (Map.Entry<Integer, MinedInformation> entry : partitions.entrySet()) {
+			MinedInformation artInfo = entry.getValue();
 			artInfo.addMinedInfoType(info.getMinedInformation());
 			writeInfo(artInfo);
 		}

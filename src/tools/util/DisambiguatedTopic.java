@@ -264,8 +264,8 @@ public class DisambiguatedTopic {
 			out.write("Text\tDisambiguated\tCYC\tCreated?\n");
 
 			// Write every term and its mappings
-			for (String term : instanceMap_.keySet()) {
-				DisambiguatedTopic disTerm = instanceMap_.get(term);
+			for (Map.Entry<String, DisambiguatedTopic> entry : instanceMap_.entrySet()) {
+				DisambiguatedTopic disTerm = entry.getValue();
 				out.write(disTerm.getText() + "\t");
 				if (disTerm.disamType_ == TYPE_ARTICLE)
 					out.write(disTerm.getDisambiguated().toString());

@@ -1,6 +1,8 @@
 package tools;
 
 import graph.core.CommonConcepts;
+import graph.inference.CommonQuery;
+import graph.module.ARFFData;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
 import io.ontology.OntologySocket;
@@ -8,37 +10,52 @@ import io.ontology.OntologySocket;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import knowledgeMiner.ConceptMiningTask;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mining.HeuristicProvenance;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import util.Pair;
 import util.UtilityMethods;
 import util.collection.MultiMap;
+import weka.classifiers.Classifier;
+import weka.core.DenseInstance;
+import weka.core.Instance;
+import weka.core.Instances;
 import cyc.OntologyConcept;
 
 public class PairwiseDisjointExperimenter {
-	private static final String EXPERIMENT_MICROTHEORY = "PairwiseDisjointExperimentMt";
+	public static final String EXPERIMENT_MICROTHEORY = "PairwiseDisjointExperimentMt";
 	private final static Logger logger_ = LoggerFactory
 			.getLogger(ConceptMiningTask.class);
 
+	private MultiMap<String, String> nonDisjoints_;
 	/** The ontology access. */
 	private DAGSocket ontology_;
+	private int pairedCount_ = 0;
 	private ArrayList<OntologyConcept> terms_;
+	private WEKAAsserter wekaGeneralisation_;
 
 	public PairwiseDisjointExperimenter() {
 		KnowledgeMiner.newInstance("Enwiki_20110722");
@@ -92,107 +109,6 @@ public class PairwiseDisjointExperimenter {
 		reader.close();
 	}
 
-	public static void assertThresholdDisjointFile(File disjointFile,
-			float relationThreshold, float intraRelationThreshold,
-			OntologySocket ontology) throws IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(disjointFile));
-
-		// Read the disjoint assertions
-		String line = reader.readLine();
-		// Skip headers
-		while ((line = reader.readLine()) != null) {
-			String[] split = line.split("\t");
-			// Check relation threshold
-			if (Float.parseFloat(split[8]) >= relationThreshold) {
-				// Check intra threshold
-				String[] intraSplit = UtilityMethods.shrinkString(split[13], 1)
-						.split(",");
-				boolean keep = true;
-				for (String intra : intraSplit) {
-					if (Float.parseFloat(intra.trim()) < intraRelationThreshold) {
-						keep = false;
-						continue;
-					}
-				}
-
-				if (!keep)
-					continue;
-
-				// Assert
-				int result = ontology.assertToOntology(EXPERIMENT_MICROTHEORY,
-						split[0]);
-				if (result < 0)
-					System.out.println("Could not assert " + split[0]);
-				else
-					ontology.setProperty(result, false, "disjWeight", split[8]
-							+ ":" + split[14]);
-			}
-		}
-
-		reader.close();
-	}
-
-	public static void assertWEKAClassfiedDisjointFile(File disjointFile,
-			float predictionThreshold, OntologySocket ontology,
-			boolean asserting) throws IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(disjointFile));
-
-		Map<String, String> disjoints = new HashMap<>();
-		Collection<String> conjoints = new HashSet<>();
-
-		// Read the disjoint assertions
-		String line = reader.readLine();
-		// Skip headers
-		while ((line = reader.readLine()) != null) {
-			if (line.isEmpty())
-				break;
-			ArrayList<String> split = UtilityMethods.split(line, ',');
-			boolean isDisjoint = split.get(2).equals("1:disjoint");
-			float predictionWeight = Float.parseFloat(split.get(4));
-			String firstArg = split.get(8);
-			String secondArg = split.get(9);
-			String assertionString = "(disjointWith " + firstArg + " "
-					+ secondArg + ")";
-			String dataString = split.get(5) + "," + split.get(6) + ","
-					+ split.get(7);
-
-			// Add it to disjoints if high enough weight and not contradicted by
-			// conjoint.
-			if (isDisjoint) {
-				if (predictionWeight >= predictionThreshold) {
-					if (!conjoints.contains(assertionString))
-						disjoints.put(assertionString, dataString);
-					else
-						logger_.info("{} contradicted by conjoint edge",
-								assertionString);
-				}
-			} else {
-				conjoints.add(assertionString);
-				if (disjoints.containsKey(assertionString)) {
-					disjoints.remove(assertionString);
-					logger_.info("{} contradicted by conjoint edge",
-							assertionString);
-				}
-			}
-		}
-		reader.close();
-
-		BufferedWriter writer = new BufferedWriter(new FileWriter(new File(
-				disjointFile.getPath() + "out")));
-		for (String assertionString : disjoints.keySet()) {
-			String provenance = disjoints.get(assertionString);
-			writer.write(assertionString + "," + provenance + "\n");
-			if (asserting) {
-				int id = ontology.assertToOntology(EXPERIMENT_MICROTHEORY,
-						assertionString);
-				logger_.info("{} asserted", assertionString);
-				ontology.setProperty(id, false, HeuristicProvenance.PROVENANCE,
-						provenance);
-			}
-		}
-		writer.close();
-	}
-
 	/**
 	 * Pairs up every term and queries if they are disjoint, outputting the
 	 * result to file.
@@ -206,46 +122,84 @@ public class PairwiseDisjointExperimenter {
 			System.out.println("Performing pairwise disjoint checks...");
 			System.out.print("Processing");
 			pairFile.createNewFile();
+			// Read terms or non disjoints from earlier
 			MultiMap<String, String> nonDisjoints = MultiMap
 					.createSortedSetMultiMap();
-			// For every concept
-			for (int i = 0; i < terms_.size() - 1; i++) {
-				OntologyConcept thisTerm = terms_.get(i);
-				// Pair it with the remaining concepts
-				String[] arguments = new String[terms_.size() - i - 1];
-				for (int j = 0; j < arguments.length; j++) {
-					// And test disjointness
-					OntologyConcept thatTerm = terms_.get(i + j + 1);
-					arguments[j] = "(disjointWith " + thisTerm.getIdentifier()
-							+ " " + thatTerm.getIdentifier() + ")";
-				}
-				String[] results = ontology_.batchCommand("query", arguments);
-				for (int j = 0; j < results.length; j++) {
-					// If not disjoint
-					if (!ontology_.parseProofResult(results[j])) {
-						OntologyConcept thatTerm = terms_.get(i + j + 1);
-						nonDisjoints.put(thisTerm.getConceptName(),
-								thatTerm.getConceptName());
-						nonDisjoints.put(thatTerm.getConceptName(),
-								thisTerm.getConceptName());
-					}
-				}
 
-				System.out.print(".");
-				if (i % 10 == 9)
-					System.out.print((i + 1) + "/" + terms_.size());
+			ExecutorService executor = Executors.newFixedThreadPool(Runtime
+					.getRuntime().availableProcessors());
+			pairedCount_ = 0;
+			if (nonDisjoints_ != null) {
+				runPairwiseFromPrevious(executor, nonDisjoints);
+			} else {
+				runPairwiseFromTerms(executor, nonDisjoints);
+			}
+			executor.shutdown();
+			try {
+				executor.awaitTermination(24, TimeUnit.HOURS);
+			} catch (Exception e1) {
+				e1.printStackTrace();
 			}
 
 			BufferedWriter out = new BufferedWriter(new FileWriter(pairFile));
-			for (String key : nonDisjoints.keySet()) {
-				for (String val : nonDisjoints.get(key))
-					out.write(key + "\t" + val + "\t"
-							+ nonDisjoints.get(key).size() + "\n");
+			for (Map.Entry<String, Collection<String>> entry : nonDisjoints
+					.entrySet()) {
+				for (String val : entry.getValue()) {
+					out.write(entry.getKey() + "\t" + val + "\n");
+					out.write(val + "\t" + entry.getKey() + "\n");
+				}
 			}
+			nonDisjoints_ = nonDisjoints;
 			out.close();
 			System.out.println();
 		} else {
+			// Read in the file as input for the next pairwise check
+			if (nonDisjoints_ == null) {
+				nonDisjoints_ = MultiMap.createSortedSetMultiMap();
+				BufferedReader in = new BufferedReader(new FileReader(pairFile));
+				String line = null;
+				while ((line = in.readLine()) != null) {
+					String[] split = line.split("\t");
+					if (!nonDisjoints_.containsKey(split[1])
+							|| !nonDisjoints_.get(split[1]).contains(split[0]))
+						nonDisjoints_.put(split[0], split[1]);
+				}
+				in.close();
+			}
 			System.out.println("Skipping pairwise disjoint checks...");
+		}
+	}
+
+	private void runPairwiseFromPrevious(ExecutorService executor,
+			MultiMap<String, String> nonDisjoints) {
+		// Read every key-value pair and test it
+		for (Map.Entry<String, Collection<String>> entry : nonDisjoints_
+				.entrySet()) {
+			String[] arguments = new String[entry.getValue().size()];
+			String[] values = entry.getValue().toArray(
+					new String[arguments.length]);
+			for (int i = 0; i < values.length; i++) {
+				arguments[i] = "(disjointWith " + entry.getKey() + " "
+						+ values[i] + ")";
+			}
+			executor.execute(new QueryTask(arguments, nonDisjoints));
+		}
+	}
+
+	private void runPairwiseFromTerms(ExecutorService executor,
+			MultiMap<String, String> nonDisjoints) {
+		// For every concept
+		for (int i = 0; i < terms_.size() - 1; i++) {
+			OntologyConcept thisTerm = terms_.get(i);
+			// Pair it with the remaining concepts
+			String[] arguments = new String[terms_.size() - i - 1];
+			for (int j = 0; j < arguments.length; j++) {
+				// And test disjointness
+				OntologyConcept thatTerm = terms_.get(i + j + 1);
+				arguments[j] = "(disjointWith " + thisTerm.getIdentifier()
+						+ " " + thatTerm.getIdentifier() + ")";
+			}
+			executor.execute(new QueryTask(arguments, nonDisjoints));
 		}
 	}
 
@@ -277,14 +231,15 @@ public class PairwiseDisjointExperimenter {
 			e.printStackTrace();
 		}
 		BufferedWriter writer = new BufferedWriter(new FileWriter(diffFile));
-		for (String key : diffMap.keySet()) {
-			for (String diff : diffMap.get(key)) {
-				writer.write(key + "\t" + diff + "\t");
+		for (Map.Entry<String, Collection<String>> entry : diffMap.entrySet()) {
+			for (String diff : entry.getValue()) {
+				writer.write(entry.getKey() + "\t" + diff + "\t");
 
 				// Damn, this isn't going to work. The disjoint relationships
 				// are to the CLUSTER, not the seed.
 				List<String> justify = ontology_.justify(
-						CommonConcepts.DISJOINTWITH.getID(), key, diff);
+						CommonConcepts.DISJOINTWITH.getID(), entry.getKey(),
+						diff);
 				for (String justStr : justify) {
 					if (justStr.startsWith("(disjointWith")) {
 						writer.write(justStr + "\t");
@@ -308,26 +263,20 @@ public class PairwiseDisjointExperimenter {
 			boolean directCollection = args[1].equalsIgnoreCase("T");
 			File outPairs1 = new File(args[2] + "1");
 			File outPairs2 = new File(args[2] + "2");
-			File disjointFile = new File(args[3]);
+			File unknownsFile = new File(args[3]);
+			File classifierFile = new File(args[4]);
 			float relationThreshold = 0;
-			float intraRelationThreshold = 0;
-			File diffFile = null;
-			if (args.length == 7) {
-				relationThreshold = Float.parseFloat(args[4]);
-				intraRelationThreshold = Float.parseFloat(args[5]);
-				diffFile = new File(args[6]);
-			} else {
-				relationThreshold = Float.parseFloat(args[4]);
-				diffFile = new File(args[5]);
-			}
+			relationThreshold = Float.parseFloat(args[5]);
+			File diffFile = new File(args[6]);
 
-			if (!outPairs1.exists() || !outPairs2.exists()
-					|| outPairs1.length() == 0 || outPairs2.length() == 0) {
+			if (!outPairs1.exists() || outPairs1.length() == 0) {
 				// Read and disambiguate the terms
 				System.out.print("Disambiguating terms to taxonomic "
 						+ "assertions...");
 				readTaxonomicTerms(termFile, directCollection);
 				System.out.println(" Done!");
+			} else {
+				System.out.println("Skipping terms.");
 			}
 
 			// Pairwise matching (pre-assertion)
@@ -335,12 +284,9 @@ public class PairwiseDisjointExperimenter {
 
 			// Read in and assert disjointness
 			System.out.print("Enacting assertions from assertion file...");
-//			if (args.length == 7)
-//				assertThresholdDisjointFile(disjointFile, relationThreshold,
-//						intraRelationThreshold, ontology_);
-//			else
-//				assertWEKAClassfiedDisjointFile(disjointFile,
-//						relationThreshold, ontology_, true);
+			wekaGeneralisation_ = new WEKAAsserter(classifierFile, ontology_);
+			wekaGeneralisation_
+					.processUnknowns(unknownsFile, relationThreshold, true);
 			System.out.println(" Done!");
 
 			// Pairwise matching (pre-assertion)
@@ -375,44 +321,56 @@ public class PairwiseDisjointExperimenter {
 	}
 
 	public static void main(String[] args) {
-		// If just a single arg, run the classification cleaner
-		if (args.length == 1) {
-			try {
-				assertWEKAClassfiedDisjointFile(new File(args[0]), 1,
-						ResourceAccess.requestOntologySocket(), false);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			System.exit(0);
-		}
-
 		// Either CLASSIFIED
 		// Input term file
 		// If direct collection file
 		// Output pair file
-		// Input disjoint assertion file
+		// Input unknowns file
+		// Input model file
 		// Prediction threshold
 		// Output diff file
-
-		// Or THRESHOLD
-		// Input term file
-		// If direct collection file
-		// Output pair file
-		// Input disjoint assertion file
-		// Disjoint relation threshold
-		// Disjoint intra-relation threshold
-		// Output diff file
-		if (args.length != 7 && args.length != 6) {
+		if (args.length != 7) {
 			System.err.println("Experimenter requires input term, "
 					+ "boolean isDirectCollectionFile, "
-					+ "output file, input disjoint assertions, "
+					+ "output file, input unknown assertions, "
+					+ "input classifier model file, "
 					+ "relation/prediction threshold, "
-					+ "intra-relation threshold (if thresholding), "
 					+ "and output diff file!");
 			System.exit(1);
 		}
 
 		PairwiseDisjointExperimenter experimenter = new PairwiseDisjointExperimenter();
 		experimenter.run(args);
+	}
+
+	private class QueryTask implements Runnable {
+		private String[] arguments_;
+		private MultiMap<String, String> results_;
+
+		public QueryTask(String[] arguments,
+				MultiMap<String, String> nonDisjoints) {
+			arguments_ = arguments;
+			results_ = nonDisjoints;
+		}
+
+		@Override
+		public void run() {
+			DAGSocket socket = (DAGSocket) ResourceAccess
+					.requestOntologySocket();
+			String[] results = socket.batchCommand("query", arguments_);
+			for (int j = 0; j < results.length; j++) {
+				// If not disjoint
+				if (!socket.parseProofResult(results[j])) {
+					String[] split = UtilityMethods.splitToArray(
+							UtilityMethods.shrinkString(arguments_[j], 1), ' ');
+					results_.put(split[1], split[2]);
+				}
+			}
+			pairedCount_++;
+			if ((pairedCount_ % 10) == 0)
+				System.out.print(pairedCount_ + " ");
+			else
+				System.out.print(".");
+		}
 	}
 }

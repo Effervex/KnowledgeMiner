@@ -156,16 +156,16 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 			Map<String, String> infoboxRelations = infobox
 					.getInfoboxRelations();
 
-			for (String relation : infoboxRelations.keySet()) {
+			for (Map.Entry<String, String> entry : infoboxRelations.entrySet()) {
 				// Determine the standing.
 				// Normalise the standing to the global count
-				WeightedStanding local = new WeightedStanding(getStanding(relation));
+				WeightedStanding local = new WeightedStanding(getStanding(entry.getKey()));
 				local.normaliseViaGlobal(global);
 				info.addStandingInformation(local);
 
 				// Extract info from the relation
-				PartialAssertion assertion = parseRelation(relation,
-						infoboxRelations.get(relation), info,
+				PartialAssertion assertion = parseRelation(entry.getKey(),
+						entry.getValue(), info,
 						infobox.getInfoboxType(), wmi, ontology);
 				if (assertion != null && assertion != IGNORABLE_ASSERTION)
 					info.addAssertion(assertion);

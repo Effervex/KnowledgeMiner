@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 
@@ -217,11 +218,11 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 		MultiMap<String, String> listItems = BulletListParser
 				.parseBulletList(markup);
 		// Iterate through the points
-		for (String context : listItems.keySet()) {
-			if (context.equalsIgnoreCase("references"))
+		for (Map.Entry<String, Collection<String>> entry : listItems.entrySet()) {
+			if (entry.getKey().equalsIgnoreCase("references"))
 				continue;
-			for (String point : listItems.get(context)) {
-				assignDataToAssertions(point, context, listTitle,
+			for (String point : entry.getValue()) {
+				assignDataToAssertions(point, entry.getKey(), listTitle,
 						listAssertions, info, wmi);
 			}
 		}

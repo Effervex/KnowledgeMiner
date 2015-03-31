@@ -217,12 +217,13 @@ public class WMISocket extends KMSocket {
 				Map<String, Object> results = parsingMethod.parseSubResults(
 						commandResult, argument);
 				result = results.get(subCommand);
-				for (String key : results.keySet()) {
-					if (key.equals(WMIMethod.DEFAULT))
+				for (Map.Entry<String, Object> entry : results.entrySet()) {
+					if (entry.getKey().equals(WMIMethod.DEFAULT))
 						access_.cacheCommand(command, argument,
-								results.get(key));
+								entry.getValue());
 					else
-						access_.cacheCommand(key, argument, results.get(key));
+						access_.cacheCommand(entry.getKey(), argument,
+								entry.getValue());
 				}
 			} else {
 				result = parsingMethod.parseResult(commandResult, argument);

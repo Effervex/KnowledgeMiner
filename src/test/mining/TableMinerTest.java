@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import knowledgeMiner.mapping.CycMapper;
 
@@ -117,9 +118,12 @@ public class TableMinerTest {
 			for (WikiTable table : tables) {
 				// Can't assert too much, other than basic reqs.
 				MultiMap<String, String> tableData = table.getTableData();
-				assertTrue(list + ": " + tableData.keySet(), tableData.size() > 1);
-				for (String key : tableData.keySet())
-					assertFalse(list + ": " + key, tableData.get(key).isEmpty());
+				assertTrue(list + ": " + tableData.keySet(),
+						tableData.size() > 1);
+				for (Map.Entry<String, Collection<String>> entry : tableData
+						.entrySet())
+					assertFalse(list + ": " + entry.getKey(), entry.getValue()
+							.isEmpty());
 			}
 		}
 	}

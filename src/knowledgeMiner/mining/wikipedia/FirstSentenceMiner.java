@@ -443,15 +443,15 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 		String collectionFragment = null;
 		// Check every pattern
 		int firstMatch = Integer.MAX_VALUE;
-		for (Pattern regExp : sentenceRegExps_.keySet()) {
-			Matcher matcher = regExp.matcher(firstSentence);
+		for (Map.Entry<Pattern, TermStanding> entry : sentenceRegExps_.entrySet()) {
+			Matcher matcher = entry.getKey().matcher(firstSentence);
 			if (matcher.matches()) {
 				// Note the collection fragment and standing
 				if (matcher.start(1) < firstMatch) {
 					firstMatch = matcher.start(1);
 					collectionFragment = matcher.group(1);
 				}
-				TermStanding matcherStanding = sentenceRegExps_.get(regExp);
+				TermStanding matcherStanding = entry.getValue();
 				if (matcherStanding != TermStanding.UNKNOWN) {
 					// Record the standing, resolving clashes.
 					info.addStandingInformation(matcherStanding, getWeight(),

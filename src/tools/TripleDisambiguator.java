@@ -315,8 +315,9 @@ public class TripleDisambiguator {
 			MultiMap<String, DisambiguatedTriple> familyTriples)
 			throws IOException {
 		// Disambiguate every family
-		for (String term : familyTriples.keySet()) {
-			Collection<DisambiguatedTriple> family = familyTriples.get(term);
+		for (Map.Entry<String, Collection<DisambiguatedTriple>> entry : familyTriples
+				.entrySet()) {
+			Collection<DisambiguatedTriple> family = entry.getValue();
 			try {
 				consistencyCheck(family);
 			} catch (Exception e) {

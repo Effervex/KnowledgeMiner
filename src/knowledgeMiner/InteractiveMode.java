@@ -244,7 +244,8 @@ public class InteractiveMode {
 						System.out.println(explainLine);
 					}
 					repeat = true;
-				}
+				} else
+					repeat = true;
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

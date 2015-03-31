@@ -288,10 +288,10 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 		if (anchors == null)
 			return str;
 		String result = str.replaceAll("(\\S+)-\\d+(?= |$)", "$1");
-		for (String anchor : anchors.keySet()) {
-			if (anchors.get(anchor) != null)
-				result = WikiParser.replaceAll(result, anchor,
-						anchors.get(anchor));
+		for (Map.Entry<String, String> entry : anchors.entrySet()) {
+			if (entry.getValue() != null)
+				result = WikiParser.replaceAll(result, entry.getKey(),
+						entry.getValue());
 		}
 		return result;
 	}
@@ -435,7 +435,8 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 		Matcher m = WikiParser.ANCHOR_PARSER.matcher(sentence);
 		while (m.find()) {
 			String replString = (m.group(2) != null) ? m.group(2) : m.group(1);
-			anchorMap.put(replString, m.group());
+			if (replString.length() > 1)
+				anchorMap.put(replString, m.group());
 		}
 		return anchorMap;
 	}
