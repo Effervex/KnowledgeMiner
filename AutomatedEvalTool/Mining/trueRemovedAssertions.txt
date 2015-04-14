@@ -1,0 +1,2 @@
+(genls Isomorphism OneToOneFunction)
+(isa deportee ActorSlot)

@@ -1,25 +1,18 @@
 package tools;
 
 import graph.core.CommonConcepts;
-import graph.inference.CommonQuery;
-import graph.module.ARFFData;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
-import io.ontology.OntologySocket;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,20 +22,13 @@ import java.util.concurrent.TimeUnit;
 
 import knowledgeMiner.ConceptMiningTask;
 import knowledgeMiner.KnowledgeMiner;
-import knowledgeMiner.mining.HeuristicProvenance;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import util.Pair;
 import util.UtilityMethods;
 import util.collection.MultiMap;
-import weka.classifiers.Classifier;
-import weka.core.DenseInstance;
-import weka.core.Instance;
-import weka.core.Instances;
 import cyc.OntologyConcept;
 
 public class PairwiseDisjointExperimenter {
@@ -196,8 +182,8 @@ public class PairwiseDisjointExperimenter {
 			for (int j = 0; j < arguments.length; j++) {
 				// And test disjointness
 				OntologyConcept thatTerm = terms_.get(i + j + 1);
-				arguments[j] = "(disjointWith " + thisTerm.getIdentifier()
-						+ " " + thatTerm.getIdentifier() + ")";
+				arguments[j] = "(disjointWith " + thisTerm.getConceptName()
+						+ " " + thatTerm.getConceptName() + ")";
 			}
 			executor.execute(new QueryTask(arguments, nonDisjoints));
 		}
@@ -283,7 +269,7 @@ public class PairwiseDisjointExperimenter {
 			runPairwiseDisjoints(outPairs1);
 
 			// Read in and assert disjointness
-			System.out.print("Enacting assertions from assertion file...");
+			System.out.print("Enacting assertions from assertion file");
 			wekaGeneralisation_ = new WEKAAsserter(classifierFile, ontology_);
 			wekaGeneralisation_
 					.processUnknowns(unknownsFile, relationThreshold, true);

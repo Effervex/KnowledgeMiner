@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import tools.PairwiseDisjointExperimenter;
 import tools.WEKAAsserter;
+import tools.WEKAAsserter.GeneraliseTask;
 import util.Pair;
 
 public class WEKAAsserterTest {
@@ -40,9 +41,9 @@ public class WEKAAsserterTest {
 
 	@After
 	public void tearDown() throws Exception {
-		 ontology_.command("map", "removeedge $1 |\nsearchprop E \"MT\"\n"
-		 + PairwiseDisjointExperimenter.EXPERIMENT_MICROTHEORY
-		 + "\n\\|(\\d+)", false);
+//		ontology_.command("map", "removeedge $1 |\nsearchprop E \"MT\"\n"
+//				+ PairwiseDisjointExperimenter.EXPERIMENT_MICROTHEORY
+//				+ "\n\\|(\\d+)", false);
 	}
 
 	@AfterClass
@@ -60,7 +61,8 @@ public class WEKAAsserterTest {
 				false);
 		String[] split = asWeka.split("\\|");
 		sut_.getAssertions().clear();
-		sut_.recursiveGeneralise(split[1], 1.0, 0, null, examined);
+		GeneraliseTask task = sut_.new GeneraliseTask(split[1], 1);
+		task.run();
 		Collection<String> assertions = sut_.getAssertions();
 		assertEquals(assertions.size(), 2);
 		assertTrue(assertions
@@ -73,7 +75,8 @@ public class WEKAAsserterTest {
 		asWeka = ontology_.command("asweka", "Fish Supper RelatedTo", false);
 		split = asWeka.split("\\|");
 		sut_.getAssertions().clear();
-		sut_.recursiveGeneralise(split[1], 1.0, 0, null, examined);
+		task = sut_.new GeneraliseTask(split[1], 1);
+		task.run();
 		assertions = sut_.getAssertions();
 		assertEquals(assertions.size(), 1);
 		assertTrue(assertions
@@ -85,7 +88,8 @@ public class WEKAAsserterTest {
 				"Brass BrassInstrument DerivedFrom", false);
 		split = asWeka.split("\\|");
 		sut_.getAssertions().clear();
-		sut_.recursiveGeneralise(split[1], 1.0, 0, null, examined);
+		task = sut_.new GeneraliseTask(split[1], 1);
+		task.run();
 		assertions = sut_.getAssertions();
 		assertEquals(assertions.size(), 0);
 		examined.clear();
@@ -94,7 +98,8 @@ public class WEKAAsserterTest {
 		asWeka = ontology_.command("asweka", "USCity Village Antonym", false);
 		split = asWeka.split("\\|");
 		sut_.getAssertions().clear();
-		sut_.recursiveGeneralise(split[1], 1.0, 0, null, examined);
+		task = sut_.new GeneraliseTask(split[1], 1);
+		task.run();
 		assertions = sut_.getAssertions();
 		assertEquals(assertions.size(), 0);
 		examined.clear();
@@ -103,7 +108,8 @@ public class WEKAAsserterTest {
 		asWeka = ontology_.command("asweka", "Fish Starfish RelatedTo", false);
 		split = asWeka.split("\\|");
 		sut_.getAssertions().clear();
-		sut_.recursiveGeneralise(split[1], 1.0, 0, null, examined);
+		task = sut_.new GeneraliseTask(split[1], 1);
+		task.run();
 		assertions = sut_.getAssertions();
 		assertEquals(assertions.size(), 0);
 		examined.clear();
@@ -113,7 +119,8 @@ public class WEKAAsserterTest {
 				"CourseOfAMeal Crustacean RelatedTo", false);
 		split = asWeka.split("\\|");
 		sut_.getAssertions().clear();
-		sut_.recursiveGeneralise(split[1], 1.0, 0, null, examined);
+		task = sut_.new GeneraliseTask(split[1], 1);
+		task.run();
 		assertions = sut_.getAssertions();
 		assertEquals(assertions.size(), 0);
 		examined.clear();
@@ -134,7 +141,8 @@ public class WEKAAsserterTest {
 		while ((input = in.readLine()) != null) {
 			String asWeka = ontology_.command("asweka", input, false);
 			String[] split = asWeka.split("\\|");
-			sut_.recursiveGeneralise(split[1], 1.0, 0, null, examined);
+			GeneraliseTask task = sut_.new GeneraliseTask(split[1], 1);
+			task.run();
 		}
 		in.close();
 
@@ -158,7 +166,8 @@ public class WEKAAsserterTest {
 		while ((input = in.readLine()) != null) {
 			String asWeka = ontology_.command("asweka", input, false);
 			String[] split = asWeka.split("\\|");
-			sut_.recursiveGeneralise(split[1], 1.0, 0, null, examined);
+			GeneraliseTask task = sut_.new GeneraliseTask(split[1], 1);
+			task.run();
 		}
 		in.close();
 

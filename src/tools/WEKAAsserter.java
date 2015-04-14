@@ -3,8 +3,10 @@ package tools;
 import graph.core.CommonConcepts;
 import graph.inference.CommonQuery;
 import graph.module.ARFFData;
+import io.KMAccess;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
+import io.ontology.OntologySocket;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -20,6 +22,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import knowledgeMiner.ConceptMiningTask;
 import knowledgeMiner.mining.HeuristicProvenance;
@@ -30,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import util.Pair;
 import util.UtilityMethods;
+import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -48,9 +54,10 @@ public class WEKAAsserter {
 	public static final File ARFF_LOCATION = new File("lib/disjointARFF.arff");
 	private Instances arffData_;
 	private Classifier classifier_;
-	private DAGSocket ontology_;
+	private ThreadLocal<Classifier> threadClassifier_;
 	private Collection<String> assertedEdges_;
 	public boolean generalising_ = true;
+	private int count_;
 
 	public WEKAAsserter(File classifierFile, DAGSocket ontology) {
 		try {
@@ -60,12 +67,24 @@ public class WEKAAsserter {
 			arffData_ = new Instances(new FileReader(ARFF_LOCATION));
 			arffData_.setClassIndex(arffData_.numAttributes() - 1);
 			classifier_ = (Classifier) ois.readObject();
+			ResourceAccess.newInstance(-1);
 			ois.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		ontology_ = ontology;
 		assertedEdges_ = new ArrayList<>();
+		
+		threadClassifier_ = new ThreadLocal<Classifier>() {
+			@Override
+			protected Classifier initialValue() {
+				try {
+					return AbstractClassifier.makeCopy(classifier_);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				return null;
+			}
+		};
 	}
 
 	/**
@@ -76,7 +95,9 @@ public class WEKAAsserter {
 	 * @return An instance according to the arffData.
 	 */
 	private Instance parseInstance(String instanceStr) {
-		String[] split = instanceStr.split(",");
+		Collection<Character> quoted = new ArrayList<>();
+		quoted.add('\'');
+		String[] split = UtilityMethods.splitToArray(instanceStr, ',', quoted);
 
 		// Form the instance
 		Instance instance = new DenseInstance(ARFFData.values().length);
@@ -102,63 +123,6 @@ public class WEKAAsserter {
 	}
 
 	/**
-	 * Check if the parents of a concept are disjoint to the other concept. If
-	 * so, there is no need to assert this pair.
-	 *
-	 * @param relation
-	 *            The relation defining the original pair.
-	 * @param generalisedConcept
-	 *            The concept to be generalised.
-	 * @param otherConcept
-	 *            The other concept to check against.
-	 * @param predictionThreshold
-	 *            The threshold at which disjoint edges are created.
-	 * @param depth
-	 *            The depth of the recursion.
-	 * @param provenance
-	 *            The original edge that spawned this generalisation.
-	 * @param examined
-	 *            The map of examined pairs.
-	 * @param instances
-	 *            The ARFF data.
-	 * @param classifier
-	 *            The classifier to classify the pairs.
-	 * @param ontology
-	 *            The ontology access.
-	 * @return False if the parents were more general and this edge need not be
-	 *         created.
-	 * @throws Exception
-	 *             Should something go awry...
-	 */
-	private boolean recurseIntoParents(String relation,
-			String generalisedConcept, String otherConcept,
-			double predictionThreshold, int depth, String provenance,
-			Map<Pair<String, String>, Boolean> examined) throws Exception {
-		Collection<OntologyConcept> parents = ontology_.quickQuery(
-				CommonQuery.MINGENLS, generalisedConcept);
-		// For every min-parent, try to generalise upwards
-		boolean shouldAssert = true;
-		for (OntologyConcept parent : parents) {
-			String parentInstStr = ontology_.command("asWeka",
-					parent.getIdentifier() + " " + otherConcept + " "
-							+ relation, false);
-			String[] split = parentInstStr.split("\\|");
-			// TODO I don't like how this is handled - it should ensure all are
-			// disjoint.
-			// If any of the parent's edges create generalisations, set should
-			// assert to false.
-			for (int i = 1; i <= Integer.parseInt(split[0]); i++) {
-				if (recursiveGeneralise(split[i], predictionThreshold,
-						depth + 1, provenance, examined)) {
-					shouldAssert = false;
-					break;
-				}
-			}
-		}
-		return shouldAssert;
-	}
-
-	/**
 	 * Asserts disjoints from a file. Though filters them first to avoid
 	 * disjoint/conjoint clashes.
 	 *
@@ -174,6 +138,7 @@ public class WEKAAsserter {
 	public void assertWEKAClassifiedDisjointFile(File disjointFile,
 			float predictionThreshold, boolean asserting) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(disjointFile));
+		OntologySocket ontology = ResourceAccess.requestOntologySocket();
 
 		Map<String, String> disjoints = new HashMap<>();
 		Collection<String> conjoints = new HashSet<>();
@@ -223,12 +188,12 @@ public class WEKAAsserter {
 			String provenance = entry.getValue();
 			writer.write(entry.getKey() + "," + provenance + "\n");
 			if (asserting) {
-				int id = ontology_.assertToOntology(
+				int id = ontology.assertToOntology(
 						PairwiseDisjointExperimenter.EXPERIMENT_MICROTHEORY,
 						entry.getKey());
 				if (id != -1) {
 					logger_.info("{} asserted", entry.getKey());
-					ontology_.setProperty(id, false,
+					ontology.setProperty(id, false,
 							HeuristicProvenance.PROVENANCE, provenance);
 				} else {
 					logger_.info("{} rejected", entry.getKey());
@@ -259,9 +224,9 @@ public class WEKAAsserter {
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	public String classify(String conceptA, String conceptB, String relation)
-			throws Exception {
-		String result = ontology_.command("asWeka", conceptA + " " + conceptB
+	public String classify(String conceptA, String conceptB, String relation,
+			DAGSocket ontology) throws Exception {
+		String result = ontology.command("asWeka", conceptA + " " + conceptB
 				+ " " + relation, false);
 		String[] lines = result.split("\\|");
 		boolean isDisjoint = true;
@@ -310,133 +275,246 @@ public class WEKAAsserter {
 		// For every unknown instance
 		BufferedReader in = new BufferedReader(new FileReader(unknownsFile));
 		String input = null;
+		ExecutorService executor = Executors.newFixedThreadPool(Runtime
+				.getRuntime().availableProcessors());
 		while ((input = in.readLine()) != null) {
-			Map<Pair<String, String>, Boolean> examined = new HashMap<>();
-			String provenance = null;
-			recursiveGeneralise(input, predictionThreshold, 0, provenance,
-					examined);
+			if (input.startsWith("@") || input.isEmpty())
+				continue;
+			executor.execute(new GeneraliseTask(input, predictionThreshold));
 		}
 		in.close();
+		executor.shutdown();
+		try {
+			executor.awaitTermination(24, TimeUnit.HOURS);
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
+		System.out.println();
 	}
 
 	public Collection<String> getAssertions() {
 		return assertedEdges_;
 	}
 
-	/**
-	 * Recursively works up the graph, testing whether a disjoint relationship
-	 * can be generalised to one or more of it's parent collections.
-	 *
-	 * @param instanceStr
-	 *            The pair of collections to test, in instance string format.
-	 * @param predictionThreshold
-	 *            The threshold at which a new disjoint can be created.
-	 * @param depth
-	 *            Depth of the recursion
-	 * @param provenance
-	 *            The original un-generalised term to note in the provenance
-	 * @param examined
-	 *            The already examined disjoints.
-	 * @param instances
-	 *            The ARFF structure.
-	 * @param ontology
-	 *            The ontology access.
-	 * @param classifier
-	 *            The classifier for classifying the instances.
-	 * @return True if this edge is already proved (transitively or directly) as
-	 *         disjoint, false otherwise.
-	 */
-	public boolean recursiveGeneralise(String instanceStr,
-			double predictionThreshold, int depth, String provenance,
-			Map<Pair<String, String>, Boolean> examined) {
-		Instance instance = parseInstance(instanceStr);
-		String relation = instance.stringValue(ARFFData.RELATION.ordinal());
-		String conceptA = instance.stringValue(ARFFData.DISAMB1.ordinal());
-		String conceptB = instance.stringValue(ARFFData.DISAMB2.ordinal());
-		if (conceptA.startsWith("'"))
-			conceptA = UtilityMethods.shrinkString(conceptA, 1);
-		if (conceptB.startsWith("'"))
-			conceptB = UtilityMethods.shrinkString(conceptB, 1);
-		Pair<String, String> conceptPair = null;
-		if (conceptA.compareTo(conceptB) < 0)
-			conceptPair = new Pair<String, String>(conceptA, conceptB);
-		else
-			conceptPair = new Pair<String, String>(conceptB, conceptA);
+	private synchronized void addAssertion(String data) {
+		assertedEdges_.add(data);
+	}
 
-		if (provenance == null)
-			provenance = "(disjointWith " + conceptA + " " + conceptB + ")"
-					+ relation;
+	public class GeneraliseTask implements Runnable {
+		private String startInstance_;
+		private float predictionThreshold_;
+		private DAGSocket ontology_;
+		private Classifier thisClassifier_;
 
-		// Check if already examined
-		if (examined.containsKey(conceptPair))
-			return examined.get(conceptPair);
-
-		String prefix = StringUtils.repeat(' ', depth * 2) + "(disjointWith "
-				+ conceptA + " " + conceptB + ")";
-
-		// First check if they're already disjoint
-		String result = ontology_.query(null,
-				CommonConcepts.DISJOINTWITH.getID(), conceptA, conceptB);
-		if (result.startsWith("1|T")) {
-			examined.put(conceptPair, true);
-			logger_.info(prefix + " - Already disjoint!");
-			return true;
-		} else if (result.startsWith("0|F")) {
-			examined.put(conceptPair, false);
-			logger_.info(prefix + " - Already conjoint!");
-			return false;
+		public GeneraliseTask(String input, float predictionThreshold) {
+			startInstance_ = input;
+			predictionThreshold_ = predictionThreshold;
 		}
 
-		// Classify
-		try {
-			double classification = 1 - classifier_.classifyInstance(instance);
-			if (classification >= predictionThreshold) {
-				logger_.info(prefix + " DISJOINT");
-				boolean shouldAssert = true;
-				// Generalise A and B until conjoint
-				if (generalising_) {
-					shouldAssert &= recurseIntoParents(relation, conceptA,
-							conceptB, predictionThreshold, depth, provenance,
-							examined);
-					shouldAssert &= recurseIntoParents(relation, conceptB,
-							conceptA, predictionThreshold, depth, provenance,
-							examined);
-				}
-				// If this is the highest disjoint assertion, make the a
-				if (shouldAssert) {
-					int id = ontology_
-							.assertToOntology(
-									PairwiseDisjointExperimenter.EXPERIMENT_MICROTHEORY,
-									CommonConcepts.DISJOINTWITH.getID(),
-									conceptA, conceptB);
-					if (id != -1) {
-						ontology_.setProperty(id, false,
-								HeuristicProvenance.PROVENANCE, provenance
-										+ "_STEPS=" + depth);
-						assertedEdges_.add("(disjointWith " + conceptA + " "
-								+ conceptB + ")\t" + provenance);
-						logger_.info("Asserted (disjointWith {} {})", conceptA,
-								conceptB);
-					} else {
-						logger_.info("Error asserting (disjointWith {} {})",
-								conceptA, conceptB);
-					}
-				}
-			} else {
-				logger_.info(prefix + " NOT DISJOINT");
+		@Override
+		public void run() {
+			ontology_ = (DAGSocket) ResourceAccess.requestOntologySocket();
+			thisClassifier_ = threadClassifier_.get();
+			try {
+				Map<Pair<String, String>, Boolean> examined = new HashMap<>();
+				String provenance = null;
+				recursiveGeneralise(startInstance_, 0, provenance, examined);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			count_++;
+			if ((count_ % 1000) == 0) {
+				if ((count_ % 10000) == 0)
+					System.out.print(count_ + " ");
+				else
+					System.out.print(".");
+			}
+		}
+
+		/**
+		 * Recursively works up the graph, testing whether a disjoint
+		 * relationship can be generalised to one or more of it's parent
+		 * collections.
+		 *
+		 * @param instanceStr
+		 *            The pair of collections to test, in instance string
+		 *            format.
+		 * @param depth
+		 *            Depth of the recursion
+		 * @param provenance
+		 *            The original un-generalised term to note in the provenance
+		 * @param examined
+		 *            The already examined disjoints.
+		 * @param instances
+		 *            The ARFF structure.
+		 * @param ontology
+		 *            The ontology access.
+		 * @param classifier
+		 *            The classifier for classifying the instances.
+		 * @return True if this edge is already proved (transitively or
+		 *         directly) as disjoint, false otherwise.
+		 */
+		public boolean recursiveGeneralise(String instanceStr, int depth,
+				String provenance, Map<Pair<String, String>, Boolean> examined) {
+			logger_.trace("Recursive Generalisation {}", instanceStr);
+			String relation = null;
+			String conceptA = null;
+			String conceptB = null;
+			Pair<String, String> conceptPair = null;
+			Instance instance = null;
+			try {
+				instance = parseInstance(instanceStr);
+				relation = instance.stringValue(ARFFData.RELATION.ordinal());
+				conceptA = instance.stringValue(ARFFData.DISAMB1.ordinal());
+				conceptB = instance.stringValue(ARFFData.DISAMB2.ordinal());
+				if (conceptA.startsWith("'"))
+					conceptA = UtilityMethods.shrinkString(conceptA, 1);
+				if (conceptB.startsWith("'"))
+					conceptB = UtilityMethods.shrinkString(conceptB, 1);
+
+				if (conceptA.compareTo(conceptB) < 0)
+					conceptPair = new Pair<String, String>(conceptA, conceptB);
+				else
+					conceptPair = new Pair<String, String>(conceptB, conceptA);
+
+				if (provenance == null)
+					provenance = "(disjointWith " + conceptA + " " + conceptB
+							+ ")" + relation;
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+			// Check if already examined
+			if (examined.containsKey(conceptPair))
+				return examined.get(conceptPair);
+
+			String prefix = StringUtils.repeat(' ', depth * 2)
+					+ "(disjointWith " + conceptA + " " + conceptB + ")";
+
+			// First check if they're already disjoint
+			String result = ontology_.query(null,
+					CommonConcepts.DISJOINTWITH.getID(), conceptA, conceptB);
+			logger_.trace("Disjoint {}", result);
+			if (result.startsWith("1|T")) {
+				examined.put(conceptPair, true);
+				logger_.info(prefix + " - Already disjoint!");
+				return true;
+			} else if (result.startsWith("0|F")) {
 				examined.put(conceptPair, false);
+				logger_.info(prefix + " - Already conjoint!");
 				return false;
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
+
+			// Classify
+			try {
+				double classification = 1 - thisClassifier_
+						.classifyInstance(instance);
+				if (classification >= predictionThreshold_) {
+					logger_.info(prefix + " DISJOINT");
+					boolean shouldAssert = true;
+					// Generalise A and B until conjoint
+					if (generalising_) {
+						shouldAssert &= recurseIntoParents(relation, conceptA,
+								conceptB, depth, provenance, examined);
+						shouldAssert &= recurseIntoParents(relation, conceptB,
+								conceptA, depth, provenance, examined);
+					}
+					// If this is the highest disjoint assertion, make the a
+					if (shouldAssert) {
+						int id = ontology_
+								.assertToOntology(
+										PairwiseDisjointExperimenter.EXPERIMENT_MICROTHEORY,
+										CommonConcepts.DISJOINTWITH.getID(),
+										conceptA, conceptB);
+						logger_.trace("Asserted {}", id);
+						if (id != -1) {
+							ontology_.setProperty(id, false,
+									HeuristicProvenance.PROVENANCE, provenance
+											+ "_STEPS=" + depth);
+							addAssertion("(disjointWith " + conceptA + " "
+									+ conceptB + ")\t" + provenance);
+							logger_.info("Asserted (disjointWith {} {})",
+									conceptA, conceptB);
+						} else {
+							logger_.info(
+									"Error asserting (disjointWith {} {})",
+									conceptA, conceptB);
+						}
+					}
+				} else {
+					logger_.info(prefix + " NOT DISJOINT");
+					examined.put(conceptPair, false);
+					return false;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			examined.put(conceptPair, true);
+			return true;
 		}
-		examined.put(conceptPair, true);
-		return true;
+
+		/**
+		 * Check if the parents of a concept are disjoint to the other concept.
+		 * If so, there is no need to assert this pair.
+		 *
+		 * @param relation
+		 *            The relation defining the original pair.
+		 * @param generalisedConcept
+		 *            The concept to be generalised.
+		 * @param otherConcept
+		 *            The other concept to check against.
+		 * @param depth
+		 *            The depth of the recursion.
+		 * @param provenance
+		 *            The original edge that spawned this generalisation.
+		 * @param examined
+		 *            The map of examined pairs.
+		 * @param instances
+		 *            The ARFF data.
+		 * @param classifier
+		 *            The classifier to classify the pairs.
+		 * @param ontology
+		 *            The ontology access.
+		 * @return False if the parents were more general and this edge need not
+		 *         be created.
+		 * @throws Exception
+		 *             Should something go awry...
+		 */
+		private boolean recurseIntoParents(String relation,
+				String generalisedConcept, String otherConcept, int depth,
+				String provenance, Map<Pair<String, String>, Boolean> examined)
+				throws Exception {
+			Collection<OntologyConcept> parents = ontology_.quickQuery(
+					CommonQuery.MINGENLS, generalisedConcept);
+			logger_.trace("Parents {}", parents.toString());
+			// For every min-parent, try to generalise upwards
+			boolean shouldAssert = true;
+			for (OntologyConcept parent : parents) {
+				String parentInstStr = ontology_.command("asWeka",
+						parent.getIdentifier() + " " + otherConcept + " "
+								+ relation, false);
+				logger_.trace("AsWEKA {}", parentInstStr);
+				String[] split = parentInstStr.split("\\|");
+				// TODO I don't like how this is handled - it should ensure all
+				// are disjoint.
+				// If any of the parent's edges create generalisations, set
+				// should assert to false.
+				for (int i = 1; i <= Integer.parseInt(split[0]); i++) {
+					if (recursiveGeneralise(split[i], depth + 1, provenance,
+							examined)) {
+						shouldAssert = false;
+						break;
+					}
+				}
+			}
+			return shouldAssert;
+		}
 	}
 
 	public static void main(String[] args) throws Exception {
+		DAGSocket ontology = (DAGSocket) ResourceAccess.requestOntologySocket();
 		WEKAAsserter wekaAsserter = new WEKAAsserter(new File(args[0]),
-				(DAGSocket) ResourceAccess.requestOntologySocket());
+				ontology);
 
 		String input = null;
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
@@ -451,7 +529,7 @@ public class WEKAAsserter {
 				String conceptB = split[2];
 
 				System.out.println(wekaAsserter.classify(conceptA, conceptB,
-						relation));
+						relation, ontology));
 			}
 		} while (!input.isEmpty());
 	}
