@@ -194,6 +194,13 @@ public class SentenceParserHeuristicTest {
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"[[United States|American]] [[actress]]", null)));
 		assertEquals(output.size(), 4);
+
+		sentence = "Wu Di (Chinese birth: 14 September 1991) is a [[Chinese]] male [[tennis]] player.";
+		output = sut_.extractAssertions(sentence, focusConcept, wikifyText,
+				wmi_, ontology_, null);
+		assertNotNull(output);
+		assertTrue(output.contains(buildPartial(focusConcept,
+				"[[tennis]] player", null)));
 	}
 
 	@Test

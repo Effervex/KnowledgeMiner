@@ -49,7 +49,7 @@ public class TextToCyc_TimeContextParse extends
 	public WeightedSet<OntologyConcept> mapSourceInternal(String value,
 			WMISocket wmi, OntologySocket ontology) throws Exception {
 		LoggerFactory.getLogger(getClass()).trace(value);
-		value = NLPToSyntaxModule.convertToAscii(value);
+//		value = NLPToSyntaxModule.convertToAscii(value);
 		Matcher m = CONTEXT_PATTERN.matcher(value);
 		if (m.matches()) {
 			// Match item

@@ -37,12 +37,14 @@ public class HeuristicProvenance implements Serializable {
 			heuristicStr_ = "<null>";
 		else
 			heuristicStr_ = heuristic.getHeuristicName();
-		details_ = NLPToSyntaxModule.convertToAscii(details);
+//		details_ = NLPToSyntaxModule.convertToAscii(details);
+		details_ = details;
 	}
 
 	public HeuristicProvenance(String heuristic, String details) {
 		heuristicStr_ = heuristic;
-		details_ = NLPToSyntaxModule.convertToAscii(details);
+//		details_ = NLPToSyntaxModule.convertToAscii(details);
+		details_ = details;
 	}
 
 	@Override

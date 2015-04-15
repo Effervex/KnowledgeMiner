@@ -1135,6 +1135,14 @@ public class ConceptMiningTask implements Runnable {
 				return null;
 			}
 		} else {
+			// If an ID
+			try {
+				int articleID = Integer.parseInt(term);
+				cm = new ConceptModule(articleID);
+				return cm;
+			} catch (Exception e) {
+			}
+			
 			try {
 				int articleID = wmi.getArticleByTitle(term);
 				cm = new ConceptModule(articleID);

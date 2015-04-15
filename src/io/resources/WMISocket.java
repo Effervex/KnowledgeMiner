@@ -1654,8 +1654,9 @@ public class WMISocket extends KMSocket {
 	public static String getArticleURL(String articleTitle) {
 		if (articleTitle == null)
 			return null;
-		String title = NLPToSyntaxModule.convertToAscii(articleTitle)
-				.replaceAll(" ", "_");
+		String title = articleTitle.replaceAll(" ", "_");
+		// String title = NLPToSyntaxModule.convertToAscii(articleTitle)
+		// .replaceAll(" ", "_");
 		return "http://en.wikipedia.org/wiki/" + title;
 	}
 

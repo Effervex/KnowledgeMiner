@@ -49,7 +49,8 @@ public class TextToCyc_AnchorTextSearch extends
 			String anchorText = (m.group(2) == null) ? m.group(1) : m.group(2);
 
 			// Attempt a 1-1 mapping
-			String articleTitle = NLPToSyntaxModule.convertToAscii(anchorText);
+//			String articleTitle = NLPToSyntaxModule.convertToAscii(anchorText);
+			String articleTitle = anchorText;
 			Collection<OntologyConcept> concepts = cyc.findConceptByName(
 					articleTitle, false, true, true);
 			results.addAll(concepts);

@@ -154,8 +154,9 @@ public class DAGSocket extends OntologySocket {
 				+ DELIMITER + "\n");
 		command.append(StringUtils.join(arguments, "\n"));
 		command.append("\n" + DELIMITER);
-		String result = querySocket(NLPToSyntaxModule.convertToAscii(command
-				.toString()));
+		// String result = querySocket(NLPToSyntaxModule.convertToAscii(command
+		// .toString()));
+		String result = querySocket(command.toString());
 		return result.split(Pattern.quote(DELIMITER));
 	}
 
@@ -182,7 +183,7 @@ public class DAGSocket extends OntologySocket {
 				return cached.toString();
 		}
 		// Remove UTF encoding
-		arguments = NLPToSyntaxModule.convertToAscii(arguments);
+		// arguments = NLPToSyntaxModule.convertToAscii(arguments);
 		String result = querySocket(command + " " + arguments);
 		if (cache)
 			access_.cacheCommand(command, arguments, result);

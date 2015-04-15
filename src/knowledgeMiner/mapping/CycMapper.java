@@ -300,8 +300,8 @@ public class CycMapper {
 	public HierarchicalWeightedSet<OntologyConcept> mapTextToCyc(String text,
 			boolean allowStrings, boolean fragmentText, boolean preProcessText,
 			boolean allowDirectSearch, WMISocket wmi, OntologySocket ontology) {
-		text = WikiParser.cleanupUselessMarkup(text);
-		text = NLPToSyntaxModule.convertToAscii(text).trim();
+		text = WikiParser.cleanupUselessMarkup(text).trim();
+//		text = NLPToSyntaxModule.convertToAscii(text).trim();
 		if (text.isEmpty())
 			return new HierarchicalWeightedSet<>();
 		logger_.debug("mapTextToCyc: {}", text);

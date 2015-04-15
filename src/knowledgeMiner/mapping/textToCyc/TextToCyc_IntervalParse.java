@@ -38,7 +38,7 @@ public class TextToCyc_IntervalParse extends
 	public WeightedSet<OntologyConcept> mapSourceInternal(String source,
 			WMISocket wmi, OntologySocket cyc) throws Exception {
 		LoggerFactory.getLogger(getClass()).trace(source);
-		source = NLPToSyntaxModule.convertToAscii(source);
+//		source = NLPToSyntaxModule.convertToAscii(source);
 		WeightedSet<OntologyConcept> results = new WeightedSet<>();
 		if (!source.contains("-"))
 			return results;

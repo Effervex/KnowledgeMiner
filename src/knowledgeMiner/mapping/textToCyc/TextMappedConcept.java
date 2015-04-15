@@ -15,7 +15,8 @@ public class TextMappedConcept extends MappableConcept {
 
 	public TextMappedConcept(String text, boolean preProcessText,
 			boolean allowDirectSearch) {
-		super(NLPToSyntaxModule.convertToAscii(text));
+		super(text);
+		// super(NLPToSyntaxModule.convertToAscii(text));
 		preProcessText_ = preProcessText;
 		allowDirectSearch_ = allowDirectSearch;
 	}
@@ -29,7 +30,7 @@ public class TextMappedConcept extends MappableConcept {
 	protected WeightedSet<OntologyConcept> mapThingInternal(CycMapper mapper,
 			WMISocket wmi, OntologySocket ontology) {
 		return mapper.mapTextToCyc((String) mappableThing_, false, false,
-				preProcessText_, allowDirectSearch_, wmi, ontology);
+				preProcessText_, true, wmi, ontology);
 	}
 
 	@Override

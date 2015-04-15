@@ -57,7 +57,11 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 			info.addAssertion(new PartialAssertion(
 					CycConstants.SYNONYM_RELATION_CANONICAL.getConcept(),
 					basicProvenance_, info.getMappableSelfRef(),
-					new StringConcept(NLPToSyntaxModule.convertToAscii(title))));
+					new StringConcept(title)));
+		// info.addAssertion(new PartialAssertion(
+		// CycConstants.SYNONYM_RELATION_CANONICAL.getConcept(),
+		// basicProvenance_, info.getMappableSelfRef(),
+		// new StringConcept(NLPToSyntaxModule.convertToAscii(title))));
 
 		boolean isCollection = false;
 		if (informationRequested(informationRequested, InformationType.STANDING)) {
@@ -86,29 +90,29 @@ public class TitleMiner extends WikipediaArticleMiningHeuristic {
 		}
 
 		// Create taxonomic data from title
-//		if (informationRequested(informationRequested,
-//						InformationType.TAXONOMIC)) {
-//			String context = wmi.getPageTitleContext(article);
-//			if (!context.isEmpty()) {
-//				// Extract the context and set as parent
-//				String sentence = SentenceParserHeuristic.SENTENCE_PREFIX
-//						+ context + ".";
-//				miner_.mineSentence(sentence, false, info, this, ontology, wmi);
-//			}
-//			if (isCollection && title.contains(" ")) {
-//				// Set up a sentence with the title as the parent
-//				String lowerCaseTitle = title;
-//				// IF the second character is alphabetical, and lowercase,
-//				// uncapitalise the title so the parser is not confused.
-//				if (Character.isAlphabetic(title.charAt(1))
-//						&& !Character.isUpperCase(title.charAt(1)))
-//					lowerCaseTitle = StringUtils.uncapitalize(lowerCaseTitle);
-//				String sentence = SentenceParserHeuristic.SENTENCE_PREFIX
-//						+ lowerCaseTitle + ".";
-//				miner_.mineSentence(sentence, false, info, this, ontology, wmi);
-//				// TODO Might need to prune out self-referential strings
-//			}
-//		}
+		// if (informationRequested(informationRequested,
+		// InformationType.TAXONOMIC)) {
+		// String context = wmi.getPageTitleContext(article);
+		// if (!context.isEmpty()) {
+		// // Extract the context and set as parent
+		// String sentence = SentenceParserHeuristic.SENTENCE_PREFIX
+		// + context + ".";
+		// miner_.mineSentence(sentence, false, info, this, ontology, wmi);
+		// }
+		// if (isCollection && title.contains(" ")) {
+		// // Set up a sentence with the title as the parent
+		// String lowerCaseTitle = title;
+		// // IF the second character is alphabetical, and lowercase,
+		// // uncapitalise the title so the parser is not confused.
+		// if (Character.isAlphabetic(title.charAt(1))
+		// && !Character.isUpperCase(title.charAt(1)))
+		// lowerCaseTitle = StringUtils.uncapitalize(lowerCaseTitle);
+		// String sentence = SentenceParserHeuristic.SENTENCE_PREFIX
+		// + lowerCaseTitle + ".";
+		// miner_.mineSentence(sentence, false, info, this, ontology, wmi);
+		// // TODO Might need to prune out self-referential strings
+		// }
+		// }
 	}
 
 }

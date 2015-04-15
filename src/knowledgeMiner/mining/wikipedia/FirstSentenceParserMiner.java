@@ -46,7 +46,7 @@ public class FirstSentenceParserMiner extends WikipediaArticleMiningHeuristic {
 		String firstSentence = wmi.getFirstSentence(article);
 		if (firstSentence == null || firstSentence.isEmpty())
 			return;
-		firstSentence = NLPToSyntaxModule.convertToAscii(firstSentence);
+//		firstSentence = NLPToSyntaxModule.convertToAscii(firstSentence);
 
 		miner_.mineSentence(firstSentence, true, info, this, ontology, wmi);
 	}

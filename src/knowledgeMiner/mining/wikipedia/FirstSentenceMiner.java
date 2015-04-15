@@ -272,7 +272,7 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 				paragraph = paragraph.replaceAll("'{2,}", "'");
 				paragraph = replaceAnchorsWithOntolinks(paragraph, wmi, cyc);
 
-				paragraph = NLPToSyntaxModule.convertToAscii(paragraph);
+//				paragraph = NLPToSyntaxModule.convertToAscii(paragraph);
 				paragraph = paragraph.replaceAll("\n+", "<p>");
 				info.addAssertion(new PartialAssertion(
 						CycConstants.WIKIPEDIA_COMMENT.getConcept(),
@@ -398,14 +398,14 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 			if (matcher.start(5) != -1)
 				buffer.append(" " + matcher.group(5));
 			String result = WikiParser.cleanAllMarkup(buffer.toString());
-			result = NLPToSyntaxModule.convertToAscii(result);
+//			result = NLPToSyntaxModule.convertToAscii(result);
 			synonyms.add(result);
 
 			// 2?+3
 			if (matcher.start(2) != -1) {
 				result = matcher.group(2) + matcher.group(3);
 				result = WikiParser.cleanAllMarkup(result);
-				result = NLPToSyntaxModule.convertToAscii(result);
+//				result = NLPToSyntaxModule.convertToAscii(result);
 				synonyms.add(result);
 			}
 
@@ -413,7 +413,7 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 			if (matcher.start(4) != -1) {
 				result = matcher.group(4) + " " + matcher.group(5);
 				result = WikiParser.cleanAllMarkup(result);
-				result = NLPToSyntaxModule.convertToAscii(result);
+//				result = NLPToSyntaxModule.convertToAscii(result);
 				synonyms.add(result);
 			}
 		}
@@ -463,6 +463,7 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 		if (collectionFragment == null) {
 			return null;
 		}
-		return NLPToSyntaxModule.convertToAscii(collectionFragment);
+//		return NLPToSyntaxModule.convertToAscii(collectionFragment);
+		return collectionFragment;
 	}
 }

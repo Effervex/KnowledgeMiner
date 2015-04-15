@@ -46,7 +46,8 @@ public class TextToCyc_TextSearch extends MappingHeuristic<String, OntologyConce
 		// return new WeightedSet<>(0);
 
 		// Attempt a 1-1 mapping
-		String articleTitle = NLPToSyntaxModule.convertToAscii(source);
+//		String articleTitle = NLPToSyntaxModule.convertToAscii(source);
+		String articleTitle = source;
 		Collection<OntologyConcept> results = cyc.findConceptByName(articleTitle,
 				false, true, true);
 		WeightedSet<OntologyConcept> mappings = new WeightedSet<>(results.size());

@@ -81,8 +81,7 @@ public class WikiToCyc_TitleMatching extends
 		if (results.isEmpty() && !pageTitle.equals(pageTitleNoContext)) {
 			// If there is a sense, attempt adding a 'the ' before the sense
 			// (film -> the film)
-			articleTitle = NLPToSyntaxModule.convertToAscii(
-					pageTitleNoContext + " (The " + pageTitleContext + ")")
+			articleTitle = (pageTitleNoContext + " (The " + pageTitleContext + ")")
 					.toLowerCase();
 			results.addAll(ontology.findConceptByName(articleTitle, false,
 					true, true));
