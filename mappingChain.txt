@@ -1,0 +1,7 @@
+MINING: 'Motörhead' (w=1.0)
+ MAPPING: 'Motörhead':[M] (w=1.0)
+  REVERSE_MAPPING: 'Motörhead':[M] => Motorhead[NEW] (w=0.1)
+   DISAMBIGUATING: Motorhead[NEW] <=> 'Motörhead':[M] (w=0.1)
+    ASSERTING: Motorhead[NEW] <=> 'Motörhead':[CM] (w=0.06500001)
+     COMPLETE: Motorhead[NEW] <=> 'Motörhead':[CM] (w=0.06500001)
+

@@ -237,6 +237,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 				// Add to the tree (if not a pure anchor)
 				if (!anchors.containsKey(np))
 					results.add(new Tree<String>(reAnchorString(np, anchors)));
+				createNewNounSet = false;
 			} else if (childType.startsWith("JJ") || childType.equals("ADJP")) {
 				// Only process if we have an NP
 				if (!nounPhrases.isEmpty()) {
