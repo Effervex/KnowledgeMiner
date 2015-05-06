@@ -264,7 +264,7 @@ public class ConceptModule extends MinedInformation implements
 	 */
 	private void makeWikiMappingAssertions(String articleTitle,
 			OntologySocket ontology) throws Exception {
-		String strURL = WMISocket.getArticleURL(articleTitle);
+		String strURL = WMISocket.getArticleURL(articleTitle, WMISocket.WIKIPEDIA_URL);
 
 		// TODO Unassert any old Wiki mappings (unless they are the same as
 		// this)

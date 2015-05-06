@@ -29,7 +29,7 @@ public class WikipediaMappedConcept extends MappableConcept {
 			WMISocket wmi, OntologySocket ontology) {
 		// Get the mapped article (if one exists).
 		WeightedSet<OntologyConcept> mapping = new WeightedSet<>(1);
-		OntologyConcept concept = KnowledgeMiner.getKnownMapping(
+		OntologyConcept concept = KnowledgeMiner.getConceptMapping(
 				(int) mappableThing_, ontology);
 		if (concept != null)
 			mapping.add(concept);

@@ -143,7 +143,6 @@ public class KnowledgeMiner {
 
 		interface_ = new MappingChainInterface(); // new SimpleListInterface();
 		ontology_ = ResourceAccess.requestOntologySocket();
-		ontology_.findConceptByName("INITIALISED", true, true, false);
 		wiki_ = ResourceAccess.requestWMISocket();
 
 		if (!singleThread_) {
@@ -183,7 +182,7 @@ public class KnowledgeMiner {
 					seedIndex_ = artId;
 				}
 				String type = wiki_.getPageType(artId);
-				if (!type.equals(WMISocket.TYPE_ARTICLE)
+				if (type != null && !type.equals(WMISocket.TYPE_ARTICLE)
 						&& !type.equals(WMISocket.TYPE_DISAMBIGUATION))
 					artId = -1;
 			} catch (Exception e) {
@@ -414,7 +413,7 @@ public class KnowledgeMiner {
 	 * @return The mapped concept or null. If no mapping found, sets the state
 	 *         array appropriately.
 	 */
-	public static OntologyConcept getKnownMapping(int article,
+	public static OntologyConcept getConceptMapping(int article,
 			OntologySocket ontology) {
 		byte state = ConceptMiningTask.getArticleState(article);
 		if (state == ConceptMiningTask.UNMAPPABLE_CURRENT
@@ -436,6 +435,31 @@ public class KnowledgeMiner {
 		String[] edgeArgs = ontology.findEdgeByID(edgeID);
 		OntologyConcept concept = OntologyConcept.parseArgument(edgeArgs[1]);
 		return concept;
+	}
+
+	/**
+	 * Gets a known mapping using the concept as lookup.
+	 *
+	 * @param concept
+	 *            The concept to search with.
+	 * @param ontology
+	 *            The ontology access.
+	 * @return The article ID, or -1 if none found.
+	 */
+	public static int getArtMapping(OntologyConcept concept,
+			OntologySocket ontology) {
+		// Query the ontology and find the mapping (if any)
+		int edgeID = ontology.findEdgeIDByArgs(
+				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getID(),
+				concept.getIdentifier(), CycConstants.WIKI_VERSION.getID(),
+				null);
+		if (edgeID < 0) {
+			return -1;
+		}
+
+		// Parse the concept out
+		String[] edgeArgs = ontology.findEdgeByID(edgeID);
+		return Integer.parseInt(UtilityMethods.shrinkString(edgeArgs[3], 1));
 	}
 
 	/**

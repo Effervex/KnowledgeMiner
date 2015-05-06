@@ -4,20 +4,20 @@ import graph.module.NLPToSyntaxModule;
 import io.ResourceAccess;
 import io.resources.WMISocket;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.text.WordUtils;
 
-import util.wikipedia.InfoboxData;
 import util.wikipedia.WikiParser;
 
 public class ExtractArticleText {
@@ -69,7 +69,7 @@ public class ExtractArticleText {
 	 * @throws IOException
 	 *             Should something go awry...
 	 */
-	public void extract(String pageName, boolean category,
+	public boolean extract(String pageName, boolean category,
 			boolean andArticleContext, boolean recurseSubCategory)
 			throws IOException {
 		int coreArticleID = -1;
@@ -82,9 +82,18 @@ public class ExtractArticleText {
 			System.exit(1);
 		}
 
+		return extract(coreArticleID, pageName, category, andArticleContext,
+				recurseSubCategory);
+	}
+
+	public boolean extract(int coreArticleID, String pageName,
+			boolean category, boolean andArticleContext,
+			boolean recurseSubCategory) throws IOException {
 		if (category && andArticleContext) {
 			System.err.println("Cannot get context for category.");
+			return false;
 		}
+		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 
 		Collection<Integer> toProcess = new HashSet<>();
 		// Add extra context
@@ -92,7 +101,7 @@ public class ExtractArticleText {
 			toProcess.addAll(getCategoryArticles(coreArticleID,
 					recurseSubCategory));
 		else if (andArticleContext) {
-//			toProcess.addAll(wmi_.getOutLinks(coreArticleID));
+			// toProcess.addAll(wmi_.getOutLinks(coreArticleID));
 			for (Integer cat : wmi_.getArticleCategories(coreArticleID))
 				toProcess.addAll(getCategoryArticles(cat, recurseSubCategory));
 		} else
@@ -101,10 +110,22 @@ public class ExtractArticleText {
 		// Process each article
 		File parentFolder = new File(EXTRACTION_FOLDER, WordUtils.capitalize(
 				pageName).replaceAll("\\s", ""));
-		parentFolder.mkdirs();
+		if (parentFolder.exists())
+			return true;
+//		else {
+//			String artTitle = wmi_.getPageTitle(coreArticleID, true);// Extract the links and their text
+//			artTitle = artTitle.replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
+//			String artText = wmi_.getMarkup(coreArticleID);
+//			// Remove specific sections
+//			artText = removeSections(artText);
+//			extractLinks(artTitle, parentFolder, artText);
+//			return true;
+//		}
+		boolean created = false;
 		for (Integer art : toProcess) {
 			// Ignore lists & disambiguations
-			if (wmi_.getPageType(art).equals(WMISocket.TYPE_DISAMBIGUATION))
+			String type = wmi_.getPageType(art);
+			if (type != null && type.equals(WMISocket.TYPE_DISAMBIGUATION))
 				continue;
 			String artTitle = wmi_.getPageTitle(art, true);
 			if (artTitle.toLowerCase().startsWith("list of"))
@@ -115,31 +136,40 @@ public class ExtractArticleText {
 			int spaceIndex = noContextTitle.lastIndexOf(" ");
 			if (spaceIndex > 0
 					&& spaceIndex < artTitle.length() - 1
-					&& Character.isUpperCase(noContextTitle
+					&& Character.isLowerCase(noContextTitle
 							.charAt(spaceIndex + 1)))
 				continue;
 
 			// Remove infoboxes
-			List<InfoboxData> infoboxData = wmi_.getInfoboxData(art);
-			if (!infoboxData.isEmpty())
-				continue;
+//			List<InfoboxData> infoboxData = wmi_.getInfoboxData(art);
+//			if (!infoboxData.isEmpty())
+//				continue;
 
 			// Extract the links and their text
 			String artText = wmi_.getMarkup(art);
 			// Remove specific sections
 			artText = removeSections(artText);
 
-			artTitle = artTitle.replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
-			extractLinks(artTitle, parentFolder, artText);
-
 			// Get the art text
-			artText = toPlainText(artText);
+			String cleanText = toPlainText(artText);
 
-			if (artText.isEmpty())
+			if (cleanText.isEmpty())
 				continue;
 
-			savePlainText(artTitle, parentFolder, artText);
+			// Check if it's acceptable
+			System.out.println("Is " + artTitle + " acceptable? (Y) or (N)");
+			String result = "Y";//in.readLine();
+			if (result.equalsIgnoreCase("Y")) {
+				parentFolder.mkdirs();
+
+				artTitle = artTitle.replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
+				extractLinks(artTitle, parentFolder, artText);
+				created = true;
+				savePlainText(artTitle, parentFolder, cleanText);
+
+			}
 		}
+		return created;
 	}
 
 	private void extractLinks(String artTitle, File parentFolder, String artText)

@@ -128,14 +128,14 @@ public class KnowledgeMinerTest {
 		int article = wmi_
 				.getArticleByTitle("List of United States Numbered Highways");
 		assertTrue(article != -1);
-		OntologyConcept mapped = KnowledgeMiner.getKnownMapping(article,
+		OntologyConcept mapped = KnowledgeMiner.getConceptMapping(article,
 				ontology_);
 		assertNull(mapped);
 
 		// Less obscure
 		article = wmi_.getArticleByTitle("United States Census Bureau");
 		assertTrue(article != -1);
-		mapped = KnowledgeMiner.getKnownMapping(article, ontology_);
+		mapped = KnowledgeMiner.getConceptMapping(article, ontology_);
 		assertNull(mapped);
 	}
 }

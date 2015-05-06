@@ -386,8 +386,8 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 			OntologySocket cyc, MiningHeuristic heuristic) throws Exception {
 		logger_.trace("mineSentence: " + sentence);
 
-		if (wikifyText)
-			sentence = wmi.annotate(sentence, 0, false);
+//		if (wikifyText)
+//			sentence = wmi.annotate(sentence, 0, false);
 
 		Map<String, Double> anchorWeights = new HashMap<>();
 		SortedMap<String, String> anchors = locateAnchors(sentence,

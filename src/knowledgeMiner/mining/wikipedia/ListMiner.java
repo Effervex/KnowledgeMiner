@@ -131,8 +131,9 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 		Collection<PartialAssertion> results = new ArrayList<>();
 		try {
 			int art = wmi.getArticleByTitle(plural);
-			if (art != -1 && art != article
-					&& wmi.getPageType(art).equals(WMISocket.TYPE_ARTICLE)) {
+			String type = wmi.getPageType(art);
+			if (art != -1 && art != article && type != null
+					&& type.equals(WMISocket.TYPE_ARTICLE)) {
 				results.add(createTaxonomicArticleAssertion(art, provenance));
 				return results;
 			}
@@ -140,8 +141,9 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 			// Stem the plural
 			String stemmed = OpenNLP.stem(plural);
 			art = wmi.getArticleByTitle(stemmed);
-			if (art != -1 && art != article
-					&& wmi.getPageType(art).equals(WMISocket.TYPE_ARTICLE)) {
+			type = wmi.getPageType(art);
+			if (art != -1 && art != article && type != null
+					&& type != null && type.equals(WMISocket.TYPE_ARTICLE)) {
 				results.add(createTaxonomicArticleAssertion(art, provenance));
 				return results;
 			}
@@ -407,9 +409,9 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 				}
 
 				String title = wmi.getPageTitle(artId, true);
-				if (WikiParser.isAListOf(title)
-						&& wmi.getPageType(artId)
-								.equals(WMISocket.TYPE_ARTICLE)) {
+				String type = wmi.getPageType(artId);
+				if (WikiParser.isAListOf(title) && type != null
+						&& type.equals(WMISocket.TYPE_ARTICLE)) {
 					out.write(artId + "\t" + title + "\n");
 					System.out.println(title);
 					listCount++;

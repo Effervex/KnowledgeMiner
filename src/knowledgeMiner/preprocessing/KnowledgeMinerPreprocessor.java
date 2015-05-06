@@ -172,8 +172,8 @@ public class KnowledgeMinerPreprocessor {
 				} else {
 					String type = wmi.getPageType(nextID);
 					// If it's an article or disambiguation, process it.
-					if (type.equals(WMISocket.TYPE_ARTICLE)
-							|| type.equals(WMISocket.TYPE_DISAMBIGUATION)) {
+					if (type != null && (type.equals(WMISocket.TYPE_ARTICLE)
+							|| type.equals(WMISocket.TYPE_DISAMBIGUATION))) {
 						PrecomputationTask preTask = new PrecomputationTask(
 								new ConceptModule(id), heuristics, taskType,
 								this);

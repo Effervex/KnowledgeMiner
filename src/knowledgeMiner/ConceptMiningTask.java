@@ -477,6 +477,7 @@ public class ConceptMiningTask implements Runnable {
 					if (KnowledgeMiner.mappingRun_
 							|| concept.getConcreteParentageAssertions()
 									.isEmpty()) {
+						// TODO Don't bother with only Individual/Collection
 						setArticleState(concept.getArticle(),
 								UNMAPPABLE_CURRENT, pendingArts);
 						return false;

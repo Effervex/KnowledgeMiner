@@ -3,7 +3,6 @@
  ******************************************************************************/
 package io.resources;
 
-import graph.module.NLPToSyntaxModule;
 import io.KMAccess;
 import io.KMSocket;
 import io.ResourceAccess;
@@ -89,6 +88,10 @@ public class WMISocket extends KMSocket {
 	public static final String TYPE_CATEGORY = "category";
 
 	public static final String TYPE_REDIRECT = "redirect";
+
+	public static final int WIKIPEDIA_URL = 0;
+
+	public static final int DBPEDIA_URL = 1;
 
 	public WMISocket(WMIAccess access) {
 		super(access);
@@ -1528,6 +1531,12 @@ public class WMISocket extends KMSocket {
 		public Map<String, Object> parseSubResults(String result, String source) {
 			Map<String, Object> subResults = new HashMap<>();
 			String[] pageSplit = result.split("\\|");
+			if (pageSplit[0].equals("null")) {
+				subResults.put("fulltitle", null);
+				subResults.put("shorttitle", null);
+				subResults.put("titlecontext", null);
+				subResults.put("pagetype", null);
+			}
 
 			// Parse the article title
 			String title = pageSplit[2];
@@ -1651,19 +1660,23 @@ public class WMISocket extends KMSocket {
 			return LOCALHOST;
 	}
 
-	public static String getArticleURL(String articleTitle) {
+	public static String getArticleURL(String articleTitle, int type) {
 		if (articleTitle == null)
 			return null;
 		String title = articleTitle.replaceAll(" ", "_");
 		// String title = NLPToSyntaxModule.convertToAscii(articleTitle)
 		// .replaceAll(" ", "_");
-		return "http://en.wikipedia.org/wiki/" + title;
+		if (type == DBPEDIA_URL)
+			return "http://dbpedia.org/page/" + title;
+		else
+			return "http://en.wikipedia.org/wiki/" + title;
+
 	}
 
 	public static String getArticleURL(int article) {
 		try {
 			return getArticleURL(ResourceAccess.requestWMISocket()
-					.getPageTitle(article, true));
+					.getPageTitle(article, true), WIKIPEDIA_URL);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -1686,6 +1699,16 @@ public class WMISocket extends KMSocket {
 		return getRecursiveCategories(pageID, true);
 	}
 
+	public static String getArticleURLDBpedia(int article) {
+		try {
+			return getArticleURL(ResourceAccess.requestWMISocket()
+					.getPageTitle(article, true), DBPEDIA_URL);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 	@SuppressWarnings("unchecked")
 	private Collection<Integer> getRecursiveCategories(int pageID,
 			boolean subCategories) throws IOException {
@@ -1694,9 +1717,9 @@ public class WMISocket extends KMSocket {
 		// Is article or category?
 		Collection<Integer> currentCategories = new HashSet<>();
 		String type = getPageType(pageID);
-		if (type.equals(TYPE_ARTICLE))
+		if (type != null && type.equals(TYPE_ARTICLE))
 			currentCategories.addAll(getArticleCategories(pageID));
-		else if (type.equals(TYPE_CATEGORY))
+		else if (type != null && type.equals(TYPE_CATEGORY))
 			currentCategories.add(pageID);
 		else
 			return Collections.EMPTY_LIST;

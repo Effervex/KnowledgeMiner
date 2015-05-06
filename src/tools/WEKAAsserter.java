@@ -3,7 +3,6 @@ package tools;
 import graph.core.CommonConcepts;
 import graph.inference.CommonQuery;
 import graph.module.ARFFData;
-import io.KMAccess;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
 import io.ontology.OntologySocket;
@@ -57,6 +56,12 @@ public class WEKAAsserter {
 	private ThreadLocal<Classifier> threadClassifier_;
 	private Collection<String> assertedEdges_;
 	public boolean generalising_ = true;
+	private static final int TRUTH_CONJOINT = -1;
+	private static final int TRUTH_DISJOINT = 1;
+	private int tp_ = 0; // Predicted disjoint for disjoint
+	private int fp_ = 0; // Predicted disjoint for conjoint
+	private int tn_ = 0; // Predicted conjoint for conjoint
+	private int fn_ = 0; // Predicted conjoint for disjoint
 	private int count_;
 
 	public WEKAAsserter(File classifierFile, DAGSocket ontology) {
@@ -73,7 +78,7 @@ public class WEKAAsserter {
 			e.printStackTrace();
 		}
 		assertedEdges_ = new ArrayList<>();
-		
+
 		threadClassifier_ = new ThreadLocal<Classifier>() {
 			@Override
 			protected Classifier initialValue() {
@@ -289,7 +294,9 @@ public class WEKAAsserter {
 		} catch (Exception e1) {
 			e1.printStackTrace();
 		}
-		System.out.println();
+		System.out.println("Generalisation stats:");
+		System.out.println("TP: " + tp_ + " FN: " + fn_);
+		System.out.println("FP: " + fp_ + " TN: " + tn_);
 	}
 
 	public Collection<String> getAssertions() {
@@ -317,16 +324,20 @@ public class WEKAAsserter {
 			thisClassifier_ = threadClassifier_.get();
 			try {
 				Map<Pair<String, String>, Boolean> examined = new HashMap<>();
-				String provenance = null;
-				recursiveGeneralise(startInstance_, 0, provenance, examined);
+				recursiveGeneralise(startInstance_, 0, null, examined);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 			count_++;
 			if ((count_ % 1000) == 0) {
-				if ((count_ % 10000) == 0)
+				if ((count_ % 10000) == 0) {
 					System.out.print(count_ + " ");
-				else
+					if (generalising_) {
+						System.out.println("\nGeneralisation stats:");
+						System.out.println("TP: " + tp_ + " FN: " + fn_);
+						System.out.println("FP: " + fp_ + " TN: " + tn_);
+					}
+				} else
 					System.out.print(".");
 			}
 		}
@@ -358,6 +369,8 @@ public class WEKAAsserter {
 				String provenance, Map<Pair<String, String>, Boolean> examined) {
 			logger_.trace("Recursive Generalisation {}", instanceStr);
 			String relation = null;
+			String textA = null;
+			String textB = null;
 			String conceptA = null;
 			String conceptB = null;
 			Pair<String, String> conceptPair = null;
@@ -365,6 +378,8 @@ public class WEKAAsserter {
 			try {
 				instance = parseInstance(instanceStr);
 				relation = instance.stringValue(ARFFData.RELATION.ordinal());
+				textA = instance.stringValue(ARFFData.ARG1.ordinal());
+				textB = instance.stringValue(ARFFData.ARG2.ordinal());
 				conceptA = instance.stringValue(ARFFData.DISAMB1.ordinal());
 				conceptB = instance.stringValue(ARFFData.DISAMB2.ordinal());
 				if (conceptA.startsWith("'"))
@@ -378,10 +393,13 @@ public class WEKAAsserter {
 					conceptPair = new Pair<String, String>(conceptB, conceptA);
 
 				if (provenance == null)
-					provenance = "(disjointWith " + conceptA + " " + conceptB
-							+ ")" + relation;
+					provenance = textA + " " + relation + " " + textB
+							+ "=>(disjointWith " + conceptA + " " + conceptB
+							+ ")";
 			} catch (Exception e) {
+				logger_.error("Error classifying {}", instanceStr);
 				e.printStackTrace();
+				System.exit(1);
 			}
 
 			// Check if already examined
@@ -395,11 +413,14 @@ public class WEKAAsserter {
 			String result = ontology_.query(null,
 					CommonConcepts.DISJOINTWITH.getID(), conceptA, conceptB);
 			logger_.trace("Disjoint {}", result);
+			int truthState = 0;
 			if (result.startsWith("1|T")) {
+				truthState = TRUTH_DISJOINT;
 				examined.put(conceptPair, true);
 				logger_.info(prefix + " - Already disjoint!");
 				return true;
 			} else if (result.startsWith("0|F")) {
+				truthState = TRUTH_CONJOINT;
 				examined.put(conceptPair, false);
 				logger_.info(prefix + " - Already conjoint!");
 				return false;
@@ -407,9 +428,20 @@ public class WEKAAsserter {
 
 			// Classify
 			try {
-				double classification = 1 - thisClassifier_
-						.classifyInstance(instance);
+				double[] predArray = thisClassifier_
+						.distributionForInstance(instance);
+				double classification = predArray[0];
 				if (classification >= predictionThreshold_) {
+					if (truthState != 0) {
+						if (truthState == TRUTH_DISJOINT) {
+							tp_++;
+							return true;
+						}
+						if (truthState == TRUTH_CONJOINT) {
+							fp_++;
+							return false;
+						}
+					}
 					logger_.info(prefix + " DISJOINT");
 					boolean shouldAssert = true;
 					// Generalise A and B until conjoint
@@ -421,36 +453,50 @@ public class WEKAAsserter {
 					}
 					// If this is the highest disjoint assertion, make the a
 					if (shouldAssert) {
-						int id = ontology_
-								.assertToOntology(
-										PairwiseDisjointExperimenter.EXPERIMENT_MICROTHEORY,
-										CommonConcepts.DISJOINTWITH.getID(),
-										conceptA, conceptB);
-						logger_.trace("Asserted {}", id);
-						if (id != -1) {
-							ontology_.setProperty(id, false,
-									HeuristicProvenance.PROVENANCE, provenance
-											+ "_STEPS=" + depth);
-							addAssertion("(disjointWith " + conceptA + " "
-									+ conceptB + ")\t" + provenance);
-							logger_.info("Asserted (disjointWith {} {})",
-									conceptA, conceptB);
-						} else {
-							logger_.info(
-									"Error asserting (disjointWith {} {})",
-									conceptA, conceptB);
-						}
+						assertDisjoint(conceptA, conceptB, depth, provenance);
 					}
 				} else {
+					if (truthState != 0) {
+						if (truthState == TRUTH_DISJOINT) {
+							fn_++;
+							return true;
+						}
+						if (truthState == TRUTH_CONJOINT) {
+							tn_++;
+							return false;
+						}
+					}
 					logger_.info(prefix + " NOT DISJOINT");
 					examined.put(conceptPair, false);
 					return false;
 				}
 			} catch (Exception e) {
+				logger_.error("Error classifying {}", instanceStr);
 				e.printStackTrace();
+				System.exit(1);
 			}
 			examined.put(conceptPair, true);
 			return true;
+		}
+
+		private void assertDisjoint(String conceptA, String conceptB,
+				int depth, String provenance) {
+			int id = ontology_.assertToOntology(
+					PairwiseDisjointExperimenter.EXPERIMENT_MICROTHEORY,
+					CommonConcepts.DISJOINTWITH.getID(), conceptA, conceptB);
+			logger_.trace("Asserted {}", id);
+			if (id != -1) {
+				provenance = provenance + "_STEPS=" + depth;
+				ontology_.setProperty(id, false,
+						HeuristicProvenance.PROVENANCE, provenance);
+				addAssertion("(disjointWith " + conceptA + " " + conceptB
+						+ ")\t" + provenance);
+				logger_.info("Asserted (disjointWith {} {})", conceptA,
+						conceptB);
+			} else {
+				logger_.info("Error asserting (disjointWith {} {})", conceptA,
+						conceptB);
+			}
 		}
 
 		/**

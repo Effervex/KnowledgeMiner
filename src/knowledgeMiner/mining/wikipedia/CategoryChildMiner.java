@@ -59,7 +59,10 @@ public class CategoryChildMiner extends WikipediaArticleMiningHeuristic {
 			int articleID, WMISocket wmi, MinedInformation info)
 			throws IOException {
 		// Already a category, use this
-		if (wmi.getPageType(articleID).equals("category"))
+		String type = wmi.getPageType(articleID);
+		if (type == null)
+			return;
+		if (type.equals("category"))
 			addChildrenFromCategory(articleID, info, wmi);
 		else {
 			Collection<Integer> categories = findRelevantCategories(

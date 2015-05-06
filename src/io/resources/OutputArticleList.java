@@ -20,7 +20,7 @@ public class OutputArticleList {
 		do {
 			index = wmi.getNextArticle(index);
 			String type = wmi.getPageType(index);
-			if (type.equals(WMISocket.TYPE_ARTICLE)
+			if (type != null && type.equals(WMISocket.TYPE_ARTICLE)
 					|| type.equals(WMISocket.TYPE_DISAMBIGUATION)) {
 				int numInLinks = wmi.getInLinks(index).size();
 				if (numInLinks >= minInLink)

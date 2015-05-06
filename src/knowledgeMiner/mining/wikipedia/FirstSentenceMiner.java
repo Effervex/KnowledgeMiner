@@ -308,7 +308,7 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 				// Replace anchors with ontolinks
 				boolean knownConcept = false;
 				if (article != -1) {
-					OntologyConcept concept = KnowledgeMiner.getKnownMapping(
+					OntologyConcept concept = KnowledgeMiner.getConceptMapping(
 							article, ontology);
 					if (concept != null) {
 						builder.append("[[" + concept.getConceptName() + "|");
@@ -337,46 +337,6 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 		informationProduced[InformationType.SYNONYM.ordinal()] = true;
 		informationProduced[InformationType.COMMENT.ordinal()] = true;
 		informationProduced[InformationType.STANDING.ordinal()] = true;
-	}
-
-	/**
-	 * Extracts parent collections from a collection fragment of the first
-	 * sentence.
-	 * 
-	 * @param collectionFragment
-	 *            The fragment of the first sentence that is likely to contain
-	 *            parent collections.
-	 * @param wikifyText
-	 *            If the collection fragment text should be wikified to create
-	 *            links.
-	 * @param wmi
-	 *            WMI access.
-	 * @return The terms identified as parents.
-	 * @throws Exception
-	 *             Should something go awry...
-	 */
-	public ArrayList<String> extractParentLabels(String collectionFragment,
-			boolean wikifyText, WMISocket wmi) throws Exception {
-		ArrayList<String> parentCollections = new ArrayList<>();
-		if (collectionFragment == null || collectionFragment.isEmpty())
-			return parentCollections;
-
-		// Wikify text?
-		if (wikifyText)
-			collectionFragment = wmi.annotate(collectionFragment, 0, false);
-
-		// Check if the first word is valid
-		for (int i = 0; i <= REGEXP_LEEWAY; i++) {
-			if (fragmentExtractB(parentCollections, collectionFragment) != null) {
-				parentCollections.clear();
-				fragmentExtractA(parentCollections, collectionFragment);
-				break;
-			}
-			int nextWord = collectionFragment.indexOf(' ');
-			collectionFragment = collectionFragment.substring(nextWord + 1);
-		}
-
-		return parentCollections;
 	}
 
 	/**

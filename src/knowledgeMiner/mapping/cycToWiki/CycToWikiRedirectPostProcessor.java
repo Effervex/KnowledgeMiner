@@ -78,7 +78,10 @@ public class CycToWikiRedirectPostProcessor extends
 			if (targetId == -1)
 				return -1;
 
-			if (wmi.getPageType(targetId).equals("redirect"))
+			String type = wmi.getPageType(targetId);
+			if (type == null)
+				return -1;
+			if (type.equals("redirect"))
 				currId = targetId;
 			else
 				return targetId;
