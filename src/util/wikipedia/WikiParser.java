@@ -28,6 +28,8 @@ public class WikiParser {
 			{ "<", ">" } };
 	public static final Pattern ANCHOR_PARSER = Pattern
 			.compile("\\[\\[([^\\[\\]]+?)(?:\\|([^\\[\\]]+?))?\\]\\]");
+	public static final Pattern ANCHOR_PARSER_WEIGHTED = Pattern
+			.compile("\\[\\[([^\\[\\]]+?)(?:\\|([^\\[\\]]+?))?\\]\\]\\{(\\d\\.\\d+)\\}");
 	public static final Pattern ANCHOR_PARSER_ROUGH = Pattern
 			.compile("[^\\s\\[]*" + WikiParser.ANCHOR_PARSER.pattern()
 					+ "[^\\s\\[]*");

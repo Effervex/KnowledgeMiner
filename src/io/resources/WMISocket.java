@@ -270,7 +270,7 @@ public class WMISocket extends KMSocket {
 		}
 		if (result == null) {
 			boolean singleline = true;
-			if (command.equals("markup")) {
+			if (command.equals("markup") || command.equals("topics")) {
 				singleline = false;
 				command("set /env/endmessage " + MESSAGE_END, true);
 				command("set /env/singleline false", false);
@@ -291,7 +291,7 @@ public class WMISocket extends KMSocket {
 				}
 			} while (retry);
 
-			if (command.equals("markup")) {
+			if (command.equals("markup") || command.equals("topics")) {
 				command("set /env/singleline true", true);
 				command("set /env/endmessage ", true);
 			}
@@ -953,23 +953,20 @@ public class WMISocket extends KMSocket {
 
 	/**
 	 * Gets the topics of a text, using the (via the "topics" command).
-	 * 
 	 * @param term
 	 *            The text for which topics are found.
+	 * 
 	 * @return A {@link WeightedSet} of topics, where each topic is represented
 	 *         by a pair (text, article).
 	 * @throws IOException
 	 *             Should something go awry...
 	 */
-	public SortedSet<WikiAnnotation> getTopics(String text) throws IOException {
-		String noBrackets = WikiParser.replaceBracketedByWhitespace(text, '{',
-				'}');
-		noBrackets = WikiParser.replaceBracketedByWhitespace(noBrackets, '<',
-				'>');
-		noBrackets = WikiParser.replaceBracketedByWhitespace(noBrackets, '[',
-				']');
-		return command("topics", TOPIC_DELIMITER + "\n" + noBrackets + "\n"
-				+ TOPIC_DELIMITER, new TopicParser());
+	public SortedSet<WikiAnnotation> getTopics(String text)
+			throws IOException {
+		String noBrackets = WikiParser.cleanAllMarkup(text);
+		SortedSet<WikiAnnotation> topics = command("topics", TOPIC_DELIMITER
+				+ "\n" + noBrackets + "\n" + TOPIC_DELIMITER, new TopicParser());
+		return topics;
 	}
 
 	/**
@@ -1159,7 +1156,7 @@ public class WMISocket extends KMSocket {
 			SortedSet<WikiAnnotation> topics = new TreeSet<>(
 					new WeightComparator<WikiAnnotation>());
 
-			String[] topicSplit = result.split(TOPIC_DELIMITER_PATTERN);
+			String[] topicSplit = result.split("\n");
 			for (String topic : topicSplit) {
 				topic = topic.trim();
 				if (topic.isEmpty())

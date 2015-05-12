@@ -104,7 +104,7 @@ public class DisambiguatedTopic {
 		case DBPEDIA:
 		case WIKIFICATION:
 			Pair<String, Double> weightedArticle = parent.textToArticleMappings_
-					.get(text_);
+					.get(cleanText);
 			if (weightedArticle != null) {
 				disambiguation_ = weightedArticle.objA_;
 				disamWeight_ = weightedArticle.objB_;
@@ -264,7 +264,8 @@ public class DisambiguatedTopic {
 			out.write("Text\tDisambiguated\tCYC\tCreated?\n");
 
 			// Write every term and its mappings
-			for (Map.Entry<String, DisambiguatedTopic> entry : instanceMap_.entrySet()) {
+			for (Map.Entry<String, DisambiguatedTopic> entry : instanceMap_
+					.entrySet()) {
 				DisambiguatedTopic disTerm = entry.getValue();
 				out.write(disTerm.getText() + "\t");
 				if (disTerm.disamType_ == TYPE_ARTICLE)
@@ -297,5 +298,11 @@ public class DisambiguatedTopic {
 		else if (disamType_ == TYPE_WEIGHTED_ARTICLES)
 			return ((WeightedSet<Integer>) disambiguation_).iterator().next();
 		return -1;
+	}
+
+	public void setDisambiguation(String artName, double weight) {
+		disambiguation_ = artName;
+		disamWeight_ = weight;
+		disamType_ = TYPE_ARTICLE;
 	}
 }

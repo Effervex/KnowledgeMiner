@@ -15,6 +15,7 @@ import edu.stanford.nlp.trees.GrammaticalStructure;
 import edu.stanford.nlp.trees.GrammaticalStructureFactory;
 import edu.stanford.nlp.trees.PennTreebankLanguagePack;
 import edu.stanford.nlp.trees.Tree;
+import edu.stanford.nlp.trees.TreeGraphNode;
 import edu.stanford.nlp.trees.TreebankLanguagePack;
 import edu.stanford.nlp.trees.TypedDependency;
 
@@ -97,7 +98,10 @@ public class StanfordNLP {
 
 	public static void main(String[] args) {
 		StanfordNLP parser = getInstance();
-		System.out.println(parser.getGrammaticalStructure(args[0]));
+		GrammaticalStructure gs = parser.getGrammaticalStructure(args[0]);
+		TreeGraphNode node = gs.root().children()[0].children()[0].children()[0];
+		System.out.println("Value: " + node.value());
+		System.out.println(gs);
 	}
 
 	public String[] getRootWords(String sentence) {

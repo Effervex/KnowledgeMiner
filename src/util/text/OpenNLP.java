@@ -10,9 +10,13 @@
  ******************************************************************************/
 package util.text;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import opennlp.tools.chunker.Chunker;
 import opennlp.tools.chunker.ChunkerME;
@@ -42,6 +46,8 @@ public class OpenNLP {
 
 	private static final String MODELS_DIR = "models";
 
+	private static final File LEMMA_FILE = new File(MODELS_DIR, "lemmaList.txt");
+
 	private static SentenceDetector sentenceDetector_;
 
 	private static POSTagger tagger_;
@@ -51,6 +57,9 @@ public class OpenNLP {
 	private static Parser parser_;
 
 	private static SnowballStemmer stemmer_;
+
+	/** A map of plurals to single. */
+	private static Map<String, String> lemmaList_;
 
 	static {
 		try {
@@ -141,5 +150,52 @@ public class OpenNLP {
 		System.out.println(Arrays.toString(tags));
 		String[] chunks = chunker_.chunk(tokens, tagger_.tag(tokens));
 		System.out.println(Arrays.toString(chunks));
+	}
+
+	/**
+	 * Lemmatises a string by replacing every word in the string with its
+	 * lemmatised version (according to a manually loaded list).
+	 *
+	 * @param plural
+	 *            The string to lemmatise.
+	 * @param lemmaAll
+	 *            If every word should be lemmatised or just the last.
+	 * @return A lemmatise form of the string.
+	 * @throws IOException
+	 *             Should something go awry...
+	 */
+	public synchronized static String lemmatise(String plural, boolean lemmaAll)
+			throws IOException {
+		if (lemmaList_ == null) {
+			if (!LEMMA_FILE.exists()) {
+				System.err.println("Could not find lemma file: " + LEMMA_FILE);
+				return plural;
+			}
+			BufferedReader in = new BufferedReader(new FileReader(LEMMA_FILE));
+			String input = null;
+			lemmaList_ = new HashMap<>();
+			while ((input = in.readLine()) != null) {
+				if (input.isEmpty())
+					continue;
+				String[] split = input.split("\t");
+				lemmaList_.put(split[1], split[0]);
+			}
+			in.close();
+		}
+
+		// Split the string by ' ', lemmatise, and recombine
+		String[] split = plural.split("\\s");
+		int i = (lemmaAll) ? 0 : split.length - 1;
+		for (; i < split.length; i++) {
+			String word = split[i];
+			if (word.isEmpty())
+				continue;
+			if (lemmaList_.containsKey(word.toLowerCase()))
+				word = lemmaList_.get(word.toLowerCase());
+			if (Character.isUpperCase(split[i].charAt(0)))
+				StringUtils.capitalize(word);
+			split[i] = word;
+		}
+		return StringUtils.join(split, ' ');
 	}
 }

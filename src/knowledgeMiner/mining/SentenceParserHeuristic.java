@@ -122,8 +122,8 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 				} else {
 					// TODO Figure out a safe way to parse predicates. Probably
 					// need to look at the parse code again.
-					// predStr = reAnchorString(predStr, anchors);
-					// predicate = new TextMappedConcept(predStr, true, true);
+					predStr = reAnchorString(predStr, anchors);
+					predicate = new TextMappedConcept(predStr, true, true);
 				}
 
 				if (predicate == null)
@@ -191,7 +191,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 *            The phrase to check.
 	 * @return True if the verb phrase is a copula.
 	 */
-	private boolean isCopula(String verbPhrase) {
+	public static boolean isCopula(String verbPhrase) {
 		for (String copula : COPULAS) {
 			if (verbPhrase.equalsIgnoreCase(copula))
 				return true;
@@ -386,8 +386,8 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 			OntologySocket cyc, MiningHeuristic heuristic) throws Exception {
 		logger_.trace("mineSentence: " + sentence);
 
-//		if (wikifyText)
-//			sentence = wmi.annotate(sentence, 0, false);
+		// if (wikifyText)
+		sentence = wmi.annotate(sentence, 0, false);
 
 		Map<String, Double> anchorWeights = new HashMap<>();
 		SortedMap<String, String> anchors = locateAnchors(sentence,

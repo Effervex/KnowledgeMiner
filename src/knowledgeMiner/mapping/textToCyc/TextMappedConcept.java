@@ -32,6 +32,10 @@ public class TextMappedConcept extends MappableConcept {
 				preProcessText_, true, wmi, ontology);
 	}
 
+	public String getText() {
+		return (String) mappableThing_;
+	}
+
 	@Override
 	public TextMappedConcept clone() {
 		return new TextMappedConcept(this);

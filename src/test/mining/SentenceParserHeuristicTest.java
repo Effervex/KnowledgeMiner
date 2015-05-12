@@ -179,7 +179,7 @@ public class SentenceParserHeuristicTest {
 		assertEquals(output.size(), 7);
 
 		// Adjective as anchor (no redundant sub assertion)
-		sentence = "Uma Karuna Thurman (born April 29, 1970) is an "
+		sentence = "Uma Karuna Thurman is an "
 				+ "[[United States|American]] [[actress]] and "
 				+ "[[Model (person)|model]].";
 		output = sut_.extractAssertions(sentence, focusConcept, wikifyText,
@@ -201,6 +201,13 @@ public class SentenceParserHeuristicTest {
 		assertNotNull(output);
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"[[tennis]] player", null)));
+
+		// Long string of PPs
+		sentence = "In astronomy, air mass (or airmass) is the "
+				+ "optical path length through Earth's atmosphere "
+				+ "for light from a celestial source.";
+		output = sut_.extractAssertions(sentence, focusConcept, wikifyText,
+				wmi_, ontology_, null);
 	}
 
 	@Test

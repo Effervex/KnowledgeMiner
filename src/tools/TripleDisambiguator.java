@@ -9,6 +9,8 @@ import io.resources.WMISocket;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -19,7 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
+import java.util.regex.Matcher;
 
 import knowledgeMiner.ConceptMiningTask;
 import knowledgeMiner.KnowledgeMiner;
@@ -29,6 +31,11 @@ import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 
 import tools.util.DisambiguatedTopic;
 import tools.util.DisambiguatedTriple;
@@ -37,7 +44,7 @@ import util.Pair;
 import util.collection.MultiMap;
 import util.collection.WeightedSet;
 import util.text.TermWeight;
-import util.wikipedia.WikiAnnotation;
+import util.wikipedia.WikiParser;
 import cyc.CycConstants;
 import cyc.OntologyConcept;
 
@@ -72,16 +79,17 @@ public class TripleDisambiguator {
 	 * @param terms
 	 *            The terms to use/process then use.
 	 */
-	public TripleDisambiguator(int port, String contextArticle) {
-		ResourceAccess.newInstance(port);
-		KnowledgeMiner km = KnowledgeMiner.newInstance("Enwiki_20110722");
+	public TripleDisambiguator(String contextArticle) {
 		wmi_ = ResourceAccess.requestWMISocket();
 		ontology_ = (DAGSocket) ResourceAccess.requestOntologySocket();
-		mapper_ = km.getMapper();
+		mapper_ = KnowledgeMiner.getInstance().getMapper();
 
 		try {
-			contextArticle_ = wmi_.getArticleByTitle(contextArticle);
-			relatedArticles_ = wmi_.getOutLinks(contextArticle_);
+			if (contextArticle != null) {
+				contextArticle_ = wmi_.getArticleByTitle(contextArticle);
+				relatedArticles_ = wmi_.getOutLinks(contextArticle_);
+				textToArticleMappings_ = new HashMap<>();
+			}
 			CycConstants.initialiseAssertions(ontology_);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -151,7 +159,7 @@ public class TripleDisambiguator {
 		return family;
 	}
 
-	private Collection<DisambiguatedTriple> convertToDisamTriples(File triples)
+	public Collection<DisambiguatedTriple> convertToDisamTriples(File triples)
 			throws Exception {
 		Collection<DisambiguatedTriple> disamTriples = new ArrayList<>();
 
@@ -167,6 +175,66 @@ public class TripleDisambiguator {
 		in.close();
 
 		return disamTriples;
+	}
+
+	/**
+	 * Parses Amal's XLS triples spreadsheet. Also simultaneously reads in
+	 * DBpedia mappings.
+	 *
+	 * @param f
+	 *            The spreadsheet to parse.
+	 * @return The triples found in the spreadsheet.
+	 * @throws IOException
+	 * @throws FileNotFoundException
+	 */
+	public Collection<DisambiguatedTriple> parseXLSSheet(File f)
+			throws IOException, FileNotFoundException {
+		Collection<DisambiguatedTriple> disamTriples = new ArrayList<>();
+
+		// Open and extract the text triples
+		POIFSFileSystem fs = new POIFSFileSystem(new FileInputStream(f));
+		HSSFWorkbook wb = new HSSFWorkbook(fs);
+		HSSFSheet sheet = wb.getSheetAt(2);
+
+		int rows = sheet.getPhysicalNumberOfRows();
+		// Parse every row, looking for subjects related to the article
+		for (int i = 1; i < rows; i++) {
+			HSSFRow row = sheet.getRow(i);
+			HSSFCell subjCell = row.getCell(RELATION_SUBJECT_INDEX);
+			// Record the triple and any necessary info
+			DisambiguatedTriple dt = new DisambiguatedTriple(row.getCell(
+					RELATION_LABEL_INDEX).getStringCellValue(), row.getCell(
+					RELATION_SUBJECT_INDEX).getStringCellValue(), row.getCell(
+					RELATION_OBJECT_INDEX).getStringCellValue());
+			disamTriples.add(dt);
+		}
+
+		// Also read the DBpedia disambiguations
+		parseDBpediaMappings(wb.getSheetAt(1));
+		wb.close();
+
+		return disamTriples;
+	}
+
+	private void parseDBpediaMappings(HSSFSheet termsSheet) {
+		int rows = termsSheet.getPhysicalNumberOfRows();
+		// Parse every row, looking for subjects related to the article
+		for (int i = 1; i < rows; i++) {
+			HSSFRow row = termsSheet.getRow(i);
+			HSSFCell uriCell = row.getCell(INPUT_DBPEDIA_INDEX);
+			if (uriCell != null && !uriCell.getStringCellValue().trim().isEmpty()) {
+				String articleName = uriCell.getStringCellValue()
+						.substring(DBPEDIA_URI_INDEX).replaceAll("_", " ");
+				articleName = articleName.replaceAll("%28", "(");
+				articleName = articleName.replaceAll("%29", ")");
+
+				HSSFCell stemCell = row.getCell(INPUT_STEMMED_INDEX);
+				String stemString = stemCell.getStringCellValue().replaceAll(
+						"_", " ");
+				textToArticleMappings_.put(stemString,
+						new Pair<String, Double>(articleName, 1d));
+			}
+		}
 	}
 
 	private void printFamilies(
@@ -294,22 +362,22 @@ public class TripleDisambiguator {
 		return shortTitle;
 	}
 
-	private void readDBPediaMappings(File termFile) throws IOException {
-		BufferedReader in = new BufferedReader(new FileReader(termFile));
-		String input = in.readLine();
-		while ((input = in.readLine()) != null) {
-			String[] split = input.split("\t");
-			if (!split[INPUT_DBPEDIA_INDEX].isEmpty()) {
-				String articleName = split[INPUT_DBPEDIA_INDEX].substring(
-						DBPEDIA_URI_INDEX).replaceAll("_", " ");
-				articleName = articleName.replaceAll("%28", "(");
-				articleName = articleName.replaceAll("%29", ")");
-				textToArticleMappings_.put(split[INPUT_STEMMED_INDEX],
-						new Pair<String, Double>(articleName, 1d));
-			}
-		}
-		in.close();
-	}
+	// private void readDBPediaMappings(File termFile) throws IOException {
+	// BufferedReader in = new BufferedReader(new FileReader(termFile));
+	// String input = in.readLine();
+	// while ((input = in.readLine()) != null) {
+	// String[] split = input.split("\t");
+	// if (!split[INPUT_DBPEDIA_INDEX].isEmpty()) {
+	// String articleName = split[INPUT_DBPEDIA_INDEX].substring(
+	// DBPEDIA_URI_INDEX).replaceAll("_", " ");
+	// articleName = articleName.replaceAll("%28", "(");
+	// articleName = articleName.replaceAll("%29", ")");
+	// textToArticleMappings_.put(split[INPUT_STEMMED_INDEX],
+	// new Pair<String, Double>(articleName, 1d));
+	// }
+	// }
+	// in.close();
+	// }
 
 	public MultiMap<String, DisambiguatedTriple> checkFamilyConsistency(
 			MultiMap<String, DisambiguatedTriple> familyTriples)
@@ -364,13 +432,12 @@ public class TripleDisambiguator {
 	public Collection<DisambiguatedTriple> disambiguateTriples(
 			Collection<DisambiguatedTriple> triples, File termFile)
 			throws Exception {
-		textToArticleMappings_ = new HashMap<>();
 		if (PRIMARY_TERMWEIGHT.equals(TermWeight.WIKIFICATION)) {
 			// TODO If using WIKIFICATION, use that instead
 			readWikificationMappings();
-		} else if (PRIMARY_TERMWEIGHT.equals(TermWeight.DBPEDIA)) {
-			readDBPediaMappings(termFile);
-		}
+		}// else if (PRIMARY_TERMWEIGHT.equals(TermWeight.DBPEDIA)) {
+			// readDBPediaMappings(termFile);
+		// }
 		// TODO Convert this to produce PartialAssertions (mapText("Blah"))
 		Collection<DisambiguatedTriple> disamTriples = disambiguateRelations(triples);
 		return disamTriples;
@@ -378,14 +445,16 @@ public class TripleDisambiguator {
 
 	private void readWikificationMappings() {
 		try {
-			SortedSet<WikiAnnotation> topics = wmi_.getTopics(wmi_
-					.getMarkup(contextArticle_));
-			// TODO Problems with stemming and underscores.
-			for (WikiAnnotation topic : topics) {
+			String markup = wmi_.getMarkup(contextArticle_);
+			String annotated = wmi_.annotate(markup, 0, true);
+			Matcher m = WikiParser.ANCHOR_PARSER_WEIGHTED.matcher(annotated);
+			while (m.find()) {
+				String linkText = (m.group(2) != null) ? m.group(2) : m
+						.group(1);
 				textToArticleMappings_.put(
-						topic.getText(),
-						new Pair<String, Double>(topic.getArticleName(), topic
-								.getWeight()));
+						linkText.toLowerCase(),
+						new Pair<String, Double>(m.group(1), Double
+								.parseDouble(m.group(3))));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -456,7 +525,9 @@ public class TripleDisambiguator {
 		String contextArticle = args[0];
 		File triples = new File(args[1]);
 		File terms = new File(args[2]);
-		TripleDisambiguator td = new TripleDisambiguator(2426, contextArticle);
+		ResourceAccess.newInstance(2426);
+		KnowledgeMiner km = KnowledgeMiner.newInstance("Enwiki_20110722");
+		TripleDisambiguator td = new TripleDisambiguator(contextArticle);
 		try {
 			td.processTriples(terms, triples);
 		} catch (Exception e) {

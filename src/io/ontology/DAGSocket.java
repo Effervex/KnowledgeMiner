@@ -28,7 +28,7 @@ import cyc.OntologyConcept;
 
 public class DAGSocket extends OntologySocket {
 	/** The default port number for the DAG. */
-	private static final int DAG_PORT = 2426;
+	public static final int DAG_PORT = 2426;
 	private static final String DELIMITER = "!Y^e#";
 	private Logger logger_ = LoggerFactory.getLogger(DAGSocket.class);
 
