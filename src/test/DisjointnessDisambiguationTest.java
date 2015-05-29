@@ -10,10 +10,10 @@ import knowledgeMiner.ConceptMiningTask;
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.TermStanding;
-import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
-import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.mining.TextMappedConcept;
+import knowledgeMiner.mining.wikipedia.WikipediaMappedConcept;
 import knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor;
 
 import org.junit.BeforeClass;

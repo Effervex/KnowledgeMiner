@@ -26,7 +26,7 @@ import java.util.regex.Matcher;
 import knowledgeMiner.ConceptMiningTask;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
-import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
+import knowledgeMiner.mining.TextMappedConcept;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;

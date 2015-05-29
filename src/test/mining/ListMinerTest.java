@@ -153,7 +153,6 @@ public class ListMinerTest {
 
 	@Test
 	public void testBatchTableMine() throws IOException {
-		WikipediaArticleMiningHeuristic.partitionInformation = false;
 		for (String testList : testLists_) {
 			MinedInformation info = sut_.mineArticle(
 					wmi_.getArticleByTitle(testList),

@@ -18,8 +18,8 @@ import java.util.Collection;
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
-import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.wikipedia.InfoboxClusterer;
+import knowledgeMiner.mining.wikipedia.WikipediaMappedConcept;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

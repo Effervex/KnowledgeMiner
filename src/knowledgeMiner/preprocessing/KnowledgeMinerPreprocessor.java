@@ -172,8 +172,9 @@ public class KnowledgeMinerPreprocessor {
 				} else {
 					String type = wmi.getPageType(nextID);
 					// If it's an article or disambiguation, process it.
-					if (type != null && (type.equals(WMISocket.TYPE_ARTICLE)
-							|| type.equals(WMISocket.TYPE_DISAMBIGUATION))) {
+					if (type != null
+							&& (type.equals(WMISocket.TYPE_ARTICLE) || type
+									.equals(WMISocket.TYPE_DISAMBIGUATION))) {
 						PrecomputationTask preTask = new PrecomputationTask(
 								new ConceptModule(id), heuristics, taskType,
 								this);
@@ -257,8 +258,10 @@ public class KnowledgeMinerPreprocessor {
 		if (!ENABLE_PREPROCESSING)
 			return null;
 
-		return heuristicResults_.get(heuristicName).getLoadHeuristicResults(
-				index);
+		if (heuristicResults_.containsKey(heuristicName))
+			return heuristicResults_.get(heuristicName)
+					.getLoadHeuristicResults(index);
+		return null;
 	}
 
 	public void incrementProcessed() {

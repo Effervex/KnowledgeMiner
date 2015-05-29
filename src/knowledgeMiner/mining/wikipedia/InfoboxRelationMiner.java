@@ -16,13 +16,13 @@ import java.util.regex.Pattern;
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.CycMapper;
-import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.mining.TextMappedConcept;
 import knowledgeMiner.mining.WeightedInformation;
 import knowledgeMiner.mining.WeightedStanding;
 

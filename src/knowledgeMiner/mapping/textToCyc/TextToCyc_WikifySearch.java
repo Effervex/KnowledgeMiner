@@ -10,7 +10,7 @@ import java.util.regex.Matcher;
 
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.MappingHeuristic;
-import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
+import knowledgeMiner.mining.wikipedia.WikipediaMappedConcept;
 
 import org.slf4j.LoggerFactory;
 

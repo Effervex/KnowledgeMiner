@@ -3,6 +3,9 @@
  ******************************************************************************/
 package knowledgeMiner.mining.wikipedia;
 
+import io.ontology.OntologySocket;
+import io.resources.WMISocket;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.SortedSet;
@@ -170,5 +173,12 @@ public class InfoboxClusterer extends MiningHeuristic {
 			}
 			return null;
 		}
+	}
+
+	@Override
+	protected void mineArticleInternal(MinedInformation info,
+			int informationRequested, WMISocket wmi, OntologySocket ontology)
+			throws Exception {
+		
 	}
 }

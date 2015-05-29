@@ -1,4 +1,4 @@
-package knowledgeMiner.mapping.textToCyc;
+package knowledgeMiner.mining;
 
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;

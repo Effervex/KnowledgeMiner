@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import knowledgeMiner.mapping.CycMapper;
-import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
+import knowledgeMiner.mining.wikipedia.WikipediaMappedConcept;
 import tools.TripleDisambiguator;
 import util.Pair;
 import util.collection.WeightedSet;

@@ -14,7 +14,7 @@ import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.MappingHeuristic;
-import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
+import knowledgeMiner.mining.wikipedia.WikipediaMappedConcept;
 
 import org.slf4j.LoggerFactory;
 

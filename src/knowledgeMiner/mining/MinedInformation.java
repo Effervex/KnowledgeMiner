@@ -9,8 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import knowledgeMiner.TermStanding;
-import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
-import knowledgeMiner.mining.wikipedia.WikipediaArticleMiningHeuristic;
+import knowledgeMiner.mining.wikipedia.WikipediaMappedConcept;
 import util.Mergeable;
 import cyc.AssertionArgument;
 import cyc.MappableConcept;
@@ -74,8 +73,7 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 	 */
 	public MinedInformation(int article) {
 		articleID_ = article;
-		selfRef_ = WikipediaArticleMiningHeuristic
-				.createSelfRefConcept(articleID_);
+		selfRef_ = MiningHeuristic.createSelfRefConcept(articleID_);
 	}
 
 	/**

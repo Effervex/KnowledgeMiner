@@ -10,9 +10,9 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import knowledgeMiner.KnowledgeMiner;
-import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import knowledgeMiner.mining.PartialAssertion;
 import knowledgeMiner.mining.SentenceParserHeuristic;
+import knowledgeMiner.mining.TextMappedConcept;
 import opennlp.tools.parser.Parse;
 
 import org.junit.BeforeClass;

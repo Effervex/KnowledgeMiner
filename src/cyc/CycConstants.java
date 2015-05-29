@@ -19,6 +19,7 @@ public enum CycConstants {
 	COMMENT("comment"),
 	CONCEPT_IMAGE("conceptImage"),
 	DATA_MICROTHEORY("KnowledgeMinerDataMt"),
+	DBPEDIA_ONTOLOGY("DBPediaOntology"),
 	DEATH_DATE("dateOfDeath"),
 	DEFAULTED_INDIVIDUAL("DefaultedIndividual"),
 	EVERY_WIKI_MICROTHEORY("KnowledgeMinerCollectorMt"),
@@ -37,6 +38,7 @@ public enum CycConstants {
 	PREDICATE("Predicate"),
 	QUOTEDISA("quotedIsa"),
 	QUOTEDISA_PARENT("SubLExpressionType"),
+	REFINABLE_PREDICATE("RefinablePredicate"),
 	SYNONYM_RELATION("wikipediaArticleSynonym"),
 	SYNONYM_RELATION_CANONICAL("wikipediaArticleName-Canonical"),
 	SYNONYMOUS_EXTERNAL_CONCEPT("synonymousExternalConcept"),
@@ -77,20 +79,20 @@ public enum CycConstants {
 	private static void lexicalPredicate(OntologyConcept predicate,
 			String comment, Object genls, Object arg1Isa, OntologySocket cyc)
 			throws Exception {
-		cyc.createAndAssert(predicate.getConceptName(),
-				CommonConcepts.PREDICATE.getID(), comment);
-		cyc.assertToOntology(BASEKB.getConceptName(),
-				CommonConcepts.GENLPREDS.getID(), predicate.getID(), genls);
-		cyc.assertToOntology(BASEKB.getConceptName(),
+		assertID(cyc.createAndAssert(predicate.getConceptName(),
+				CommonConcepts.PREDICATE.getID(), comment));
+		assertID(cyc.assertToOntology(BASEKB.getConceptName(),
+				CommonConcepts.GENLPREDS.getID(), predicate.getID(), genls));
+		assertID(cyc.assertToOntology(BASEKB.getConceptName(),
 				CommonConcepts.ISA.getID(), predicate.getID(),
-				CommonConcepts.BINARY_PREDICATE.getID());
-		cyc.assertToOntology(BASEKB.getConceptName(),
-				CommonConcepts.ARITY.getID(), predicate.getID(), "'2");
-		cyc.assertToOntology(BASEKB.getConceptName(),
-				CommonConcepts.ARG1ISA.getID(), predicate.getID(), arg1Isa);
-		cyc.assertToOntology(BASEKB.getConceptName(),
+				CommonConcepts.BINARY_PREDICATE.getID()));
+		assertID(cyc.assertToOntology(BASEKB.getConceptName(),
+				CommonConcepts.ARITY.getID(), predicate.getID(), "'2"));
+		assertID(cyc.assertToOntology(BASEKB.getConceptName(),
+				CommonConcepts.ARG1ISA.getID(), predicate.getID(), arg1Isa));
+		assertID(cyc.assertToOntology(BASEKB.getConceptName(),
 				CommonConcepts.ARG2ISA.getID(), predicate.getID(),
-				CommonConcepts.CHARACTER_STRING.getID());
+				CommonConcepts.CHARACTER_STRING.getID()));
 	}
 
 	/**
@@ -103,68 +105,68 @@ public enum CycConstants {
 	private static void setUpAssertions(OntologySocket ontologySocket)
 			throws Exception {
 		// Creating the default collection
-		ontologySocket
+		assertID(ontologySocket
 				.createAndAssert(DEFAULTED_INDIVIDUAL.getConceptName(),
 						CommonConcepts.COLLECTION.getID(),
-						"The collection containing constants that were defaulted to individuals.");
-		ontologySocket.assertToOntology(
+						"The collection containing constants that were defaulted to individuals."));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ISA.getID(), DEFAULTED_INDIVIDUAL.getID(),
-				QUOTEDISA_PARENT.getID());
-		ontologySocket.assertToOntology(
+				QUOTEDISA_PARENT.getID()));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.GENLS.getID(), DEFAULTED_INDIVIDUAL.getID(),
-				"CycLTerm");
+				"CycLTerm"));
 
 		// Creating the infobox pairing collection
-		ontologySocket
+		assertID(ontologySocket
 				.createAndAssert(
 						INFOBOX_PAIRING.getConceptName(),
 						CommonConcepts.COLLECTION.getID(),
-						"The collection containing constants that were created by matching infobox types to known siblings.");
-		ontologySocket.assertToOntology(
+						"The collection containing constants that were created by matching infobox types to known siblings."));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ISA.getID(), INFOBOX_PAIRING.getID(),
-				QUOTEDISA_PARENT.getID());
-		ontologySocket.assertToOntology(
+				QUOTEDISA_PARENT.getID()));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.GENLS.getID(), INFOBOX_PAIRING.getID(),
-				"CycLTerm");
+				"CycLTerm"));
 
 		// Setting up the Wikipedia version constant
 		WIKI_VERSION = new OntologyConcept(ontologySocket.createAndAssert(
 				KnowledgeMiner.wikiVersion_, CommonConcepts.INDIVIDUAL.getID(),
 				"A version of Wikipedia being used during Knowledge Mining."));
-		ontologySocket.assertToOntology(
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ISA.getID(), KnowledgeMiner.wikiVersion_,
-				"IndexedInformationSource");
+				"IndexedInformationSource"));
 
 		// Wikipedia Comment
-		ontologySocket
+		assertID(ontologySocket
 				.createAndAssert(
 						WIKIPEDIA_COMMENT.getConceptName(),
 						CommonConcepts.BINARY_PREDICATE.getID(),
-						"A [[DocumentationPredicate]] that is used to represent the comment of the mapped Wikipedia article for this concept. This mapping may be marked up (contain links to other concepts) or just be plain text. In any case, it's superpredicate [[comment]] should take precedence over this predicate.");
-		ontologySocket.assertToOntology(
+						"A [[DocumentationPredicate]] that is used to represent the comment of the mapped Wikipedia article for this concept. This mapping may be marked up (contain links to other concepts) or just be plain text. In any case, it's superpredicate [[comment]] should take precedence over this predicate."));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ISA.getID(), WIKIPEDIA_COMMENT.getID(),
-				"DocumentationPredicate");
-		ontologySocket.assertToOntology(
+				"DocumentationPredicate"));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.GENLPREDS.getID(), WIKIPEDIA_COMMENT.getID(),
-				COMMENT.getID());
-		ontologySocket.assertToOntology(
+				COMMENT.getID()));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
-				CommonConcepts.ARITY.getID(), WIKIPEDIA_COMMENT.getID(), "'2");
-		ontologySocket.assertToOntology(
+				CommonConcepts.ARITY.getID(), WIKIPEDIA_COMMENT.getID(), "'2"));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ARG1ISA.getID(), WIKIPEDIA_COMMENT.getID(),
-				CommonConcepts.THING.getID());
-		ontologySocket.assertToOntology(
+				CommonConcepts.THING.getID()));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ARG2ISA.getID(), WIKIPEDIA_COMMENT.getID(),
-				CommonConcepts.CHARACTER_STRING.getID());
+				CommonConcepts.CHARACTER_STRING.getID()));
 
 		// Setting up the various synonyms
 		lexicalPredicate(
@@ -182,77 +184,88 @@ public enum CycConstants {
 				"Denotes a Wikipedia specific infobox value name that is synonymous with this predicate.",
 				CommonConcepts.TERM_STRING.getID(),
 				CommonConcepts.PREDICATE.getID(), ontologySocket);
-		ontologySocket
+		assertID(ontologySocket
 				.createAndAssert(
 						MAPPING_CONFIDENCE.getConceptName(),
 						CommonConcepts.BINARY_PREDICATE.getID(),
-						"A numerical value between 0 and 1 representing the confidence with which a mapping between THING and the synonymous Wikipedia article is true.");
-		ontologySocket.assertToOntology(
+						"A numerical value between 0 and 1 representing the confidence with which a mapping between THING and the synonymous Wikipedia article is true."));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ISA.getID(), MAPPING_CONFIDENCE.getID(),
-				"NumericIntervalSlot");
-		ontologySocket.assertToOntology(
+				"NumericIntervalSlot"));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ISA.getID(), MAPPING_CONFIDENCE.getID(),
-				"StrictlyFunctionalSlot");
-		ontologySocket.assertToOntology(
+				"StrictlyFunctionalSlot"));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ARG1ISA.getID(), MAPPING_CONFIDENCE.getID(),
-				CommonConcepts.THING.getID());
-		ontologySocket.assertToOntology(
+				CommonConcepts.THING.getID()));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ARG2ISA.getID(), MAPPING_CONFIDENCE.getID(),
-				"Real0-1");
+				"Real0-1"));
 
 		// Image URL predicate
-		ontologySocket.createAndAssert(CONCEPT_IMAGE.getConceptName(),
+		assertID(ontologySocket.createAndAssert(CONCEPT_IMAGE.getConceptName(),
 				CommonConcepts.BINARY_PREDICATE.getID(),
 				"Defines an image link using a [[UniformResourceLocator]] "
-						+ "for a given concept.");
-		ontologySocket.assertToOntology(
+						+ "for a given concept."));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ARG1ISA.getID(), CONCEPT_IMAGE.getID(),
-				CommonConcepts.THING.getID());
-		ontologySocket.assertToOntology(
+				CommonConcepts.THING.getID()));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.ARG2ISA.getID(), CONCEPT_IMAGE.getID(),
-				"UniformResourceLocator");
-
-		// Unclassified collection
-		ontologySocket
-				.createAndAssert(
-						UNCLASSIFIED_CONCEPT.getConceptName(),
-						CommonConcepts.COLLECTION.getID(),
-						"The collection of concepts that have been created "
-								+ "by KnowledgeMiner without much information to quantify "
-								+ "how they fit in the ontology. Most of these terms "
-								+ "should be merged, linked, or removed as a post "
-								+ "process to the mining process.");
-		ontologySocket.assertToOntology(
-				IMPLEMENTATION_MICROTHEORY.getConceptName(),
-				UNCLASSIFIED_CONCEPT.getID(), GENLS.getID(), "StubTerm");
+				"UniformResourceLocator"));
 
 		// Strictly Functional Slots
-		ontologySocket.assertToOntology(
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(), ISA.getID(),
 				MAPPING_CONFIDENCE.getID(),
-				CommonConcepts.STRICTLY_FUNCTIONAL_SLOT.getID());
-		ontologySocket.assertToOntology(
+				CommonConcepts.STRICTLY_FUNCTIONAL_SLOT.getID()));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(), ISA.getID(),
 				SYNONYM_RELATION_CANONICAL.getID(),
-				CommonConcepts.STRICTLY_FUNCTIONAL_SLOT.getID());
-		ontologySocket.assertToOntology(
+				CommonConcepts.STRICTLY_FUNCTIONAL_SLOT.getID()));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(), ISA.getID(),
 				WIKIPEDIA_URL.getID(),
-				CommonConcepts.STRICTLY_FUNCTIONAL_SLOT.getID());
-		ontologySocket.assertToOntology(
+				CommonConcepts.STRICTLY_FUNCTIONAL_SLOT.getID()));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(), ISA.getID(),
 				CONCEPT_IMAGE.getID(),
-				CommonConcepts.STRICTLY_FUNCTIONAL_SLOT.getID());
-		ontologySocket.assertToOntology(
+				CommonConcepts.STRICTLY_FUNCTIONAL_SLOT.getID()));
+		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(), ISA.getID(),
 				WIKIPEDIA_COMMENT.getID(),
-				CommonConcepts.STRICTLY_FUNCTIONAL_SLOT.getID());
+				CommonConcepts.STRICTLY_FUNCTIONAL_SLOT.getID()));
+
+		// Refinable predicates
+		assertID(ontologySocket.createAndAssert(
+				REFINABLE_PREDICATE.getConceptName(), CommonConcepts.COLLECTION.getID(),
+				"A RefinablePredicate is a predicate which "
+						+ "inductively defines its semantic argument "
+						+ "constraints based on the assertions that "
+						+ "employ the predicate. Once a certain number "
+						+ "of assertions are created that use a "
+						+ "refinable predicate, the semantic argument "
+						+ "constraints are inductively calculated and "
+						+ "asserted, rejecting any evidence that no "
+						+ "longer fits the constraints. Refinable "
+						+ "predicates are also transient, in that "
+						+ "they may be completely removed if they are "
+						+ "found to be unused."));
+		assertID(ontologySocket.assertToOntology(
+				IMPLEMENTATION_MICROTHEORY.getConceptName(),
+				CommonConcepts.GENLS.getID(), REFINABLE_PREDICATE.getID(),
+				CommonConcepts.PREDICATE.getID()));
+	}
+
+	private static void assertID(int returnedID) throws Exception {
+		if (returnedID < 0)
+			throw new Exception("Assertion was not successful!");
 	}
 
 	/**

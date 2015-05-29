@@ -124,6 +124,8 @@ public class DAGSocket extends OntologySocket {
 			String result = command("addedge", args, false);
 			IOManager.getInstance().writeCycOperation("addedge " + args);
 			int id = Integer.parseInt(result.split("\\|")[0]);
+			if (id < 0)
+				System.err.println("addedge " + args + " = " + result);
 			clearCachedArticles();
 			return id;
 		} catch (Exception e) {

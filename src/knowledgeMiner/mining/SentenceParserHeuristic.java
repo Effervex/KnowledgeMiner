@@ -30,7 +30,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import knowledgeMiner.mapping.CycMapper;
-import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import opennlp.tools.parser.Parse;
 
 import org.apache.commons.lang3.StringUtils;
@@ -47,7 +46,6 @@ import cyc.MappableConcept;
 public class SentenceParserHeuristic extends MiningHeuristic {
 	private static final String[] COPULAS = { "is", "are", "was", "were", "be",
 			"am", "being", "been" };
-	private static final Collection<ExtractionPattern> EXTRACTION_PATTERNS;
 	private final static Logger logger_ = LoggerFactory
 			.getLogger(SentenceParserHeuristic.class);
 	private static final Pattern[] SENTENCE_SIMPLIFIER = {
@@ -185,21 +183,6 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	}
 
 	/**
-	 * If the current verbPhrase is a copula.
-	 * 
-	 * @param verbPhrase
-	 *            The phrase to check.
-	 * @return True if the verb phrase is a copula.
-	 */
-	public static boolean isCopula(String verbPhrase) {
-		for (String copula : COPULAS) {
-			if (verbPhrase.equalsIgnoreCase(copula))
-				return true;
-		}
-		return false;
-	}
-
-	/**
 	 * Pairs the nouns and adjectives together to produce a number of result
 	 * text fragments to be resolved to concepts.
 	 *
@@ -329,6 +312,12 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	}
 
 	@Override
+	protected void mineArticleInternal(MinedInformation info,
+			int informationRequested, WMISocket wmi, OntologySocket ontology)
+			throws Exception {
+	}
+
+	@Override
 	protected void setInformationTypes(boolean[] infoTypes) {
 		infoTypes[InformationType.TAXONOMIC.ordinal()] = true;
 		infoTypes[InformationType.NON_TAXONOMIC.ordinal()] = true;
@@ -361,7 +350,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 		results.addAll(pairNounAdjs(parse, anchors, anchorMap));
 		return results;
 	}
-
+	
 	/**
 	 * Extracts a set of assertions from a sentence using parsing techniques to
 	 * identify plain-text assertions.
@@ -404,10 +393,20 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 				heuristic, results);
 		return results;
 	}
-
-	static {
-		EXTRACTION_PATTERNS = new ArrayList<>();
-		EXTRACTION_PATTERNS.add(new ExtractionPattern("VB", "NP"));
+	
+	/**
+	 * If the current verbPhrase is a copula.
+	 * 
+	 * @param verbPhrase
+	 *            The phrase to check.
+	 * @return True if the verb phrase is a copula.
+	 */
+	public static boolean isCopula(String verbPhrase) {
+		for (String copula : COPULAS) {
+			if (verbPhrase.equalsIgnoreCase(copula))
+				return true;
+		}
+		return false;
 	}
 
 	/**

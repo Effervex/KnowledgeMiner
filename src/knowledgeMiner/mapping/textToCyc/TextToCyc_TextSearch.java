@@ -3,7 +3,6 @@
  ******************************************************************************/
 package knowledgeMiner.mapping.textToCyc;
 
-import graph.module.NLPToSyntaxModule;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 

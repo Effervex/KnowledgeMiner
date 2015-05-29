@@ -22,12 +22,12 @@ import java.util.regex.Pattern;
 
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
-import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
-import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
 import knowledgeMiner.mining.SentenceParserHeuristic;
+import knowledgeMiner.mining.TextMappedConcept;
+import knowledgeMiner.mining.wikipedia.WikipediaMappedConcept;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;

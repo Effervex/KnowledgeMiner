@@ -10,7 +10,6 @@ import io.ontology.OntologySocket;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import cyc.AssertionArgument;
 import cyc.CycConstants;
 import cyc.MappableConcept;

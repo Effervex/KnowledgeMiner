@@ -10,7 +10,7 @@ import java.util.Collection;
 import java.util.regex.Pattern;
 
 import knowledgeMiner.mapping.CycMapper;
-import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
+import knowledgeMiner.mining.wikipedia.WikipediaMappedConcept;
 
 import org.apache.commons.collections4.CollectionUtils;
 

@@ -12,9 +12,9 @@ import java.util.Collection;
 
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
-import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import knowledgeMiner.mining.AssertionQueue;
 import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.mining.TextMappedConcept;
 
 import org.junit.After;
 import org.junit.BeforeClass;

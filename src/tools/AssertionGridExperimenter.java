@@ -20,10 +20,10 @@ import java.util.TreeMap;
 
 import knowledgeMiner.AssertionGrid;
 import knowledgeMiner.KnowledgeMiner;
-import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
 import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.mining.TextMappedConcept;
 import knowledgeMiner.mining.WeightedStanding;
 
 import org.apache.commons.collections4.CollectionUtils;

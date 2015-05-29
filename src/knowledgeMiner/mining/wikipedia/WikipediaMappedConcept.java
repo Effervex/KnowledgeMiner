@@ -1,4 +1,4 @@
-package knowledgeMiner.mapping.wikiToCyc;
+package knowledgeMiner.mining.wikipedia;
 
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
@@ -13,6 +13,12 @@ import cyc.AssertionArgument;
 import cyc.MappableConcept;
 import cyc.OntologyConcept;
 
+/**
+ * A class for mapping Wikipedia articles to concepts. Generally just looks up
+ * existing mappings in KnowledgeMiner and returns them when mapped.
+ *
+ * @author Sam Sarjant
+ */
 public class WikipediaMappedConcept extends MappableConcept {
 	private static final long serialVersionUID = 1L;
 
@@ -35,7 +41,7 @@ public class WikipediaMappedConcept extends MappableConcept {
 			mapping.add(concept);
 		return mapping;
 	}
-	
+
 	public int getArticle() {
 		return (int) mappableThing_;
 	}

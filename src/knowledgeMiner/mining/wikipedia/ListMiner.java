@@ -21,14 +21,13 @@ import java.util.regex.Matcher;
 
 import knowledgeMiner.TermStanding;
 import knowledgeMiner.mapping.CycMapper;
-import knowledgeMiner.mapping.textToCyc.TextMappedConcept;
-import knowledgeMiner.mapping.wikiToCyc.WikipediaMappedConcept;
 import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.HeuristicProvenance;
 import knowledgeMiner.mining.InformationType;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
 import knowledgeMiner.mining.SentenceParserHeuristic;
+import knowledgeMiner.mining.TextMappedConcept;
 
 import org.apache.commons.lang3.StringUtils;
 

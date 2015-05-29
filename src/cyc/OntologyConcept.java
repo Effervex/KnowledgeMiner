@@ -195,7 +195,7 @@ public class OntologyConcept extends AssertionArgument implements Serializable,
 												UtilityMethods.shrinkString(
 														funcArg, 1), ' '),
 										parseArgs), ' ') + ")";
-			else if (!parseArgs && funcArg.matches("\\d+"))
+			else if (parseArgs && funcArg.matches("\\d+"))
 				result[i] = ResourceAccess.requestOntologySocket()
 						.findConceptByID(Integer.parseInt(funcArg));
 			else
