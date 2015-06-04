@@ -260,7 +260,7 @@ public enum CycConstants {
 		assertID(ontologySocket.assertToOntology(
 				IMPLEMENTATION_MICROTHEORY.getConceptName(),
 				CommonConcepts.GENLS.getID(), REFINABLE_PREDICATE.getID(),
-				CommonConcepts.PREDICATE.getID()));
+				CommonConcepts.BINARY_PREDICATE.getID()));
 	}
 
 	private static void assertID(int returnedID) throws Exception {
