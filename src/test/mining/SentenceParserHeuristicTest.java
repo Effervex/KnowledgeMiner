@@ -242,11 +242,14 @@ public class SentenceParserHeuristicTest {
 				null)));
 		assertTrue(output.contains(buildPartial(focusConcept,
 				"[[digital]] [[keyboard instrument]]", null)));
-		// assertTrue(output.contains(buildPartial(focusConcept,
-		// "[[Electronic music|electronic]] [[keyboard instrument]]", null)));
-		// assertTrue(output.contains(buildPartial(focusConcept,
-		// "[[Electronic music|electronic]] instrument", null)));
-		assertEquals(output.size(), 6);
+		if (SentenceParserHeuristic.parser_ == SentenceParserHeuristic.STANFORD_NLP) {
+			assertTrue(output.contains(buildPartial(focusConcept,
+					"[[electronic keyboard]] instrument", null)));
+			assertTrue(output.contains(buildPartial(focusConcept,
+					"[[Electronic music|electronic]] instrument", null)));
+			assertEquals(output.size(), 8);
+		} else
+			assertEquals(output.size(), 6);
 	}
 
 	private PartialAssertion buildPartial(MappableConcept focusConcept,
@@ -269,98 +272,99 @@ public class SentenceParserHeuristicTest {
 		System.out.println(output);
 	}
 
-	@Test
-	public void testComposeAdjNounsTree() {
-		SortedMap<String, String> anchors = new TreeMap<>();
-		// Basic noun
-		String sentence = "a battle";
-		Parse parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
-		Collection<Tree<String>> adjNounTree = sut_.composeAdjNounsTree(parse,
-				anchors);
-		assertEquals(adjNounTree.size(), 1);
-		assertTrue(adjNounTree.contains(new Tree<String>("battle")));
-
-		// Adj noun combo
-		sentence = "a naval battle";
-		parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
-		adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
-		assertEquals(adjNounTree.size(), 2);
-		assertTrue(adjNounTree.contains(new Tree<String>("battle")));
-		Tree<String> subT = new Tree<String>("naval battle");
-		subT.addSubValue("naval");
-		assertTrue(adjNounTree.contains(subT));
-
-		// Double JJ
-		sentence = "an indecisive naval battle";
-		parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
-		adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
-		assertEquals(adjNounTree.size(), 4);
-		assertTrue(adjNounTree.contains(new Tree<String>("battle")));
-		subT = new Tree<String>("naval battle");
-		subT.addSubValue("naval");
-		assertTrue(adjNounTree.contains(subT));
-		subT = new Tree<String>("indecisive battle");
-		subT.addSubValue("indecisive");
-		assertTrue(adjNounTree.contains(subT));
-		subT = new Tree<String>("indecisive naval battle");
-		subT.addSubValue("indecisive naval");
-		assertTrue(adjNounTree.contains(subT));
-
-		// Double NN
-		sentence = "a figure skater";
-		parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
-		adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
-		assertEquals(adjNounTree.size(), 2);
-		assertTrue(adjNounTree.contains(new Tree<String>("skater")));
-		assertTrue(adjNounTree.contains(new Tree<String>("figure skater")));
-
-		// Double JJ + double NN
-		sentence = "a former Swiss figure skater";
-		parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
-		adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
-		assertEquals(adjNounTree.size(), 8);
-		assertTrue(adjNounTree.contains(new Tree<String>("skater")));
-		assertTrue(adjNounTree.contains(new Tree<String>("figure skater")));
-		subT = new Tree<String>("Swiss skater");
-		subT.addSubValue("Swiss");
-		assertTrue(adjNounTree.contains(subT));
-		subT = new Tree<String>("former skater");
-		subT.addSubValue("former");
-		assertTrue(adjNounTree.contains(subT));
-		subT = new Tree<String>("former Swiss skater");
-		subT.addSubValue("former Swiss");
-		assertTrue(adjNounTree.contains(subT));
-		subT = new Tree<String>("Swiss figure skater");
-		subT.addSubValue("Swiss");
-		assertTrue(adjNounTree.contains(subT));
-		subT = new Tree<String>("former figure skater");
-		subT.addSubValue("former");
-		assertTrue(adjNounTree.contains(subT));
-		subT = new Tree<String>("former Swiss figure skater");
-		subT.addSubValue("former Swiss");
-		assertTrue(adjNounTree.contains(subT));
-
-		// Anchors
-		sentence = "a professional football end";
-		parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
-		anchors.clear();
-		anchors.put("end", "[[End (American football)|end]]");
-		anchors.put("football", "[[American football|football]]");
-		adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
-		assertEquals(adjNounTree.size(), 5);
-		assertTrue(adjNounTree.contains(new Tree<String>(
-				"[[American football|football]]")));
-		assertTrue(adjNounTree.contains(new Tree<String>(
-				"[[End (American football)|end]]")));
-		assertTrue(adjNounTree
-				.contains(new Tree<String>(
-						"[[American football|football]] [[End (American football)|end]]")));
-		subT = new Tree<String>("professional [[End (American football)|end]]");
-		subT.addSubValue("professional");
-		assertTrue(adjNounTree.contains(subT));
-		subT = new Tree<String>(
-				"professional [[American football|football]] [[End (American football)|end]]");
-		subT.addSubValue("professional");
-		assertTrue(adjNounTree.contains(subT));
-	}
+	// @Test
+	// public void testComposeAdjNounsTree() {
+	// SortedMap<String, String> anchors = new TreeMap<>();
+	// // Basic noun
+	// String sentence = "a battle";
+	// Parse parse =
+	// SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
+	// Collection<Tree<String>> adjNounTree = sut_.composeAdjNounsTree(parse,
+	// anchors);
+	// assertEquals(adjNounTree.size(), 1);
+	// assertTrue(adjNounTree.contains(new Tree<String>("battle")));
+	//
+	// // Adj noun combo
+	// sentence = "a naval battle";
+	// parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
+	// adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
+	// assertEquals(adjNounTree.size(), 2);
+	// assertTrue(adjNounTree.contains(new Tree<String>("battle")));
+	// Tree<String> subT = new Tree<String>("naval battle");
+	// subT.addSubValue("naval");
+	// assertTrue(adjNounTree.contains(subT));
+	//
+	// // Double JJ
+	// sentence = "an indecisive naval battle";
+	// parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
+	// adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
+	// assertEquals(adjNounTree.size(), 4);
+	// assertTrue(adjNounTree.contains(new Tree<String>("battle")));
+	// subT = new Tree<String>("naval battle");
+	// subT.addSubValue("naval");
+	// assertTrue(adjNounTree.contains(subT));
+	// subT = new Tree<String>("indecisive battle");
+	// subT.addSubValue("indecisive");
+	// assertTrue(adjNounTree.contains(subT));
+	// subT = new Tree<String>("indecisive naval battle");
+	// subT.addSubValue("indecisive naval");
+	// assertTrue(adjNounTree.contains(subT));
+	//
+	// // Double NN
+	// sentence = "a figure skater";
+	// parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
+	// adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
+	// assertEquals(adjNounTree.size(), 2);
+	// assertTrue(adjNounTree.contains(new Tree<String>("skater")));
+	// assertTrue(adjNounTree.contains(new Tree<String>("figure skater")));
+	//
+	// // Double JJ + double NN
+	// sentence = "a former Swiss figure skater";
+	// parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
+	// adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
+	// assertEquals(adjNounTree.size(), 8);
+	// assertTrue(adjNounTree.contains(new Tree<String>("skater")));
+	// assertTrue(adjNounTree.contains(new Tree<String>("figure skater")));
+	// subT = new Tree<String>("Swiss skater");
+	// subT.addSubValue("Swiss");
+	// assertTrue(adjNounTree.contains(subT));
+	// subT = new Tree<String>("former skater");
+	// subT.addSubValue("former");
+	// assertTrue(adjNounTree.contains(subT));
+	// subT = new Tree<String>("former Swiss skater");
+	// subT.addSubValue("former Swiss");
+	// assertTrue(adjNounTree.contains(subT));
+	// subT = new Tree<String>("Swiss figure skater");
+	// subT.addSubValue("Swiss");
+	// assertTrue(adjNounTree.contains(subT));
+	// subT = new Tree<String>("former figure skater");
+	// subT.addSubValue("former");
+	// assertTrue(adjNounTree.contains(subT));
+	// subT = new Tree<String>("former Swiss figure skater");
+	// subT.addSubValue("former Swiss");
+	// assertTrue(adjNounTree.contains(subT));
+	//
+	// // Anchors
+	// sentence = "a professional football end";
+	// parse = SentenceParserHeuristic.parseLine(sentence).getChildren()[0];
+	// anchors.clear();
+	// anchors.put("end", "[[End (American football)|end]]");
+	// anchors.put("football", "[[American football|football]]");
+	// adjNounTree = sut_.composeAdjNounsTree(parse, anchors);
+	// assertEquals(adjNounTree.size(), 5);
+	// assertTrue(adjNounTree.contains(new Tree<String>(
+	// "[[American football|football]]")));
+	// assertTrue(adjNounTree.contains(new Tree<String>(
+	// "[[End (American football)|end]]")));
+	// assertTrue(adjNounTree
+	// .contains(new Tree<String>(
+	// "[[American football|football]] [[End (American football)|end]]")));
+	// subT = new Tree<String>("professional [[End (American football)|end]]");
+	// subT.addSubValue("professional");
+	// assertTrue(adjNounTree.contains(subT));
+	// subT = new Tree<String>(
+	// "professional [[American football|football]] [[End (American football)|end]]");
+	// subT.addSubValue("professional");
+	// assertTrue(adjNounTree.contains(subT));
+	// }
 }

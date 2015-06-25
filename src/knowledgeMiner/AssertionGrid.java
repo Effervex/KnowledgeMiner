@@ -191,11 +191,16 @@ public class AssertionGrid {
 
 		// Build the Assertion Queues
 		Collection<AssertionQueue> aqs = new ArrayList<>();
+		// Sum the weight of all aqs, using fractions for lower weights. Is <=
+		// aqs.size
+		float sumWeight = 0;
 		for (PartialAssertion pa : assertions) {
 			AssertionQueue aq = expandPartial(pa, ontology, wmi);
 			if (aq != null && !aq.isEmpty()) {
 				aq = (AssertionQueue) aq.cleanEmptyParents();
 				aqs.add(aq);
+				// TODO Sum the weight of the most likely element(s)
+				sumWeight += aq.getMaxWeight();
 			}
 		}
 
@@ -205,7 +210,7 @@ public class AssertionGrid {
 		// Iterate through
 		for (AssertionQueue aq : aqs)
 			recurseBuild(aq, 0, assertionGrid, weightGrid, proportion,
-					1f / aqs.size(), seedStack_);
+					1f / sumWeight, seedStack_);
 
 		assertionGrid_ = assertionGrid.toArray(new MinedAssertion[assertionGrid
 				.size()][]);
@@ -385,14 +390,15 @@ public class AssertionGrid {
 			}
 			assertionGrid.add(assertions);
 			weightGrid.add(weights);
-			proportion.add(fraction);
+			proportion.add(fraction * (float) aq.getMaxWeight());
 		}
 
 		// Recurse to lower AQs, offsetting
 		Set<AssertionQueue> subAssertionQueues = aq.getSubAssertionQueues();
-		for (AssertionQueue subAQ : subAssertionQueues)
+		for (AssertionQueue subAQ : subAssertionQueues) {
 			recurseBuild(subAQ, size + offset, assertionGrid, weightGrid,
 					proportion, fraction / subAssertionQueues.size(), coords);
+		}
 	}
 
 	private DisjointCase requestDisjointCase(OntologySocket ontology) {

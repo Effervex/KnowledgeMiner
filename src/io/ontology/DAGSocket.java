@@ -6,7 +6,6 @@ package io.ontology;
 import graph.core.DAGNode;
 import graph.core.cli.DAGPortHandler;
 import graph.inference.CommonQuery;
-import graph.module.NLPToSyntaxModule;
 import io.IOManager;
 
 import java.io.IOException;
@@ -623,8 +622,9 @@ public class DAGSocket extends OntologySocket {
 	@Override
 	public String query(String microtheory, Object... queryArgs) {
 		try {
+			// TODO Note that proveFail is always false here.
 			return command("query",
-					"(" + noNewLine(StringUtils.join(queryArgs, ' ')) + ")",
+					"F (" + noNewLine(StringUtils.join(queryArgs, ' ')) + ")",
 					true);
 		} catch (Exception e) {
 			logger_.error("query: {}, {}", Arrays.toString(queryArgs),
@@ -728,6 +728,28 @@ public class DAGSocket extends OntologySocket {
 	}
 
 	@Override
+	public void removeProperty(Object nodeEdge, boolean isNode, String propKey) {
+		StringBuilder buffer = new StringBuilder();
+		if (isNode)
+			buffer.append("N");
+		else
+			buffer.append("E");
+		buffer.append(" " + noNewLine(nodeEdge.toString()) + " \""
+				+ noNewLine(propKey) + "\"");
+
+		try {
+			command("removeprop", buffer.toString(), false);
+		} catch (Exception e) {
+			logger_.error("removeProperty: {}:{}={}, {}", nodeEdge, propKey,
+					Arrays.toString(e.getStackTrace()));
+			if (restartConnection()) {
+				removeProperty(nodeEdge, isNode, propKey);
+				canRestart_ = true;
+			}
+		}
+	}
+
+	@Override
 	public boolean unassert(String microtheory, int assertionID,
 			boolean forceRemove) {
 		try {
@@ -751,5 +773,44 @@ public class DAGSocket extends OntologySocket {
 	@Override
 	public boolean validConstantName(String cycTerm) {
 		return DAGNode.isValidName(cycTerm);
+	}
+
+	/**
+	 * Searches for all nodes with given property and key values.
+	 *
+	 * @param property
+	 *            The property key.
+	 * @param valueRegex
+	 *            The regex for value matching.
+	 * @return The collection of all concepts with the given key:value pair.
+	 */
+	public Collection<OntologyConcept> searchNodeProperty(String property,
+			String valueRegex) {
+		Collection<OntologyConcept> propNodes = new ArrayList<>();
+		try {
+			String result = command("searchprop", "N " + property + " F\n"
+					+ valueRegex, false);
+			String[] split = result.split("\\|");
+
+			for (int i = 1; i < split.length; i++) {
+				if (!split[i].startsWith("(")
+						&& !StringUtils.isNumeric(split[i]))
+					continue;
+				OntologyConcept concept = OntologyConcept
+						.parseArgument(split[i]);
+				if (concept != null)
+					propNodes.add(concept);
+			}
+		} catch (Exception e) {
+			logger_.error("searchNodeProperty: {}={}, {}", property,
+					valueRegex, Arrays.toString(e.getStackTrace()));
+			if (restartConnection()) {
+				Collection<OntologyConcept> result = searchNodeProperty(
+						property, valueRegex);
+				canRestart_ = true;
+				return result;
+			}
+		}
+		return propNodes;
 	}
 }

@@ -162,8 +162,8 @@ public class KnowledgeMinerPreprocessor {
 							&& ontology.getProperty(id, true,
 									DirectedAcyclicGraph.EPHEMERAL_MARK) == null
 							&& !ontology.evaluate(null,
-									CommonConcepts.ISA.getID(), constant,
-									CommonConcepts.PREDICATE.getID())) {
+									CommonConcepts.ISA.getID(),
+									constant, CommonConcepts.PREDICATE.getID())) {
 						PrecomputationTask preTask = new PrecomputationTask(
 								new ConceptModule(new OntologyConcept(constant,
 										id)), heuristics, taskType, this);

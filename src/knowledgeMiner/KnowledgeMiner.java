@@ -282,6 +282,7 @@ public class KnowledgeMiner {
 		seedIndex_ = startIndex;
 		endCount_ = end;
 		startTime_ = System.currentTimeMillis();
+		ConceptMiningTask.usingMinedProperty_ = false;
 
 		// Load up the executor with a list of article/concept IDs
 		ConceptModule cm = null;
@@ -291,7 +292,7 @@ public class KnowledgeMiner {
 			else if (resourceName.equals(RESOURCE_ONTOLOGY))
 				cm = readConcept();
 			if (cm != null)
-				processConcept(new ConceptMiningTask(cm));
+				processConcept(new ConceptMiningTask(cm, runID_));
 		} while (cm != null);
 
 		executor_.shutdown();
@@ -415,19 +416,11 @@ public class KnowledgeMiner {
 	 */
 	public static OntologyConcept getConceptMapping(int article,
 			OntologySocket ontology) {
-		byte state = ConceptMiningTask.getArticleState(article);
-		if (state == ConceptMiningTask.UNMAPPABLE_CURRENT
-				|| state == ConceptMiningTask.UNMAPPABLE_PRIOR)
-			return null;
-
 		// Query the ontology and find the mapping (if any)
 		int edgeID = ontology.findEdgeIDByArgs(
 				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getID(), null,
 				CycConstants.WIKI_VERSION.getID(), "\"" + article + "\"");
 		if (edgeID < 0) {
-			if (state == ConceptMiningTask.UNKNOWN)
-				ConceptMiningTask.setArticleState(article,
-						ConceptMiningTask.UNMAPPABLE_PRIOR, null);
 			return null;
 		}
 
@@ -516,7 +509,7 @@ public class KnowledgeMiner {
 			km.preprocess();
 
 		if (runID_ != -1)
-			readInOntologyMappings(runID_);
+			readInOntologyMappings();
 
 		// Link an input file to KM
 		String resourceName = RESOURCE_WIKIPEDIA;
@@ -528,16 +521,17 @@ public class KnowledgeMiner {
 	}
 
 	/**
-	 * Reads in all existing mappings for a given run ID and marks the concept
-	 * and article of the mapping as completed (so it will not be re-mapped). If
-	 * there exists a mapping, but it is of a different run ID, it will be
-	 * remapped. TODO Remove the old run's information.
+	 * Reads in existing run information for both concepts and articles such
+	 * that any future mapping processes with a lower/equal iteration are
+	 * skipped and later ones are run.
 	 */
-	public static void readInOntologyMappings(int runID) {
+	public static void readInOntologyMappings() {
 		System.out.println("Beginning preloading.");
 		DAGSocket ontology = (DAGSocket) ResourceAccess.requestOntologySocket();
-		String delimiter = "###";
-		String mapArgs = "getprop E $1 runID " + delimiter + " T";
+
+		// Search for all runIDs using mapping edges
+		String delimiter = "#";
+		String mapArgs = "getprop E $1 " + RUN_ID + " " + delimiter + " T";
 		String wikiEdges = "findedges "
 				+ CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getID() + " (1) "
 				+ CycConstants.WIKI_VERSION.getConceptName() + " (3)";
@@ -545,30 +539,29 @@ public class KnowledgeMiner {
 		try {
 			String result = ontology.command("map", mapArgs + "\n" + wikiEdges
 					+ "\n" + regEx, false);
-			if (result.isEmpty())
-				return;
 			String[] split = result.split(delimiter);
 			if (split.length > 0)
 				System.out.println("Preloading " + (split.length / 2)
 						+ " existing mappings.");
+			// Reading in each runID
 			for (int i = 0; i < split.length; i++) {
 				String inputID = split[i++].trim().substring(1);
 				String[] edgeRunSplit = split[i].trim().split("\\|");
-				if (edgeRunSplit[0].equals("1")
-						&& edgeRunSplit[1].equals(runID + "")) {
-					// Note the completed mapping
+				if (edgeRunSplit[0].equals("1")) {
 					String[] edgeArgs = ontology.findEdgeByID(Integer
 							.parseInt(inputID));
 					if (StringUtils.isNumeric(edgeArgs[1])) {
-						// Set the ontology state
-						int ontID = Integer.parseInt(edgeArgs[1]);
-						ConceptMiningTask.setConceptState(ontID,
-								ConceptMiningTask.MAPPED_CURRENT, null);
+						int mappingIter = Integer.parseInt(edgeRunSplit[1]);
+						if (mappingIter == 0)
+							continue;
+						int conceptID = Integer.parseInt(edgeArgs[1]);
+						ConceptMiningTask.setConceptState(conceptID,
+								mappingIter);
+
 						// Set the article state
 						int artID = Integer.parseInt(UtilityMethods
 								.shrinkString(edgeArgs[3], 1));
-						ConceptMiningTask.setArticleState(artID,
-								ConceptMiningTask.MAPPED_CURRENT, null);
+						ConceptMiningTask.setArticleState(artID, mappingIter);
 					}
 				}
 			}
@@ -607,5 +600,9 @@ public class KnowledgeMiner {
 			numComplete_++;
 		}
 
+	}
+
+	protected ThreadPoolExecutor getExecutor() {
+		return executor_;
 	}
 }

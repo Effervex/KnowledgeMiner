@@ -15,10 +15,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -50,7 +48,7 @@ import cyc.StringConcept;
  * @author Sam Sarjant
  */
 public class ConceptMiningTask implements Runnable {
-	private static final int BIG_ENOUGH = 40000000;
+	private static final int BIG_ENOUGH = 10000000;
 
 	/** The chance that a child is created. */
 	private static final float CHILD_CREATION_THRESHOLD = .1f;
@@ -58,16 +56,11 @@ public class ConceptMiningTask implements Runnable {
 	private final static Logger logger_ = LoggerFactory
 			.getLogger(ConceptMiningTask.class);
 
-	/** Mappings from an indexed concept (ID) to a given article. */
-	private static byte[] ontologyStates_ = new byte[BIG_ENOUGH];
-
 	/** Mappings from an indexed article to a given ontology (ID). */
-	private static byte[] artStates_ = new byte[BIG_ENOUGH];
+	private static int[] artStates_ = new int[BIG_ENOUGH];
 
-	static final byte MAPPED_CURRENT = 2;
-	static final byte PENDING = 1;
-	static final byte UNKNOWN = 0;
-	static final byte UNMAPPABLE_CURRENT = -2;
+	/** Mappings from an indexed concept (ID) to a given article. */
+	private static int[] ontologyStates_ = new int[BIG_ENOUGH];
 
 	static final byte UNMAPPABLE_PRIOR = -1;
 
@@ -80,8 +73,13 @@ public class ConceptMiningTask implements Runnable {
 	/** The frequency at which the output files are updated. */
 	public static final int UPDATE_INTERVAL = 100;
 
+	public static boolean usingMinedProperty_ = false;
+
 	/** A collection for keeping track of all asserted conceptModules. */
 	private Collection<ConceptModule> assertedConcepts_;
+
+	/** The iteration flag to run this task with. */
+	private int iteration_;
 
 	/** The KnowledgeMiner core. */
 	private KnowledgeMiner km_;
@@ -103,6 +101,7 @@ public class ConceptMiningTask implements Runnable {
 	private ConceptMiningTask() {
 		processables_ = new TreeSet<>();
 		km_ = KnowledgeMiner.getInstance();
+		iteration_ = KnowledgeMiner.runID_;
 	}
 
 	/**
@@ -112,41 +111,13 @@ public class ConceptMiningTask implements Runnable {
 	 * @param conceptModule
 	 *            The initial concept module to begin with. Should only be a
 	 *            term/article to map.
+	 * @param runIteration
+	 *            The iteration to run the mappings in.
 	 */
-	public ConceptMiningTask(ConceptModule conceptModule) {
+	public ConceptMiningTask(ConceptModule conceptModule, int runIteration) {
 		this();
 		processables_.add(conceptModule);
-	}
-
-	/**
-	 * Constructor for a new ConceptMiningTask with a single Cyc Term to begin
-	 * with.
-	 * 
-	 * @param conceptModule
-	 *            The initial concept module to begin with. Should only be a
-	 *            term/article to map.
-	 * @param trackAssertedConcepts
-	 *            If the asserted concepts should be tracked.
-	 */
-	public ConceptMiningTask(ConceptModule conceptModule,
-			boolean trackAssertedConcepts) {
-		this(conceptModule);
-		trackAsserted_ = trackAssertedConcepts;
-	}
-
-	/**
-	 * Constructor for a new ConceptMiningTask.
-	 * 
-	 * @param mapped
-	 *            The {@link ConceptModule}s to process.
-	 * @param cyc
-	 *            The Cyc access.
-	 * @param wikipedia
-	 *            The WMI access.
-	 */
-	public ConceptMiningTask(SortedSet<ConceptModule> mapped) {
-		this();
-		processables_ = mapped;
+		iteration_ = runIteration;
 	}
 
 	/**
@@ -227,48 +198,12 @@ public class ConceptMiningTask implements Runnable {
 			processables_.addAll(mappedMappings.values());
 	}
 
-	private boolean checkAvailability(SortedSet<ConceptModule> allResults,
-			ConceptModule cm, Set<Integer> pendingArts,
-			Set<Integer> pendingConcepts) {
-		if (cm.getArticle() != -1) {
-			if (getArticleState(cm.getArticle()) != UNKNOWN
-					&& getArticleState(cm.getArticle()) != UNMAPPABLE_PRIOR) {
-				logger_.trace("Article " + cm + " currently/already mapped!");
-				return false;
-			}
-			setArticleState(cm.getArticle(), PENDING, pendingArts);
-		}
-		if (cm.getConcept() != null) {
-			if (getConceptState(cm.getConcept()) != UNKNOWN
-					&& getConceptState(cm.getConcept()) != UNMAPPABLE_PRIOR) {
-				logger_.trace("Concept " + cm + " currently/already mapped!");
-				return false;
-			}
-			setConceptState(cm.getConcept().getID(), PENDING, pendingConcepts);
-		}
-		return true;
-	}
-
-	private void cleanupPending(Set<Integer> pendingArts,
-			Set<Integer> pendingConcepts) {
-		for (Integer pendingArt : pendingArts.toArray(new Integer[pendingArts
-				.size()])) {
-			logger_.trace("Loose pending article " + pendingArt + ".");
-			setArticleState(pendingArt, UNKNOWN, pendingArts);
-		}
-		for (Integer pendingConcept : pendingConcepts
-				.toArray(new Integer[pendingConcepts.size()])) {
-			logger_.trace("Loose pending concept " + pendingConcept + ".");
-			setConceptState(pendingConcept, UNKNOWN, pendingConcepts);
-		}
-	}
-
 	private boolean containsCompleted(ConceptModule concept) {
 		if (concept.getArticle() != -1
-				&& isProcessed(concept.getArticle(), artStates_))
+				&& isArticleProcessed(concept.getArticle()))
 			return true;
 		if (concept.getConcept() != null && concept.getConcept().getID() >= 0
-				&& isProcessed(concept.getConcept().getID(), ontologyStates_))
+				&& isConceptProcessed(concept.getConcept()))
 			return true;
 		return false;
 	}
@@ -300,9 +235,54 @@ public class ConceptMiningTask implements Runnable {
 		return null;
 	}
 
-	private boolean isProcessed(Integer index, byte[] stateArray) {
-		return getState(index, stateArray) == MAPPED_CURRENT
-				|| getState(index, stateArray) == UNMAPPABLE_CURRENT;
+	/**
+	 * Checks if an article is mapped to a concept that does not need to be
+	 * reprocessed.
+	 *
+	 * @param article
+	 *            The article to check.
+	 * @return True if the article does not need to be reprocessed.
+	 */
+	private boolean isArticleProcessed(Integer article) {
+		if (article < 0 || iteration_ < 0)
+			return false;
+		int iter = getState(article, artStates_);
+		if (iter != 0)
+			return iter >= iteration_;
+		OntologyConcept concept = KnowledgeMiner.getConceptMapping(article,
+				ontology_);
+		if (concept != null) {
+			boolean result = isConceptProcessed(concept);
+			setArticleState(article, getState(concept.getID(), ontologyStates_));
+			return result;
+		}
+		return false;
+	}
+
+	/**
+	 * Checks the concept properties to see if it does not need to currently be
+	 * reprocessed.
+	 *
+	 * @param concept
+	 *            The concept to check.
+	 * @return True if the concept does not need to be reprocessed.
+	 */
+	private boolean isConceptProcessed(OntologyConcept concept) {
+		int conceptID = concept.getID();
+		if (conceptID < 0 || iteration_ < 0)
+			return false;
+		int iter = getState(conceptID, ontologyStates_);
+		if (iter == 0) {
+			String strIteration = ontology_.getProperty(concept, true,
+					KnowledgeMiner.RUN_ID);
+			if (strIteration == null)
+				return false;
+			else {
+				iter = Short.parseShort(strIteration);
+				setConceptState(conceptID, iter);
+			}
+		}
+		return iter >= iteration_;
 	}
 
 	/**
@@ -336,8 +316,7 @@ public class ConceptMiningTask implements Runnable {
 	 *            The pending concepts to notify if the state of the concept
 	 *            changes.
 	 */
-	private void runInternal(ConceptModule cm, boolean singleMapping,
-			Set<Integer> pendingArts, Set<Integer> pendingConcepts) {
+	private void runInternal(ConceptModule cm, boolean singleMapping) {
 		try {
 			logger_.info(cm.toFlatString());
 			km_.getInterface().update(cm, processables_);
@@ -368,7 +347,7 @@ public class ConceptMiningTask implements Runnable {
 				break;
 			case CONSISTENT:
 				// If reverse-mapped: Assert & initiate sibling search
-				assertConcept(cm, pendingArts, pendingConcepts);
+				assertConcept(cm);
 				break;
 			default:
 				break;
@@ -424,21 +403,13 @@ public class ConceptMiningTask implements Runnable {
 		}
 
 		// Stop on completed articles/concepts (from this run)
-		if (concept.getArticle() != -1
-				&& isProcessed(concept.getArticle(), artStates_)) {
-			// If the concept produced the article, it has already mapped and
-			// should be skipped
-			// if (concept.isCycToWiki() && concept.isMapped())
-			return true;
-			// concept.removeArticle();
+		if (concept.getConcept() != null) {
+			if (isConceptProcessed(concept.getConcept()))
+				return true;
 		}
-		if (concept.getConcept() != null
-				&& isProcessed(concept.getConcept().getID(), ontologyStates_)) {
-			// If the article produced the concept, it has already mapped and
-			// should be skipped
-			// if (!concept.isCycToWiki() && concept.isMapped())
-			return true;
-			// concept.removeConcept();
+		if (concept.getArticle() != -1) {
+			if (isArticleProcessed(concept.getArticle()))
+				return true;
 		}
 
 		// If neither article nor concept, remove this
@@ -460,15 +431,13 @@ public class ConceptMiningTask implements Runnable {
 	 *            The pending concepts set to remove the assertion from.
 	 * @return If the assertion was successful.
 	 */
-	protected boolean assertConcept(ConceptModule concept,
-			Set<Integer> pendingArts, Set<Integer> pendingConcepts) {
+	protected boolean assertConcept(ConceptModule concept) {
 		try {
 			synchronized (this) {
 				if (containsCompleted(concept))
 					return false;
 				// Get concept ID and record processed
-				setArticleState(concept.getArticle(), MAPPED_CURRENT,
-						pendingArts);
+				setArticleState(concept.getArticle(), iteration_);
 
 				// If a created concept
 				if (concept.isCreatedConcept()) {
@@ -478,21 +447,27 @@ public class ConceptMiningTask implements Runnable {
 							|| concept.getConcreteParentageAssertions()
 									.isEmpty()) {
 						// TODO Don't bother with only Individual/Collection
-						setArticleState(concept.getArticle(),
-								UNMAPPABLE_CURRENT, pendingArts);
 						return false;
 					}
 				} else if (concept.getConcept().getID() < 0) {
 					// No unreifiable mappings
-					setArticleState(concept.getArticle(), UNMAPPABLE_CURRENT,
-							pendingArts);
 					return false;
 				}
 
 				// Create any new concepts
 				concept.findCreateConcept(ontology_);
-				setConceptState(concept.getConcept().getID(), MAPPED_CURRENT,
-						pendingConcepts);
+				setConceptState(concept.getConcept().getID(), iteration_);
+
+				// Note mining details on node
+				if (iteration_ != -1) {
+					int newIter = 0;
+					String oldIter = ontology_.getProperty(
+							concept.getConcept(), true, KnowledgeMiner.RUN_ID);
+					if (oldIter != null)
+						newIter = Integer.parseInt(oldIter);
+					ontology_.setProperty(concept.getConcept(), true,
+							KnowledgeMiner.RUN_ID, "" + (newIter + 1));
+				}
 			}
 			// Firstly, record the mapping
 			String articleTitle = wmi_.getPageTitle(concept.getArticle(), true);
@@ -671,7 +646,8 @@ public class ConceptMiningTask implements Runnable {
 		for (Integer childArt : children) {
 			ConceptModule cm = new ConceptModule(childArt, parents,
 					autoAssertions);
-			ConceptMiningTask childTask = new ConceptMiningTask(cm);
+			ConceptMiningTask childTask = new ConceptMiningTask(cm,
+					KnowledgeMiner.runID_);
 			km_.processConcept(childTask);
 		}
 	}
@@ -690,11 +666,13 @@ public class ConceptMiningTask implements Runnable {
 		wmi_ = ResourceAccess.requestWMISocket();
 		ontology_ = ResourceAccess.requestOntologySocket();
 
-		Set<Integer> pendingArts = new HashSet<>();
-		Set<Integer> pendingConcepts = new HashSet<>();
-		// If the concept/article is unavailable, exit
-		if (!checkAvailability(allResults, cm, pendingArts, pendingConcepts))
-			return;
+		// Get iteration for concept
+		OntologyConcept concept = cm.getConcept();
+		String origIteration = null;
+		if (concept != null) {
+			origIteration = ontology_.getProperty(concept, true,
+					KnowledgeMiner.RUN_ID);
+		}
 
 		ConceptModule original = cm;
 		do {
@@ -723,8 +701,7 @@ public class ConceptMiningTask implements Runnable {
 			// If about to assert when we already have an answer, skip it
 			if (cm.getState() != MiningState.CONSISTENT || allResults.isEmpty()) {
 				// Selects a particular process to run, advancing the state.
-				runInternal(cm, tempSingleMapping, pendingArts, pendingConcepts);
-				// System.out.println(processables_.size());
+				runInternal(cm, tempSingleMapping);
 
 				// If the original concept, add it to the results.
 				if (cm.getState().equals(MiningState.ASSERTED)
@@ -738,14 +715,26 @@ public class ConceptMiningTask implements Runnable {
 		} while (!processables_.isEmpty()
 				&& !(singleMapping && !allResults.isEmpty()));
 
+		// Mark the input as completed.
+		if (concept != null) {
+			String strIteration = ontology_.getProperty(concept, true,
+					KnowledgeMiner.RUN_ID);
+			if (strIteration == null || strIteration.equals(origIteration)) {
+				int iteration = (strIteration == null) ? 0 : Integer
+						.parseInt(strIteration);
+				ontology_.setProperty(concept, true, KnowledgeMiner.RUN_ID, ""
+						+ (iteration + 1));
+			}
+		}
+
 		// Flush the interface
 		if (InteractiveMode.interactiveMode_)
 			interactiveInterface_.saveEvaluations();
 		km_.getInterface().flush();
+	}
 
-		// Clean up any loose pending articles (theoretically shouldn't
-		// happen).
-		cleanupPending(pendingArts, pendingConcepts);
+	public void setTrackAsserted(boolean trackAsserted) {
+		trackAsserted_ = trackAsserted;
 	}
 
 	@Override
@@ -795,7 +784,8 @@ public class ConceptMiningTask implements Runnable {
 			String map = in.readLine().trim();
 			ConceptModule cm = parseConceptModule(map, cmt.wmi_, cmt.ontology_);
 			if (cm != null) {
-				cmt = new ConceptMiningTask(cm, true);
+				cmt = new ConceptMiningTask(cm, KnowledgeMiner.runID_);
+				cmt.setTrackAsserted(true);
 				cmt.run(true);
 				System.out.println(cmt.getAssertedConcepts());
 				// cmt.run();
@@ -1012,11 +1002,13 @@ public class ConceptMiningTask implements Runnable {
 		return new OntologyConcept(name);
 	}
 
-	public static byte getArticleState(int article) {
+	public static int getArticleState(int article) {
+		// TODO Read iter state from concept
 		return getState(article, artStates_);
 	}
 
-	public static byte getConceptState(OntologyConcept concept) {
+	public static int getConceptState(OntologyConcept concept) {
+		// TODO Read iter state from concept
 		return getState(concept.getID(), ontologyStates_);
 	}
 
@@ -1033,11 +1025,11 @@ public class ConceptMiningTask implements Runnable {
 	 *            If we only check current states.
 	 * @return The state of the indexed thing.
 	 */
-	public static byte getState(int index, byte[] array) {
+	public static int getState(int index, int[] array) {
 		if (index < 0)
-			return UNKNOWN;
+			return -1;
 		if (index >= array.length)
-			return UNKNOWN;
+			return -1;
 		return array[index];
 	}
 
@@ -1063,8 +1055,7 @@ public class ConceptMiningTask implements Runnable {
 				} else if (args[i].equals("-r")) {
 					i++;
 					KnowledgeMiner.runID_ = Integer.parseInt(args[i]);
-					KnowledgeMiner
-							.readInOntologyMappings(KnowledgeMiner.runID_);
+					KnowledgeMiner.readInOntologyMappings();
 				} else {
 					if (article == null)
 						article = new StringBuilder(args[i]);
@@ -1081,7 +1072,8 @@ public class ConceptMiningTask implements Runnable {
 					int artID = ResourceAccess.requestWMISocket()
 							.getArticleByTitle(article.toString());
 					ConceptModule cm = new ConceptModule(artID);
-					ConceptMiningTask cmt = new ConceptMiningTask(cm);
+					ConceptMiningTask cmt = new ConceptMiningTask(cm,
+							KnowledgeMiner.runID_);
 					cmt.run();
 					break;
 				} else {
@@ -1143,7 +1135,7 @@ public class ConceptMiningTask implements Runnable {
 				return cm;
 			} catch (Exception e) {
 			}
-			
+
 			try {
 				int articleID = wmi.getArticleByTitle(term);
 				cm = new ConceptModule(articleID);
@@ -1171,20 +1163,13 @@ public class ConceptMiningTask implements Runnable {
 	 *            The optional set of pending articles to modify. Use this if
 	 *            keeping track of articles currently being mapped.
 	 */
-	public static void setArticleState(int article, byte state,
-			Set<Integer> pendingArts) {
+	public static void setArticleState(int article, int state) {
 		if (article == -1)
 			return;
 		if (article >= artStates_.length)
 			artStates_ = Arrays.copyOf(artStates_, artStates_.length * 2);
 
 		artStates_[article] = state;
-		if (pendingArts != null) {
-			if (state == PENDING)
-				pendingArts.add(article);
-			else
-				pendingArts.remove(article);
-		}
 		logger_.trace("Set article state to {} for {}.", state, article);
 	}
 
@@ -1204,8 +1189,7 @@ public class ConceptMiningTask implements Runnable {
 	 *            The optional set of pending concepts to modify. Use this if
 	 *            keeping track of concepts currently being mapped.
 	 */
-	public static void setConceptState(Integer concept, byte state,
-			Set<Integer> pendingConcepts) {
+	public static void setConceptState(Integer concept, int state) {
 		if (concept.intValue() < 0)
 			return;
 		if (concept >= ontologyStates_.length)
@@ -1213,12 +1197,6 @@ public class ConceptMiningTask implements Runnable {
 					ontologyStates_.length * 2);
 
 		ontologyStates_[concept.intValue()] = state;
-		if (pendingConcepts != null) {
-			if (state == PENDING)
-				pendingConcepts.add(concept);
-			else
-				pendingConcepts.remove(concept);
-		}
 		logger_.trace("Set concept state to {} for {}.", state, concept);
 	}
 }

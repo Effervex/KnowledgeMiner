@@ -78,6 +78,9 @@ public class ConceptModule extends MinedInformation implements
 	/** The weight of the mapping between the concept and article [0-1] */
 	protected float miningWeight_ = 1;
 
+	/** If, after processing, this concept module imposed significant changes. */
+	private boolean significantChange_ = false;
+
 	/**
 	 * Constructor for a new ConceptModule using just an article ID.
 	 * 
@@ -264,7 +267,8 @@ public class ConceptModule extends MinedInformation implements
 	 */
 	private void makeWikiMappingAssertions(String articleTitle,
 			OntologySocket ontology) throws Exception {
-		String strURL = WMISocket.getArticleURL(articleTitle, WMISocket.WIKIPEDIA_URL);
+		String strURL = WMISocket.getArticleURL(articleTitle,
+				WMISocket.WIKIPEDIA_URL);
 
 		// TODO Unassert any old Wiki mappings (unless they are the same as
 		// this)
@@ -327,6 +331,7 @@ public class ConceptModule extends MinedInformation implements
 	 */
 	protected void performAssertionRemoval(OntologySocket ontology) {
 		for (DefiniteAssertion assertion : deletedAssertions_) {
+			significantChange_ = true;
 			int assertionID = ontology.findEdgeIDByArgs((Object[]) assertion
 					.asArgs());
 			if (ontology.unassert(null, assertionID, false)) {
@@ -444,11 +449,16 @@ public class ConceptModule extends MinedInformation implements
 
 		// Disambiguate the assertions.
 		dd_.findMaximalConjoint(this, ontology);
+		miningWeight_ = dd_.getConjointWeight();
+		if (miningWeight_ > 1) {
+			LoggerFactory.getLogger(this.getClass()).error(
+					"Mining Weight exceeded 1.0 for {}", this.toFlatString());
+			miningWeight_ = 1;
+		}
 		for (DefiniteAssertion assertion : dd_.getConsistentAssertions())
 			addAssertion(assertion);
 		for (DefiniteAssertion assertion : dd_.getRemovedAssertions())
 			addDeletedAssertion(assertion);
-		miningWeight_ = dd_.getConjointWeight();
 		try {
 			if (createdConcept_) {
 				if (dd_.isCollection())
@@ -590,6 +600,10 @@ public class ConceptModule extends MinedInformation implements
 		return articleID_ != -1 && concept_ != null;
 	}
 
+	public boolean isSignificantlyChanged() {
+		return significantChange_;
+	}
+
 	/**
 	 * Make the assertions contained within this ConceptModule.
 	 * 
@@ -600,10 +614,17 @@ public class ConceptModule extends MinedInformation implements
 	public void makeAssertions(String articleTitle, OntologySocket ontology)
 			throws Exception {
 		// Assert type
-		if (createdConcept_)
+		int numAssertions = 0;
+		if (createdConcept_) {
 			new DefiniteAssertion(CycConstants.ISA.getConcept(),
 					CycConstants.BASE_MICROTHEORY.getConceptName(), null,
 					concept_, type_).makeAssertion(concept_, ontology);
+			significantChange_ = true;
+		} else {
+			// Count the number of assertions
+			numAssertions = ontology.getAllAssertions(concept_, 2,
+					CommonConcepts.REMOVED).size();
+		}
 
 		if (!KnowledgeMiner.mappingRun_) {
 			// Perform the removals
@@ -615,6 +636,9 @@ public class ConceptModule extends MinedInformation implements
 			// Perform auto-assertions
 			performAutoAssertions(ontology);
 		}
+		if (!significantChange_)
+			significantChange_ = ontology.getAllAssertions(concept_, 2,
+					CommonConcepts.REMOVED).size() != numAssertions;
 
 		makeWikiMappingAssertions(articleTitle, ontology);
 		DefiniteAssertion weightAssertion = new DefiniteAssertion(
@@ -667,7 +691,7 @@ public class ConceptModule extends MinedInformation implements
 		cycToWiki_ = false;
 		mappingWeight_ = 1;
 		disambiguated_ = false;
-		getConcreteAssertions().removeAll(getConcreteParentageAssertions());
+		getConcreteAssertions().clear();
 		getConcreteParentageAssertions().clear();
 	}
 

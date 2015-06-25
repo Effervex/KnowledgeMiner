@@ -41,7 +41,13 @@ public class RippleTask implements Callable<Collection<ConceptModule>> {
 	@Override
 	public Collection<ConceptModule> call() throws Exception {
 		// Run the concept mapping
-		ConceptMiningTask cmt = new ConceptMiningTask(cm_, true);
+		int iteration = 0;
+		if (cm_.getConcept() != null)
+			iteration = ConceptMiningTask.getConceptState(cm_.getConcept());
+		else
+			iteration = ConceptMiningTask.getArticleState(cm_.getArticle());
+		ConceptMiningTask cmt = new ConceptMiningTask(cm_, iteration + 1);
+		cmt.setTrackAsserted(true);
 		cmt.run();
 
 		// Add new ripples if this is not at the limit

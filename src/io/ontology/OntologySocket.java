@@ -215,6 +215,9 @@ public abstract class OntologySocket extends KMSocket {
 	public abstract void setProperty(Object nodeEdge, boolean isNode,
 			String propKey, String propValue);
 
+	public abstract void removeProperty(Object nodeEdge, boolean isNode,
+			String propKey);
+
 	public String toNormalFormat(String term) {
 		return NLPToStringModule.conceptToPlainText(term);
 	}

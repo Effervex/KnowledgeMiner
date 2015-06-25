@@ -35,7 +35,7 @@ public class StanfordNLP {
 	}
 
 	public Tree apply(List<String> words) {
-		return lp_.apply(words);
+		return lp_.parseStrings(words);
 	}
 
 	/**
@@ -46,7 +46,7 @@ public class StanfordNLP {
 	 * @return The Tree representing the output parsing.
 	 */
 	public Tree apply(String sentence) {
-		return lp_.apply(sentence);
+		return lp_.parse(sentence);
 	}
 
 	/**
@@ -111,7 +111,7 @@ public class StanfordNLP {
 		String[] roots = new String[rootDeps.size()];
 		int i = 0;
 		for (TypedDependency td : rootDeps)
-			roots[i] = td.dep().nodeString();
+			roots[i] = td.dep().word();
 		return roots;
 	}
 
@@ -128,8 +128,8 @@ public class StanfordNLP {
 		MultiMap<String, TypedDependency> wordDependencies = MultiMap
 				.createListMultiMap();
 		for (TypedDependency typeDep : structure.typedDependenciesCCprocessed()) {
-			wordDependencies.put(typeDep.dep().toOneLineString(), typeDep);
-			wordDependencies.put(typeDep.gov().toOneLineString(), typeDep);
+			wordDependencies.put(typeDep.dep().toString(), typeDep);
+			wordDependencies.put(typeDep.gov().toString(), typeDep);
 		}
 		return wordDependencies;
 	}

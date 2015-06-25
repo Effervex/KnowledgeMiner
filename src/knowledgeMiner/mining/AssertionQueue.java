@@ -3,6 +3,7 @@
  ******************************************************************************/
 package knowledgeMiner.mining;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Queue;
@@ -132,5 +133,30 @@ public class AssertionQueue extends HierarchicalWeightedSet<MinedAssertion>
 		MinedAssertion assertion = element();
 		remove(assertion);
 		return assertion;
+	}
+
+	@Override
+	public double getMaxWeight() {
+		float maxWeight = 0;
+		if (size() == 0) {
+			// Check for lower queues
+			if (hasSubSets()) {
+				Collection<AssertionQueue> lowers = getSubAssertionQueues();
+				// Weight is now the average of the weights of the lower queues
+				int count = 0;
+				for (AssertionQueue lowerAQ : lowers) {
+					if (!lowerAQ.isEmpty()) {
+						maxWeight += lowerAQ.getMaxWeight();
+						count++;
+					}
+				}
+				if (count > 0)
+					return maxWeight / count;
+			}
+		} else {
+			// Return the max weight in this set.
+			return super.getMaxWeight();
+		}
+		return Integer.MIN_VALUE;
 	}
 }

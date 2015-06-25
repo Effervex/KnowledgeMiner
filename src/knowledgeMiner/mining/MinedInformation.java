@@ -4,6 +4,7 @@
 package knowledgeMiner.mining;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -35,10 +36,10 @@ public class MinedInformation implements Mergeable<MinedInformation>,
 	 * The assertions that are non-refutable and the selected disambiguated
 	 * assertions.
 	 */
-	private Collection<DefiniteAssertion> concreteAssertions_ = new HashSet<>();
+	private Collection<DefiniteAssertion> concreteAssertions_ = new ArrayList<>();
 
 	/** The assertions to make during disjointness disambiguation. */
-	private Collection<DefiniteAssertion> concreteParentageAssertions_ = new HashSet<>();
+	private Collection<DefiniteAssertion> concreteParentageAssertions_ = new ArrayList<>();
 
 	/**
 	 * If there are any assertions that COULD be resolved as parentage

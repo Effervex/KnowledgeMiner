@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import util.Tree;
 import util.text.OpenNLP;
+import util.text.StanfordNLP;
 import util.wikipedia.WikiParser;
 import cyc.AssertionArgument;
 import cyc.CycConstants;
@@ -52,34 +53,66 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 			Pattern.compile("^In [^,.]+, "),
 			Pattern.compile("(?<=[^,.]+), [^,.]+,(?= (is|was|are|were))") };
 	public static final String SENTENCE_PREFIX = "TOPICS is a ";
+	public static final int STANFORD_NLP = 1;
+	public static final int OPEN_NLP = 0;
+	/** The type of parser currently being used. */
+	public static int parser_ = STANFORD_NLP;
 
 	public SentenceParserHeuristic(CycMapper mapper, CycMiner miner) {
 		super(false, mapper, miner);
-		OpenNLP.getParser();
+		if (parser_ == STANFORD_NLP)
+			StanfordNLP.getInstance();
+		else
+			OpenNLP.getParser();
 	}
 
-	private String disambiguateTree(Parse parse, String[] predicateStrs,
+	/**
+	 * Disambiguates a parse tree recursively, by working it's way down through
+	 * NP, VP and PP and combining them into a semi-coherent assertion.
+	 * 
+	 * This is the Stanford Parser version.
+	 *
+	 * @param parse
+	 *            The parse to traverse.
+	 * @param predicateStrs
+	 *            The current predicate strings.
+	 * @param focusConcept
+	 *            The focus concept to record in the assertions.
+	 * @param anchors
+	 *            The anchor text to add back in.
+	 * @param heuristic
+	 *            The heuristic that triggered this call.
+	 * @param results
+	 *            The results to add to.
+	 * @param wmi
+	 *            The WMI access.
+	 * @param ontology
+	 *            The ontology access.
+	 * @return The string represented by this tree.
+	 * @throws Exception
+	 *             Should something go awry...
+	 */
+	private String disambiguateTree(Object parse, String[] predicateStrs,
 			MappableConcept focusConcept, SortedMap<String, String> anchors,
-			WMISocket wmi, OntologySocket cyc, MiningHeuristic heuristic,
-			Collection<PartialAssertion> results) throws Exception {
+			MiningHeuristic heuristic, Collection<PartialAssertion> results,
+			WMISocket wmi, OntologySocket ontology) throws Exception {
 		if (predicateStrs == null) {
 			predicateStrs = new String[1];
 			predicateStrs[0] = "";
 		}
 
-		Parse[] children = parse.getChildren();
-		String type = parse.getType();
-		String text = parse.getCoveredText();
+		Object[] children = getChildren(parse);
+		String type = getType(parse);
 
 		// No children? Return value
 		if (children.length == 0)
-			return text;
+			return getCoveredText(parse);
 
 		// Recurse to 'left'
 		int childIndex = 0;
 		String left = disambiguateTree(children[childIndex++],
 				Arrays.copyOf(predicateStrs, predicateStrs.length),
-				focusConcept, anchors, wmi, cyc, heuristic, results);
+				focusConcept, anchors, heuristic, results, wmi, ontology);
 
 		// If VP or PP, add to predicate
 		boolean canCreate = true;
@@ -99,13 +132,12 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 			canCreate = false;
 
 		for (; childIndex < children.length; childIndex++) {
-			Parse childParse = children[childIndex];
+			Object childParse = children[childIndex];
 			String result = disambiguateTree(childParse,
 					Arrays.copyOf(predicateStrs, predicateStrs.length),
-					focusConcept, anchors, wmi, cyc, heuristic, results);
-			if (result == null) {
+					focusConcept, anchors, heuristic, results, wmi, ontology);
+			if (result == null)
 				canCreate = false;
-			}
 		}
 
 		if (type.equals("VP") || type.equals("PP"))
@@ -120,8 +152,8 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 				} else {
 					// TODO Figure out a safe way to parse predicates. Probably
 					// need to look at the parse code again.
-					predStr = reAnchorString(predStr, anchors);
-					predicate = new TextMappedConcept(predStr, true, true);
+					// predStr = reAnchorString(predStr, anchors);
+					// predicate = new TextMappedConcept(predStr, true, true);
 				}
 
 				if (predicate == null)
@@ -130,12 +162,13 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 				// Return the possible noun strings
 				Collection<Tree<String>> nounStrs = composeAdjNounsTree(parse,
 						anchors);
+
 				logger_.trace("createAssertions: " + predicate.toString() + " "
 						+ nounStrs.toString().replaceAll("\\\\\n", " "));
 
 				// Recurse through the tree and build the partial assertions
 				HeuristicProvenance provenance = new HeuristicProvenance(
-						heuristic, predStr + "+" + text);
+						heuristic, predStr + "+" + getCoveredText(parse));
 				Collection<PartialAssertion> currAssertions = recurseStringTree(
 						predicate, focusConcept, nounStrs, provenance);
 
@@ -151,7 +184,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 		if (!canCreate)
 			return null;
 
-		return text;
+		return getCoveredText(parse);
 	}
 
 	/**
@@ -196,16 +229,15 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 * @return A collection of possible mappable entities composed of at least
 	 *         one noun and possible adjectives (with sub-adjectives).
 	 */
-	private Collection<Tree<String>> pairNounAdjs(Parse parse,
+	private Collection<Tree<String>> pairNounAdjs(Object parse,
 			SortedMap<String, String> anchors,
 			Map<String, Tree<String>> existingAnchorTrees) {
 		Collection<Tree<String>> results = new ArrayList<>();
 		boolean createNewNounSet = false;
 		ArrayList<String> nounPhrases = new ArrayList<>();
-		Parse[] children = parse.getChildren();
+		Object[] children = getChildren(parse);
 		for (int i = children.length - 1; i >= 0; i--) {
-			String childType = children[i].getType();
-			String childText = children[i].getCoveredText();
+			String childType = getType(children[i]);
 			if (childType.startsWith("NN") || childType.equals("NP")) {
 				// Note the noun, adding it to the front of the existing NP.
 				if (createNewNounSet)
@@ -214,7 +246,8 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 				if (!nounPhrases.isEmpty())
 					existingNounPhrase = nounPhrases
 							.get(nounPhrases.size() - 1);
-				String np = (childText + " " + existingNounPhrase).trim();
+				String np = (getCoveredText(children[i]) + " " + existingNounPhrase)
+						.trim();
 				nounPhrases.add(np);
 
 				// Add to the tree (if not a pure anchor)
@@ -226,12 +259,12 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 				if (!nounPhrases.isEmpty()) {
 					// For every nounPhrase
 					StringBuilder adjective = new StringBuilder();
-					for (int j = i; children[j].getType().startsWith("JJ")
-							|| children[j].getType().equals("ADJP"); j++) {
+					for (int j = i; getType(children[j]).startsWith("JJ")
+							|| getType(children[j]).equals("ADJP"); j++) {
 						// Build adjective combinations
 						if (adjective.length() != 0)
 							adjective.append(" ");
-						adjective.append(children[j].getCoveredText());
+						adjective.append(getCoveredText(children[j]));
 						for (String np : nounPhrases) {
 							// Create the tree (with sub adjective tree)
 							String adjNP = adjective + " " + np;
@@ -335,9 +368,9 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 * @return A Hierarchical Weighted Set of strings representing the order of
 	 *         strings that should be attempted to assert.
 	 */
-	public Collection<Tree<String>> composeAdjNounsTree(Parse parse,
+	public Collection<Tree<String>> composeAdjNounsTree(Object parse,
 			SortedMap<String, String> anchors) {
-		String text = parse.getCoveredText();
+		String text = getCoveredText(parse);
 		Collection<Tree<String>> results = new ArrayList<>();
 
 		// Add all visible anchors
@@ -350,7 +383,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 		results.addAll(pairNounAdjs(parse, anchors, anchorMap));
 		return results;
 	}
-	
+
 	/**
 	 * Extracts a set of assertions from a sentence using parsing techniques to
 	 * identify plain-text assertions.
@@ -375,8 +408,8 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 			OntologySocket cyc, MiningHeuristic heuristic) throws Exception {
 		logger_.trace("mineSentence: " + sentence);
 
-		// if (wikifyText)
-		sentence = wmi.annotate(sentence, 0, false);
+//		if (wikifyText)
+			sentence = wmi.annotate(sentence, 0, false);
 
 		Map<String, Double> anchorWeights = new HashMap<>();
 		SortedMap<String, String> anchors = locateAnchors(sentence,
@@ -385,15 +418,16 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 		sentence = sentence.replaceAll("\\?{2,}", "");
 		String cleanSentence = WikiParser.cleanAllMarkup(sentence);
 
-		Parse parse = parseLine(cleanSentence);
+		Object parse = parseLine(cleanSentence);
+		// edu.stanford.nlp.trees.Tree parse = parseLineSt(cleanSentence);
 		// parse.show();
 		Collection<PartialAssertion> results = new ArrayList<>();
 		logger_.trace("disambiguateTree: " + sentence);
-		disambiguateTree(parse, null, focusConcept, anchors, wmi, cyc,
-				heuristic, results);
+		disambiguateTree(parse, null, focusConcept, anchors, heuristic,
+				results, wmi, cyc);
 		return results;
 	}
-	
+
 	/**
 	 * If the current verbPhrase is a copula.
 	 * 
@@ -463,12 +497,24 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 		}
 	}
 
-	public static synchronized Parse parseLine(String cleanSentence) {
-		Parse parse = null;
+	/**
+	 * Parses a sentence with the parser, cleaning the sentence further if
+	 * needed.
+	 *
+	 * @param cleanSentence
+	 *            The sentence to parse.
+	 * @return The parsed sentence, either as OpenNLP parse, or StanfordNLP
+	 *         Tree.
+	 */
+	public static synchronized Object parseLine(String cleanSentence) {
+		Object parse = null;
 		while (parse == null) {
-			parse = OpenNLP.parseLine(cleanSentence);
+			if (parser_ == STANFORD_NLP)
+				parse = StanfordNLP.getInstance().apply(cleanSentence);
+			else if (parser_ == OPEN_NLP)
+				parse = OpenNLP.parseLine(cleanSentence);
 			// Could not parse
-			if (parse.getType().equals("INC")) {
+			if (getType(parse).equals("INC")) {
 				try {
 					IOManager.getInstance().writeFirstSentence(-1,
 							cleanSentence);
@@ -491,5 +537,51 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 			}
 		}
 		return parse;
+	}
+
+	/**
+	 * A convenience method for extracting type information from a parse
+	 * (regardless of parser).
+	 *
+	 * @param parse
+	 *            The parse to extract type information from.
+	 * @return The type information as a string.
+	 */
+	public static String getType(Object parse) {
+		if (parser_ == STANFORD_NLP)
+			return ((edu.stanford.nlp.trees.Tree) parse).value();
+		else
+			return ((Parse) parse).getType();
+	}
+
+	/**
+	 * A convenience method for extracting covered text information from a parse
+	 * (regardless of parser).
+	 *
+	 * @param parse
+	 *            The parse to extract covered text information from.
+	 * @return The covered text of the parse.
+	 */
+	public static String getCoveredText(Object parse) {
+		if (parser_ == STANFORD_NLP)
+			return StringUtils.join(
+					((edu.stanford.nlp.trees.Tree) parse).yieldWords(), ' ');
+		else
+			return ((Parse) parse).getCoveredText();
+	}
+
+	/**
+	 * A convenience method for extracting children information from a parse
+	 * (regardless of parser).
+	 *
+	 * @param parse
+	 *            The parse to extract children information from.
+	 * @return The children of the parse.
+	 */
+	public static Object[] getChildren(Object parse) {
+		if (parser_ == STANFORD_NLP)
+			return ((edu.stanford.nlp.trees.Tree) parse).children();
+		else
+			return ((Parse) parse).getChildren();
 	}
 }

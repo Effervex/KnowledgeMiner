@@ -78,7 +78,7 @@ public class ConceptMiningTaskTest {
 	@Test
 	public void testTest() {
 		ConceptMiningTask cmt = new ConceptMiningTask(new ConceptModule(
-				new OntologyConcept("YearFn", "'2010")));
+				new OntologyConcept("YearFn", "'2010")), -1);
 		cmt.run();
 	}
 }

@@ -47,19 +47,19 @@ public class KnowledgeMinerTest {
 		ConceptModule cm = null;
 		article = wmi_.getArticleByTitle("Alabama");
 		cm = new ConceptModule(article);
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		article = wmi_.getArticleByTitle("Abraham Lincoln");
 		cm = new ConceptModule(article);
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		article = wmi_.getArticleByTitle("Uma Thurman");
 		cm = new ConceptModule(article);
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		article = wmi_.getArticleByTitle("Pavel Roman");
 		cm = new ConceptModule(article);
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 	}
 
 	/**
@@ -73,53 +73,53 @@ public class KnowledgeMinerTest {
 		// KnowledgeMiner.miningChildren_ = false;
 		ConceptModule cm = null;
 		cm = new ConceptModule(new OntologyConcept("Fruit"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(new OntologyConcept("AshTree"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(new OntologyConcept("Cyclist"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(wmi_.getArticleByTitle("Christa McAuliffe"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(
 				wmi_.getArticleByTitle("Howard Jones (musician)"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(new OntologyConcept("Cyclist"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(wmi_.getArticleByTitle("Tooth"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(new OntologyConcept("Proctologist"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(new OntologyConcept("Urologist"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(new OntologyConcept("Android"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(new OntologyConcept("Date"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(new OntologyConcept("Veterinarian"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(new OntologyConcept("Mountain"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(new OntologyConcept("PolishPerson"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(new OntologyConcept("Konin-ProvincePoland"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 
 		cm = new ConceptModule(new OntologyConcept("PhoenicianLanguage"));
-		km_.processConcept(new ConceptMiningTask(cm));
+		km_.processConcept(new ConceptMiningTask(cm, -1));
 	}
 
 	@Test

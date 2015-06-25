@@ -159,6 +159,7 @@ public class DefiniteAssertion extends MinedAssertion {
 			if (KnowledgeMiner.runID_ != -1)
 				ontology.setProperty(assertionID_, false,
 						KnowledgeMiner.RUN_ID, KnowledgeMiner.runID_ + "");
+			
 		}
 
 		return assertionID_;

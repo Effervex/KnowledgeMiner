@@ -115,7 +115,7 @@ public class InformationDripBootstrapping {
 	private void run() {
 		ResourceAccess.newInstance();
 		IOManager.newInstance();
-		KnowledgeMiner.readInOntologyMappings(initialRunNumber_);
+		KnowledgeMiner.readInOntologyMappings();
 		Executor executor = Executors.newFixedThreadPool(KnowledgeMiner
 				.getNumThreads());
 		pool_ = new ExecutorCompletionService<Collection<ConceptModule>>(

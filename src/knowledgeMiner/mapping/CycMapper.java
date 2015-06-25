@@ -4,7 +4,6 @@
 package knowledgeMiner.mapping;
 
 import graph.core.CommonConcepts;
-import graph.module.NLPToSyntaxModule;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
@@ -284,9 +283,11 @@ public class CycMapper {
 	 * @param allowStrings
 	 *            If the text can simply be returned as a StringNode .
 	 * @param fragmentText
-	 *            If the text should be fragmented up.
+	 *            If the text should be fragmented up (into multiple
+	 *            components).
 	 * @param preProcessText
-	 *            If the text being parsed should be preprocessed.
+	 *            If the text being parsed should be preprocessed (may
+	 *            fragment).
 	 * @param allowDirectSearch
 	 *            If text can be mapped directly (search ontology by text).
 	 * @param wmi
@@ -301,7 +302,7 @@ public class CycMapper {
 			boolean allowStrings, boolean fragmentText, boolean preProcessText,
 			boolean allowDirectSearch, WMISocket wmi, OntologySocket ontology) {
 		text = WikiParser.cleanupUselessMarkup(text).trim();
-//		text = NLPToSyntaxModule.convertToAscii(text).trim();
+		// text = NLPToSyntaxModule.convertToAscii(text).trim();
 		if (text.isEmpty())
 			return new HierarchicalWeightedSet<>();
 		logger_.debug("mapTextToCyc: {}", text);
@@ -321,8 +322,10 @@ public class CycMapper {
 						.mapSourcesToTargets(textToCycMapping_
 								.preProcessSource(text, wmi, ontology), wmi,
 								ontology, excludedHeuristics);
-			return (HierarchicalWeightedSet<OntologyConcept>) textToCycMapping_
-					.mapSourceToTarget(text, wmi, ontology, excludedHeuristics);
+			else
+				return (HierarchicalWeightedSet<OntologyConcept>) textToCycMapping_
+						.mapSourceToTarget(text, wmi, ontology,
+								excludedHeuristics);
 		}
 
 		// Split strings up, creating layered collections of assertions

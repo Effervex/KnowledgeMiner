@@ -1,16 +1,18 @@
 package knowledgeMiner.mining;
 
 import graph.core.CommonConcepts;
+import graph.inference.CommonQuery;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import knowledgeMiner.mapping.CycMapper;
-import knowledgeMiner.mining.wikipedia.WikipediaMappedConcept;
 
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -27,8 +29,13 @@ public class PartialAssertion extends MinedAssertion {
 
 	private static final long serialVersionUID = 1L;
 
+	private static final double NO_CONSTRAINT_REWEIGHT = 0.001;
+
 	/** Optional sub-assertions for hierarchically structured mined information. */
 	private Collection<PartialAssertion> subAssertions_;
+
+	/** A reweighted cache of the relations during expansion. */
+	private transient Map<OntologyConcept, Double> reweightCache_;
 
 	public PartialAssertion() {
 		super();
@@ -71,30 +78,188 @@ public class PartialAssertion extends MinedAssertion {
 	private AssertionQueue compileAssertionQueue(
 			WeightedSet<OntologyConcept> expandedRelation,
 			WeightedSet<OntologyConcept>[] expandedArgs, OntologySocket ontology) {
-		AssertionQueue aq = new AssertionQueue(getProvenance());
-		// For every relation
-		for (OntologyConcept relation : expandedRelation) {
-			// relation needs to be a predicate of the correct arity
-			if (relation.equals(CycConstants.ISA_GENLS.getConcept())
-					|| ontology.isa(relation.getIdentifier(),
-							CommonConcepts.PREDICATE.getID()))
-				recurseBuildArgs(relation, 0,
-						new AssertionArgument[args_.length], 1, expandedArgs,
-						aq, ontology);
-		}
+		reweightCache_ = new HashMap<>();
+		return recurseArguments(expandedRelation, expandedArgs, ontology);
+	}
 
-		// Deal with sub-relations
-		if (expandedRelation instanceof HierarchicalWeightedSet) {
-			Collection<WeightedSet<OntologyConcept>> subRelations = ((HierarchicalWeightedSet<OntologyConcept>) expandedRelation)
-					.getSubSets();
-			for (WeightedSet<OntologyConcept> subRelation : subRelations) {
-				AssertionQueue subAQ = compileAssertionQueue(subRelation,
-						expandedArgs, ontology);
-				if (!subAQ.isEmpty() & !subAQ.equals(aq))
-					aq.addLower(subAQ);
+	/**
+	 * Recurses through the arguments, calling a recurse through the relations
+	 * as well.
+	 *
+	 * @param expandedRelation
+	 *            The relations to recurse through.
+	 * @param expandedArgs
+	 *            The arguments to recurse through.
+	 * @param ontology
+	 *            The ontology access.
+	 * @return The asertion queue containing the combined relations and args,
+	 *         organised by argument first.
+	 */
+	private AssertionQueue recurseArguments(
+			WeightedSet<OntologyConcept> expandedRelation,
+			WeightedSet<OntologyConcept>[] expandedArgs, OntologySocket ontology) {
+		// Recurse the relations, using these arguments
+		AssertionQueue aq = recurseRelation(expandedRelation, expandedArgs,
+				ontology);
+
+		// Recurse into further arguments
+		for (int i = 0; i < expandedArgs.length; i++) {
+			// If the expanded args are hierarchical and can recurse, drop down
+			if (expandedArgs[i] != null
+					&& expandedArgs[i] instanceof HierarchicalWeightedSet
+					&& ((HierarchicalWeightedSet) expandedArgs[i]).hasSubSets()) {
+				for (WeightedSet<OntologyConcept> lowerSet : ((HierarchicalWeightedSet<OntologyConcept>) expandedArgs[i])
+						.getSubSets()) {
+					WeightedSet<OntologyConcept>[] lowerArgs = Arrays.copyOf(
+							expandedArgs, expandedArgs.length);
+					lowerArgs[i] = lowerSet;
+					AssertionQueue lowerAQ = recurseArguments(expandedRelation,
+							lowerArgs, ontology);
+					aq.addLower(lowerAQ);
+				}
 			}
 		}
+
 		return aq;
+	}
+
+	/**
+	 * Form the assertions with these relations, then recurse lower relations
+	 * ONLY (i.e. no recursing arguments).
+	 *
+	 * @param expandedRelation
+	 *            The relations to form assertions with and recurse through.
+	 * @param expandedArgs
+	 *            The arguments to use (only these, no recursing).
+	 * @param ontology
+	 *            The ontology access.
+	 * @return The assertion queue resulting from this.
+	 */
+	private AssertionQueue recurseRelation(
+			WeightedSet<OntologyConcept> expandedRelation,
+			WeightedSet<OntologyConcept>[] expandedArgs, OntologySocket ontology) {
+		// Work through relations
+		AssertionQueue aq = new AssertionQueue(getProvenance());
+		for (OntologyConcept relation : expandedRelation) {
+			double weight = expandedRelation.getWeight(relation);
+			weight *= constraintFactor(relation, expandedArgs, ontology);
+			AssertionArgument[] args = new AssertionArgument[expandedArgs.length];
+			buildArguments(relation, args, 0, weight, expandedArgs, aq,
+					ontology);
+		}
+
+		// Add lower relations
+		if (expandedRelation instanceof HierarchicalWeightedSet
+				&& ((HierarchicalWeightedSet) expandedRelation).hasSubSets()) {
+			Collection<WeightedSet<OntologyConcept>> lowers = ((HierarchicalWeightedSet<OntologyConcept>) expandedRelation)
+					.getSubSets();
+			for (WeightedSet<OntologyConcept> lower : lowers)
+				aq.addLower(recurseRelation(lower, expandedArgs, ontology));
+		}
+
+		return aq;
+	}
+
+	/**
+	 * Returns a coefficient for multiplying a relation's weight by with respect
+	 * to the relation's argument constraints.
+	 *
+	 * @param relation
+	 *            The relation to base the reweight off.
+	 * @param expandedArgs
+	 *            The arguments containing the null assertion for constraint
+	 *            checking.
+	 * @param ontology
+	 *            The ontology access.
+	 * @return The reweighting factor to apply to the weight between 0
+	 *         (exclusive) and 1 (inclusive).
+	 */
+	private double constraintFactor(OntologyConcept relation,
+			WeightedSet<OntologyConcept>[] expandedArgs, OntologySocket ontology) {
+		if (reweightCache_.containsKey(relation))
+			return reweightCache_.get(relation);
+		if (relation.equals(CycConstants.ISA_GENLS.getConcept()))
+			return 1;
+
+		int nullIndex = 0;
+		for (int i = 0; i < expandedArgs.length; i++) {
+			if (expandedArgs[i] == null) {
+				nullIndex = i;
+				break;
+			}
+		}
+
+		// Check if there are constraints
+		Collection<OntologyConcept> constraints = ontology.quickQuery(
+				CommonQuery.ARGNISA, relation.getIdentifier() + " '"
+						+ (nullIndex + 1));
+		if (constraints.size() > 1) {
+			reweightCache_.put(relation, 1d);
+			return 1;
+		}
+		if (constraints.isEmpty()
+				|| constraints.iterator().next().getID() == CommonConcepts.THING
+						.getID()) {
+			// Check the arg genls
+			constraints = ontology.quickQuery(CommonQuery.ARGNGENL,
+					relation.getIdentifier() + " '" + (nullIndex + 1));
+			if (constraints.size() >= 1) {
+				reweightCache_.put(relation, 1d);
+				return 1;
+			}
+			reweightCache_.put(relation, NO_CONSTRAINT_REWEIGHT);
+			return NO_CONSTRAINT_REWEIGHT;
+		}
+		reweightCache_.put(relation, 1d);
+		return 1;
+	}
+
+	/**
+	 * Builds the combinatorial arguments from an array of arguments.
+	 *
+	 * @param args
+	 *            The args to recursively build.
+	 * @param i
+	 *            The current index to fill.
+	 * @param relationWeight
+	 *            The weight of the relation.
+	 * @param expandedArgs
+	 *            The arguments to combine.
+	 * @param aq
+	 *            The AssertionQueue to add to.
+	 * @param ontology
+	 *            The ontology access.
+	 */
+	private void buildArguments(OntologyConcept relation,
+			AssertionArgument[] args, int i, double weight,
+			WeightedSet<OntologyConcept>[] expandedArgs, AssertionQueue aq,
+			OntologySocket ontology) {
+		if (i >= expandedArgs.length) {
+			aq.add(new PartialAssertion(relation, microtheory_,
+					getProvenance(), args), weight);
+			return;
+		}
+
+		// If null expansion, use args value.
+		if (expandedArgs[i] == null) {
+			args[i] = args_[i];
+			// TODO Reweight based on argument constraint
+			buildArguments(relation, args, i + 1, weight, expandedArgs, aq,
+					ontology);
+		} else {
+			// Iterate through every weighted element.
+			for (OntologyConcept concept : expandedArgs[i]) {
+				if (ontology.isValidArg(relation.getIdentifier(), concept,
+						i + 1)) {
+					AssertionArgument[] argsClone = Arrays.copyOf(args,
+							args.length);
+					argsClone[i] = concept;
+					buildArguments(relation, argsClone, i + 1,
+							expandedArgs[i].getWeight(concept) * weight,
+							expandedArgs, aq, ontology);
+				}
+			}
+		}
 	}
 
 	/**
@@ -125,6 +290,7 @@ public class PartialAssertion extends MinedAssertion {
 			if (relation_ instanceof MappableConcept) {
 				expandedRelation = ((MappableConcept) relation_).mapThing(
 						mapper, wmi, ontology);
+				// TODO Check it is in fact a relation!
 
 				// No relation found.
 				// TODO Modify this to allow relation creation (if arg known)
@@ -136,93 +302,27 @@ public class PartialAssertion extends MinedAssertion {
 			// Expand the args
 			WeightedSet<OntologyConcept>[] expandedArgs = new WeightedSet[args_.length];
 			for (int i = 0; i < args_.length; i++) {
-				if (!excluded.contains(args_[i])
-						&& args_[i] instanceof MappableConcept) {
-					expandedArgs[i] = ((MappableConcept) args_[i]).mapThing(
-							mapper, wmi, ontology);
-					// TODO Avoid self-referential excluded anchors
-
-					// No concept found.
-					if (expandedArgs[i].isEmpty())
-						return aq;
+				if (!excluded.contains(args_[i])) {
+					if (args_[i] instanceof MappableConcept) {
+						expandedArgs[i] = ((MappableConcept) args_[i])
+								.mapThing(mapper, wmi, ontology);
+						// TODO Avoid self-referential excluded anchors
+						// No concept found.
+						if (expandedArgs[i].isEmpty())
+							return aq;
+					} else if (args_[i] instanceof OntologyConcept) {
+						expandedArgs[i] = new WeightedSet<OntologyConcept>(1);
+						expandedArgs[i].add((OntologyConcept) args_[i], 1);
+					}
 				}
 			}
 
 			// Combine the expanded args into valid assertions
 			aq = compileAssertionQueue(expandedRelation, expandedArgs, ontology);
-			aq.scaleAll(getWeight());
+			double weight = getWeight();
+			aq.scaleAll(weight);
 		}
 		return aq;
-	}
-
-	/**
-	 * Recursively build the args from the expanded arguments.
-	 * 
-	 * @param relation
-	 *            The relation to use for checking arg constraints.
-	 * @param i
-	 *            The current recursive index.
-	 * @param argArray
-	 *            The array to recursively build.
-	 * @param weight
-	 *            The weight of the combined args.
-	 * @param expandedArgs
-	 *            The args to use.
-	 * @param aq
-	 *            The assertion queue to add to.
-	 * @param ontology
-	 *            The ontology access.
-	 */
-	private void recurseBuildArgs(OntologyConcept relation, int i,
-			AssertionArgument[] argArray, double weight,
-			WeightedSet<OntologyConcept>[] expandedArgs, AssertionQueue aq,
-			OntologySocket ontology) {
-		// Base case - if i > arg length, save
-		if (i >= argArray.length) {
-			aq.add(new PartialAssertion(relation, microtheory_, heuristic_,
-					argArray), weight);
-			return;
-		}
-
-		// If null expansion, use args value.
-		if (expandedArgs[i] == null) {
-			argArray[i] = args_[i];
-			recurseBuildArgs(relation, i + 1, argArray, weight, expandedArgs,
-					aq, ontology);
-		} else {
-			// Otherwise, recurse into every possibility, stopping if invalid.
-			boolean copyArray = false;
-			for (OntologyConcept concept : expandedArgs[i]) {
-				if (ontology.isValidArg(relation.getIdentifier(), concept,
-						i + 1)) {
-					if (copyArray)
-						argArray = Arrays.copyOf(argArray, argArray.length);
-					argArray[i] = concept;
-					recurseBuildArgs(relation, i + 1, argArray, weight
-							* expandedArgs[i].getWeight(concept), expandedArgs,
-							aq, ontology);
-					copyArray = true;
-				}
-			}
-
-			// Step into subassertions
-			if (expandedArgs[i] instanceof HierarchicalWeightedSet) {
-				Collection<WeightedSet<OntologyConcept>> subConcepts = ((HierarchicalWeightedSet<OntologyConcept>) expandedArgs[i])
-						.getSubSets();
-				for (WeightedSet<OntologyConcept> subSet : subConcepts) {
-					AssertionQueue subAQ = new AssertionQueue(
-							aq.getProvenance());
-					WeightedSet<OntologyConcept>[] subExpandedArgs = expandedArgs
-							.clone();
-					subExpandedArgs[i] = subSet;
-					argArray = Arrays.copyOf(argArray, argArray.length);
-					recurseBuildArgs(relation, i, argArray, weight,
-							subExpandedArgs, subAQ, ontology);
-					if (!subAQ.isEmpty() && !subAQ.equals(aq))
-						aq.addLower(subAQ);
-				}
-			}
-		}
 	}
 
 	@Override

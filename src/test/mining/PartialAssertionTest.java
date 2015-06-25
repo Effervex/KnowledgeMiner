@@ -15,10 +15,15 @@ import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mining.AssertionQueue;
 import knowledgeMiner.mining.PartialAssertion;
 import knowledgeMiner.mining.TextMappedConcept;
+import knowledgeMiner.mining.dbpedia.DBMappedConcept;
+import knowledgeMiner.mining.dbpedia.DBPediaAlignmentMiner;
+import knowledgeMiner.mining.dbpedia.DBPediaNamespace;
 
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.hp.hpl.jena.rdf.model.RDFNode;
 
 import cyc.CycConstants;
 import cyc.MappableConcept;
@@ -52,7 +57,8 @@ public class PartialAssertionTest {
 	public void testExpand() {
 		PartialAssertion pa;
 		AssertionQueue aq;
-		MappableConcept coreConcept = new TextMappedConcept("CORE", false, false);
+		MappableConcept coreConcept = new TextMappedConcept("CORE", false,
+				false);
 		Collection<MappableConcept> excluded = new ArrayList<>();
 		excluded.add(coreConcept);
 		// Single entity resolution
@@ -64,36 +70,40 @@ public class PartialAssertionTest {
 				.contains(new PartialAssertion(CycConstants.ISA_GENLS
 						.getConcept(), null, coreConcept, new OntologyConcept(
 						"Actor"))));
-		
+
 		// Multiple entity resolution
 		pa = new PartialAssertion(CycConstants.ISA_GENLS.getConcept(), null,
 				coreConcept, new TextMappedConcept("model", false, false));
 		aq = pa.expand(excluded, mapper_, ontology_, wmi_);
 		assertEquals(aq.size(), 6);
-		assertTrue(aq
-				.contains(new PartialAssertion(CycConstants.ISA_GENLS
-						.getConcept(), null, coreConcept, new OntologyConcept(
-						"ProfessionalModel"))));
-		assertTrue(aq
-				.contains(new PartialAssertion(CycConstants.ISA_GENLS
-						.getConcept(), null, coreConcept, new OntologyConcept(
-						"FashionModel"))));
-		assertTrue(aq
-				.contains(new PartialAssertion(CycConstants.ISA_GENLS
-						.getConcept(), null, coreConcept, new OntologyConcept(
-						"DisplayingSomething"))));
-		assertTrue(aq
-				.contains(new PartialAssertion(CycConstants.ISA_GENLS
-						.getConcept(), null, coreConcept, new OntologyConcept(
-						"Model-Artifact"))));
-		assertTrue(aq
-				.contains(new PartialAssertion(CycConstants.ISA_GENLS
-						.getConcept(), null, coreConcept, new OntologyConcept(
-						"(MakingFn Model-Artifact)"))));
-		assertTrue(aq
-				.contains(new PartialAssertion(CycConstants.ISA_GENLS
-						.getConcept(), null, coreConcept, new OntologyConcept(
-						"ProductTypeByBrand"))));
+		assertTrue(aq.contains(new PartialAssertion(CycConstants.ISA_GENLS
+				.getConcept(), null, coreConcept, new OntologyConcept(
+				"ProfessionalModel"))));
+		assertTrue(aq.contains(new PartialAssertion(CycConstants.ISA_GENLS
+				.getConcept(), null, coreConcept, new OntologyConcept(
+				"FashionModel"))));
+		assertTrue(aq.contains(new PartialAssertion(CycConstants.ISA_GENLS
+				.getConcept(), null, coreConcept, new OntologyConcept(
+				"DisplayingSomething"))));
+		assertTrue(aq.contains(new PartialAssertion(CycConstants.ISA_GENLS
+				.getConcept(), null, coreConcept, new OntologyConcept(
+				"Model-Artifact"))));
+		assertTrue(aq.contains(new PartialAssertion(CycConstants.ISA_GENLS
+				.getConcept(), null, coreConcept, new OntologyConcept(
+				"(MakingFn Model-Artifact)"))));
+		assertTrue(aq.contains(new PartialAssertion(CycConstants.ISA_GENLS
+				.getConcept(), null, coreConcept, new OntologyConcept(
+				"ProductTypeByBrand"))));
+
+		// Test birthPlaces
+		DBMappedConcept placeBirthPred = new DBMappedConcept(
+				DBPediaAlignmentMiner.askSingularQuery(
+						"?pob",
+						DBPediaNamespace.format(DBPediaNamespace.DBPEDIA,
+								"Uma_Thurman") + " ?pob \"Boston, Massachusetts, U.S.\"@en"), true);
+		pa = new PartialAssertion(placeBirthPred, null, coreConcept,
+				new TextMappedConcept("Boston, Massachusetts", true, true));
+		aq = pa.expand(excluded, mapper_, ontology_, wmi_);
 	}
 
 }

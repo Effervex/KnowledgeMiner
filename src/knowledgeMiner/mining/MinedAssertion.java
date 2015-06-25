@@ -112,8 +112,7 @@ public abstract class MinedAssertion extends WeightedInformation implements
 				|| relation.equals(CycConstants.SYNONYM_RELATION_CANONICAL)
 				|| ResourceAccess.requestOntologySocket().evaluate(null,
 						CommonConcepts.GENLPREDS.getID(),
-						relation.getIdentifier(),
-						CommonConcepts.TERM_STRING.getID()))
+						relation.getIdentifier(), CommonConcepts.TERM_STRING.getID()))
 			return CycConstants.LEXICAL_MICROTHEORY;
 		else if (relation.equals(CycConstants.WIKIPEDIA_URL.getConcept())
 				|| relation.toString().startsWith("synonymousExternal"))
@@ -141,12 +140,10 @@ public abstract class MinedAssertion extends WeightedInformation implements
 					.getConcept())
 					|| ontology.evaluate(null,
 							CommonConcepts.GENLPREDS.getID(),
-							relation.getIdentifier(),
-							CommonConcepts.ISA.getID())
+							relation.getIdentifier(), CommonConcepts.ISA.getID())
 					|| ontology.evaluate(null,
 							CommonConcepts.GENLPREDS.getID(),
-							relation.getIdentifier(),
-							CommonConcepts.GENLS.getID());
+							relation.getIdentifier(), CommonConcepts.GENLS.getID());
 	}
 
 	@Override
@@ -238,6 +235,8 @@ public abstract class MinedAssertion extends WeightedInformation implements
 		for (AssertionArgument arg : args_)
 			builder.append(" " + arg.toString());
 		builder.append(")");
+		if (microtheory_ != null && microtheory_.startsWith("(MtSpace "))
+			builder.append("[TEMPORAL]");
 		return builder.toString();
 	}
 

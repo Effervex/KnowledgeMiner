@@ -136,7 +136,7 @@ public class InfoboxClusterer extends MiningHeuristic {
 					ConceptModule newChild = new ConceptModule(cm.getArticle());
 					newChild.mergeInformation(cm);
 					KnowledgeMiner.getInstance().processConcept(
-							new ConceptMiningTask(newChild));
+							new ConceptMiningTask(newChild, -1));
 				}
 				counter.negativeExamples_.clear();
 			}
@@ -164,7 +164,7 @@ public class InfoboxClusterer extends MiningHeuristic {
 		 *         enough samples, otherwise null.
 		 */
 		public String getMajorityInfobox() {
-			int sumWeight = counts_.getSumWeight();
+			double sumWeight = counts_.getSumWeight();
 			if (sumWeight >= MIN_CLUSTER_COUNT) {
 				SortedSet<String> ordered = counts_.getOrdered();
 				if (counts_.getWeight(ordered.first()) >= sumWeight

@@ -113,9 +113,9 @@ public class DisjointImpactExperiment {
 					fullyFound = false;
 			}
 			try {
-			out.write("(disjointWith " + concepts[1] + " " + concepts[2] + ")\t"
-					+ split[1] + "\n");
-			}catch (Exception e) {
+				out.write("(disjointWith " + concepts[1] + " " + concepts[2]
+						+ ")\t" + split[1] + "\n");
+			} catch (Exception e) {
 				System.err.println(input);
 				e.printStackTrace();
 			}

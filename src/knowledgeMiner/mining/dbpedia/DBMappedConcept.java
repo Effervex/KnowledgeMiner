@@ -5,8 +5,6 @@ import graph.core.PrimitiveNode;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,17 +14,15 @@ import knowledgeMiner.mining.TextMappedConcept;
 import knowledgeMiner.mining.wikipedia.WikipediaMappedConcept;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.LoggerFactory;
 
 import util.collection.HierarchicalWeightedSet;
 import util.collection.WeightedSet;
 
 import com.hp.hpl.jena.datatypes.xsd.XSDDateTime;
-import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.sparql.util.NodeFactoryExtra;
-import com.hp.hpl.jena.sparql.util.Utils;
 
 import cyc.AssertionArgument;
 import cyc.CycConstants;
@@ -44,7 +40,12 @@ import cyc.StringConcept;
  */
 public class DBMappedConcept extends MappableConcept {
 	private static final long serialVersionUID = 1L;
+	/** If this concept is a predicate. */
 	private boolean predicate_ = false;
+	/** If strings are parsed. Defaults to false. */
+	private boolean allowString_ = false;
+	/** If primitives are parsde. Defaults to true. */
+	private boolean allowPrimitives_ = true;
 
 	/** A cache of mappings from DBpedia URIs to concepts. */
 	public static final Map<String, WeightedSet<OntologyConcept>> predMappings_ = new HashMap<>();
@@ -54,8 +55,18 @@ public class DBMappedConcept extends MappableConcept {
 		predicate_ = predicate;
 	}
 
+	public DBMappedConcept(RDFNode resource, boolean predicate,
+			boolean allowPrimitives, boolean allowString) {
+		super(resource);
+		predicate_ = predicate;
+		allowPrimitives_ = allowPrimitives;
+		allowString_ = allowString;
+	}
+
 	public DBMappedConcept(DBMappedConcept existing) {
 		super(existing);
+		predicate_ = existing.predicate_;
+		allowString_ = existing.allowString_;
 	}
 
 	@Override
@@ -99,13 +110,22 @@ public class DBMappedConcept extends MappableConcept {
 		} else if (rdfMappable.isLiteral()) {
 			Literal lit = rdfMappable.asLiteral();
 			// Hand off to Text mapping to resolve.
-			String property = lit.getValue().toString();
-			TextMappedConcept tmc = new TextMappedConcept(property, true, true);
-			WeightedSet<OntologyConcept> results = tmc.mapThing(mapper, wmi,
-					ontology);
-			// Add DBpedia's literal definitions
-			parsePrimitive(lit, results, mapper, wmi, ontology);
-			return results;
+			try {
+				String property = lit.getValue().toString();
+				TextMappedConcept tmc = new TextMappedConcept(property, true,
+						true);
+				WeightedSet<OntologyConcept> results = tmc.mapThing(mapper,
+						wmi, ontology);
+				// Add DBpedia's literal definitions
+				parsePrimitive(lit, results, mapper, wmi, ontology);
+
+				return results;
+			} catch (Exception e) {
+				// Problem parsing.
+				LoggerFactory.getLogger(this.getClass()).error(
+						"Error during DBMappedConcept disambiguation: {}",
+						e.getMessage());
+			}
 		}
 		// Otherwise, return empty
 		return new WeightedSet<>(0);
@@ -131,13 +151,16 @@ public class DBMappedConcept extends MappableConcept {
 			WMISocket wmi, OntologySocket ontology) {
 		Object value = lit.getValue();
 		PrimitiveNode primitiveNode = PrimitiveNode.parseNode(value.toString());
-		if (primitiveNode != null)
-			results.set(new PrimitiveConcept(primitiveNode.getPrimitive()), 1);
-		else {
+		if (primitiveNode != null) {
+			if (allowPrimitives_)
+				results.set(new PrimitiveConcept(primitiveNode.getPrimitive()),
+						1);
+		} else {
 			// Some non-primitive value.
-			if (value instanceof String)
-				results.set(new StringConcept(value.toString()), 1);
-			else if (value instanceof XSDDateTime) {
+			if (value instanceof String) {
+				if (allowString_)
+					results.set(new StringConcept(value.toString()), 1);
+			} else if (value instanceof XSDDateTime) {
 				String dateString = lit.getString();
 				dateString = dateString.substring(0, dateString.indexOf('+'));
 				results.setAll(mapper.mapViaHeuristic(dateString,
@@ -178,14 +201,25 @@ public class DBMappedConcept extends MappableConcept {
 		}
 
 		results = mapper.mapRelationToPredicate(relation, wmi, ontology);
+		// Move Refinable Predicates lower.
+		WeightedSet<OntologyConcept> lowerRefinables = new WeightedSet<>();
+		for (OntologyConcept oc : results) {
+			if (ontology.isa(oc.getIdentifier(),
+					CycConstants.REFINABLE_PREDICATE.getID()))
+				lowerRefinables.add(oc, results.getWeight(oc));
+		}
+		results.removeAll(lowerRefinables);
+		results.normaliseWeightTo1();
 
 		// Add a lower ranked created relation
-		WeightedSet<OntologyConcept> newRelationSet = new WeightedSet<>(1);
 		try {
 			OntologyConcept newRelation = createNewRelation(res, ontology);
 			if (newRelation != null) {
-				newRelationSet.add(newRelation);
-				((HierarchicalWeightedSet) results).addLower(newRelationSet);
+				lowerRefinables.add(newRelation);
+			}
+			if (!lowerRefinables.isEmpty()) {
+				lowerRefinables.normaliseWeightTo1();
+				((HierarchicalWeightedSet) results).addLower(lowerRefinables);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
