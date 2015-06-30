@@ -38,7 +38,6 @@ public enum CycConstants {
 	PREDICATE("Predicate"),
 	QUOTEDISA("quotedIsa"),
 	QUOTEDISA_PARENT("SubLExpressionType"),
-	REFINABLE_PREDICATE("RefinablePredicate"),
 	SYNONYM_RELATION("wikipediaArticleSynonym"),
 	SYNONYM_RELATION_CANONICAL("wikipediaArticleName-Canonical"),
 	SYNONYMOUS_EXTERNAL_CONCEPT("synonymousExternalConcept"),
@@ -241,26 +240,6 @@ public enum CycConstants {
 				IMPLEMENTATION_MICROTHEORY.getConceptName(), ISA.getID(),
 				WIKIPEDIA_COMMENT.getID(),
 				CommonConcepts.STRICTLY_FUNCTIONAL_SLOT.getID()));
-
-		// Refinable predicates
-		assertID(ontologySocket.createAndAssert(
-				REFINABLE_PREDICATE.getConceptName(), CommonConcepts.COLLECTION.getID(),
-				"A RefinablePredicate is a predicate which "
-						+ "inductively defines its semantic argument "
-						+ "constraints based on the assertions that "
-						+ "employ the predicate. Once a certain number "
-						+ "of assertions are created that use a "
-						+ "refinable predicate, the semantic argument "
-						+ "constraints are inductively calculated and "
-						+ "asserted, rejecting any evidence that no "
-						+ "longer fits the constraints. Refinable "
-						+ "predicates are also transient, in that "
-						+ "they may be completely removed if they are "
-						+ "found to be unused."));
-		assertID(ontologySocket.assertToOntology(
-				IMPLEMENTATION_MICROTHEORY.getConceptName(),
-				CommonConcepts.GENLS.getID(), REFINABLE_PREDICATE.getID(),
-				CommonConcepts.BINARY_PREDICATE.getID()));
 	}
 
 	private static void assertID(int returnedID) throws Exception {

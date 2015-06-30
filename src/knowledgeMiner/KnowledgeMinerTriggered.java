@@ -34,7 +34,7 @@ import cyc.OntologyConcept;
  * @author Sam Sarjant
  */
 public class KnowledgeMinerTriggered {
-	private static final long CHECK_INTERVAL = TimeUnit.SECONDS.toMillis(1);
+	private static final long CHECK_INTERVAL = TimeUnit.SECONDS.toMillis(30);
 
 	private final static Logger logger_ = LoggerFactory
 			.getLogger(ConceptMiningTask.class);

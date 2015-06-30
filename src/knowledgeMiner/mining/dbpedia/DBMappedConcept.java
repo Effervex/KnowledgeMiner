@@ -205,7 +205,7 @@ public class DBMappedConcept extends MappableConcept {
 		WeightedSet<OntologyConcept> lowerRefinables = new WeightedSet<>();
 		for (OntologyConcept oc : results) {
 			if (ontology.isa(oc.getIdentifier(),
-					CycConstants.REFINABLE_PREDICATE.getID()))
+					CommonConcepts.REFINABLE_PREDICATE.getID()))
 				lowerRefinables.add(oc, results.getWeight(oc));
 		}
 		results.removeAll(lowerRefinables);
@@ -242,12 +242,12 @@ public class DBMappedConcept extends MappableConcept {
 	private OntologyConcept createNewRelation(Resource res,
 			OntologySocket ontology) throws Exception {
 		String name = StringUtils.uncapitalize(res.getLocalName());
-		if (ontology.inOntology(name))
+		if (ontology.inOntology(name) || !ontology.validConstantName(name))
 			return null;
 		int id = ontology
 				.createAndAssert(
 						name,
-						CycConstants.REFINABLE_PREDICATE.getID(),
+						CommonConcepts.REFINABLE_PREDICATE.getID(),
 						"A refinable relation imported from DBPedia. This relation is equivalent to the DBPedia relation: ["
 								+ res.getURI() + "]");
 		if (id == -1)

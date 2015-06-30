@@ -362,6 +362,9 @@ public class KnowledgeMiner {
 		LoggerFactory.getLogger("STATUS").info(builder.toString());
 		((FSTSerialisationMechanism) SerialisationMechanism.FST.getSerialiser())
 				.reset();
+		
+		// TODO Begin predicate refinement
+	
 		try {
 			IOManager.getInstance().flush();
 			miner_.printCurrentHeuristicStates();

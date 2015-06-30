@@ -48,7 +48,7 @@ import cyc.StringConcept;
  * @author Sam Sarjant
  */
 public class ConceptMiningTask implements Runnable {
-	private static final int BIG_ENOUGH = 10000000;
+	private static final int BIG_ENOUGH = (int) Math.pow(2, 20);
 
 	/** The chance that a child is created. */
 	private static final float CHILD_CREATION_THRESHOLD = .1f;
@@ -494,8 +494,9 @@ public class ConceptMiningTask implements Runnable {
 				mh.updateGlobal(concept, wmi_);
 
 			assertedCount_++;
-			if (assertedCount_ % UPDATE_INTERVAL == 0)
+			if (assertedCount_ % UPDATE_INTERVAL == 0) {
 				km_.statusUpdate();
+			}
 
 			km_.getInterface().update(concept, processables_);
 
@@ -1055,7 +1056,7 @@ public class ConceptMiningTask implements Runnable {
 				} else if (args[i].equals("-r")) {
 					i++;
 					KnowledgeMiner.runID_ = Integer.parseInt(args[i]);
-					KnowledgeMiner.readInOntologyMappings();
+					// KnowledgeMiner.readInOntologyMappings();
 				} else {
 					if (article == null)
 						article = new StringBuilder(args[i]);
@@ -1166,7 +1167,7 @@ public class ConceptMiningTask implements Runnable {
 	public static void setArticleState(int article, int state) {
 		if (article == -1)
 			return;
-		if (article >= artStates_.length)
+		while (article >= artStates_.length)
 			artStates_ = Arrays.copyOf(artStates_, artStates_.length * 2);
 
 		artStates_[article] = state;
@@ -1192,7 +1193,7 @@ public class ConceptMiningTask implements Runnable {
 	public static void setConceptState(Integer concept, int state) {
 		if (concept.intValue() < 0)
 			return;
-		if (concept >= ontologyStates_.length)
+		while (concept >= ontologyStates_.length)
 			ontologyStates_ = Arrays.copyOf(ontologyStates_,
 					ontologyStates_.length * 2);
 
