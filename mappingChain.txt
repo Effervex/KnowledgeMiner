@@ -1,0 +1,14 @@
+MINING: 'Robert Thurman' (w=1.0)
+ MAPPING: 'Robert Thurman':[M] (w=1.0)
+  REVERSE_MAPPING: 'Robert Thurman':[M] => RobertThurman[NEW] (w=0.1)
+   DISAMBIGUATING: RobertThurman[NEW] <=> 'Robert Thurman':[M] (w=0.1)
+    ASSERTING: RobertThurman[NEW] <=> 'Robert Thurman':[CM] (w=0.09878312)
+     COMPLETE: RobertThurman[NEW] <=> 'Robert Thurman':[CM] (w=0.09878312)
+
+MINING: 'Robert Thurman' (w=1.0)
+ MAPPING: 'Robert Thurman':[M] (w=1.0)
+  REVERSE_MAPPING: 'Robert Thurman':[M] => RobertThurman (w=1.0)
+   DISAMBIGUATING: RobertThurman <=> 'Robert Thurman':[M] (w=1.0)
+    ASSERTING: RobertThurman <=> 'Robert Thurman':[CM] (w=0.98783076)
+     COMPLETE: RobertThurman <=> 'Robert Thurman':[CM] (w=0.98783076)
+

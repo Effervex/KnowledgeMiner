@@ -32,9 +32,6 @@ public class MappingSuite<Source, Target> {
 	/** The pre processors to apply to the source. */
 	private List<MappingPreProcessor<Source>> preProcessors_;
 
-	/** The pre mapped info source to apply to the mappings process. */
-	private CacheMap<Source, HierarchicalWeightedSet<Target>> cachedMappings_;
-
 	/** The non-recursive preprocessors that always modify the source. */
 	private List<MappingPreProcessor<Source>> nonRecursivePreprocessors_;
 
@@ -44,7 +41,6 @@ public class MappingSuite<Source, Target> {
 	 * Constructor for a new MappingSuite
 	 */
 	public MappingSuite() {
-		cachedMappings_ = new CacheMap<>(KnowledgeMiner.CACHE_SIZES, true);
 		mappingHeuristics_ = new ArrayList<>();
 		postProcessors_ = new ArrayList<>();
 		preProcessors_ = new ArrayList<>();
@@ -114,19 +110,9 @@ public class MappingSuite<Source, Target> {
 			WMISocket wmi,
 			OntologySocket ontology,
 			Collection<Class<? extends MappingHeuristic<Source, Target>>> disabledHeuristics) {
-		// If the term is already mapped, return the article.
-		// TODO Try disabling this for memory and to see if it makes much of a
-		// performance difference.
-		WeightedSet<Target> knownMapping = getAddCachedMapping(source, null);
-		if (knownMapping != null)
-			return knownMapping;
-
 		HierarchicalWeightedSet<Target> mappings = new HierarchicalWeightedSet<>();
 		mappings.setAll(mapSourceToTargetInternal(source, wmi, ontology,
 				disabledHeuristics));
-		// TODO Refine this to only remap the heuristics needed.
-		if (disabledHeuristics == null)
-			getAddCachedMapping(source, mappings);
 		return mappings;
 	}
 
@@ -175,20 +161,6 @@ public class MappingSuite<Source, Target> {
 			}
 		}
 		return result;
-	}
-
-	private synchronized HierarchicalWeightedSet<Target> getAddCachedMapping(
-			Source source, HierarchicalWeightedSet<Target> mappings) {
-		if (mappings == null) {
-			// Getting mapping
-			if (cachedMappings_.containsKey(source))
-				return new HierarchicalWeightedSet<Target>(
-						cachedMappings_.get(source));
-		} else {
-			// Putting mapping
-			cachedMappings_.put(source, mappings);
-		}
-		return null;
 	}
 
 	/**
@@ -240,10 +212,6 @@ public class MappingSuite<Source, Target> {
 					wmi, ontology));
 		}
 		return mappings;
-	}
-
-	public void clearMappings() {
-		cachedMappings_.clear();
 	}
 
 	public ArrayList<MappingHeuristic<Source, Target>> getHeuristics() {

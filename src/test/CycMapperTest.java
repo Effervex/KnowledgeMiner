@@ -32,7 +32,6 @@ public class CycMapperTest {
 	@After
 	public void tearDown() {
 		wmi_.clearCachedArticles();
-		mapper_.clearMappings();
 		OntologyConcept.parsingArgs_ = false;
 	}
 

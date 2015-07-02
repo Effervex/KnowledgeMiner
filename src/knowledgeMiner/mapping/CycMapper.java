@@ -200,10 +200,6 @@ public class CycMapper {
 				knowledgeMiner.registerHeuristic(mh);
 	}
 
-	public void clearMappings() {
-		cycToWikiMapping_.clearMappings();
-	}
-
 	public MappingSuite<OntologyConcept, Integer> getCycToWikiMappingSuite() {
 		return cycToWikiMapping_;
 	}
