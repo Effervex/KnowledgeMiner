@@ -158,13 +158,6 @@ public class KnowledgeMinerTriggered {
 					}
 				}
 
-				// DEBUG
-				if (!rippleConcepts.isEmpty()) {
-					ConceptModule singleDEBUG = rippleConcepts.iterator()
-							.next();
-					rippleConcepts.clear();
-					rippleConcepts.add(singleDEBUG);
-				}
 				for (ConceptModule link : rippleConcepts) {
 					processConcept(link, false);
 				}
