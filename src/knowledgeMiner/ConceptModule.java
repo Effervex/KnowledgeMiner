@@ -390,6 +390,15 @@ public class ConceptModule extends MinedInformation implements
 		disambiguated_ = false;
 		mappingWeight_ = 1.0f;
 		miningWeight_ = 1;
+		significantChange_ = false;
+		if (deletedAssertions_ != null)
+			deletedAssertions_.clear();
+	}
+
+	public ConceptModule clone() {
+		ConceptModule newCM = new ConceptModule(concept_, getArticle(),
+				mappingWeight_, cycToWiki_);
+		return newCM;
 	}
 
 	@Override
@@ -636,9 +645,11 @@ public class ConceptModule extends MinedInformation implements
 			// Perform auto-assertions
 			performAutoAssertions(ontology);
 		}
-		if (!significantChange_)
-			significantChange_ = ontology.getAllAssertions(concept_, 2,
-					CommonConcepts.REMOVED).size() != numAssertions;
+		if (!significantChange_) {
+			int newNumAssertions = ontology.getAllAssertions(concept_, 2,
+					CommonConcepts.REMOVED).size();
+			significantChange_ = newNumAssertions != numAssertions;
+		}
 
 		makeWikiMappingAssertions(articleTitle, ontology);
 		DefiniteAssertion weightAssertion = new DefiniteAssertion(

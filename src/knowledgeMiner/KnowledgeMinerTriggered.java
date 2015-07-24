@@ -77,6 +77,8 @@ public class KnowledgeMinerTriggered {
 					// If found, add it to the executor
 					logger_.info("{} triggers found, beginning process",
 							triggers.size());
+					System.out.println(triggers.size()
+							+ " triggers found. Beginning process.");
 					for (OntologyConcept concept : triggers) {
 						// Set the concept/article as pending
 						ontology.removeProperty(concept, true, TRIGGER_PROPERTY);
@@ -136,7 +138,7 @@ public class KnowledgeMinerTriggered {
 			iteration++;
 
 			// Map the core concept
-			ConceptMiningTask cmt = new ConceptMiningTask(concept_, iteration);
+			ConceptMiningTask cmt = new ConceptMiningTask(concept_.clone(), iteration);
 			cmt.setTrackAsserted(true);
 			cmt.run();
 
@@ -146,20 +148,32 @@ public class KnowledgeMinerTriggered {
 						.getAssertedConcepts();
 				Collection<ConceptModule> rippleConcepts = new HashSet<>();
 				// Identify changed concepts
+				boolean changed = false;
 				for (ConceptModule cm : assertedConcepts) {
 					if (cm.isSignificantlyChanged()) {
 						Collection<ConceptModule> linked = notifyLinkedConcepts(
 								cm, ontology, wmi);
 						rippleConcepts.addAll(linked);
+						changed = true;
 					}
 				}
 
+				// DEBUG
+				if (!rippleConcepts.isEmpty()) {
+					ConceptModule singleDEBUG = rippleConcepts.iterator()
+							.next();
+					rippleConcepts.clear();
+					rippleConcepts.add(singleDEBUG);
+				}
 				for (ConceptModule link : rippleConcepts) {
 					processConcept(link, false);
 				}
 
 				// Add original concept to the end of the queue
-				processConcept(concept_, true);
+				if (changed) {
+					concept_.clearInformation();
+					processConcept(concept_, true);
+				}
 			}
 		}
 
