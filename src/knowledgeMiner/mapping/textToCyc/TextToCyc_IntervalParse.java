@@ -49,9 +49,9 @@ public class TextToCyc_IntervalParse extends
 
 		// Parse each side, and resolve using the existing resolution info.
 		// Looking for Temporal Things
-		WeightedSet<OntologyConcept> past = mapper_.mapViaHeuristic(split[0],
+		WeightedSet<OntologyConcept> past = mapper_.mapViaHeuristic(split[0].trim(),
 				TextToCyc_DateParse.class, wmi, cyc);
-		WeightedSet<OntologyConcept> future = mapper_.mapViaHeuristic(split[1],
+		WeightedSet<OntologyConcept> future = mapper_.mapViaHeuristic(split[1].trim(),
 				TextToCyc_DateParse.class, wmi, cyc);
 		resolveIntervals(past, future, results, cyc);
 
@@ -78,12 +78,12 @@ public class TextToCyc_IntervalParse extends
 			throws Exception {
 		for (OntologyConcept pastFact : past) {
 			// If fact is a TemporalThing
-			if (cyc.isa(pastFact.getIdentifier(), CommonConcepts.DATE.getID())) {
+			if (cyc.isa(pastFact.getIdentifier(), CommonConcepts.TIME_INTERVAL.getID())) {
 				Iterator<OntologyConcept> futureIter = future.iterator();
 				while (futureIter.hasNext()) {
 					OntologyConcept futureFact = futureIter.next();
 					if (cyc.isa(futureFact.getIdentifier(),
-							CommonConcepts.DATE.getID())) {
+							CommonConcepts.TIME_INTERVAL.getID())) {
 						// If future is after past
 						if (cyc.evaluate(null,
 								CommonConcepts.LATER_PREDICATE.getID(),

@@ -128,6 +128,26 @@ public abstract class MiningHeuristic extends WeightedHeuristic {
 		return coreInfo;
 	}
 
+	/**
+	 * Reweights the information returned by this mining heuristic mining
+	 * process.
+	 * 
+	 * @param info
+	 *            The info to reweight
+	 */
+	private void reweightInfo(MinedInformation info) {
+		double weight = getWeight();
+		if (weight == 1)
+			return;
+
+		// Otherwise, reweight the assertions
+		for (PartialAssertion pa : info.getAssertions())
+			pa.setWeight(pa.getWeight() * weight);
+		// TODO Reweight the standing? It's normalised anyway, so it wouldn't
+		// matter too much.
+//		info.getStanding()
+	}
+
 	protected synchronized MinedInformation getInfo(int article) {
 		// Load up the information, if it exists
 		MinedInformation info = null;
@@ -275,6 +295,7 @@ public abstract class MiningHeuristic extends WeightedHeuristic {
 			// System.out.println(getHeuristicName() + " (Pre): "
 			// + info.getAssertions());
 			info.setModified(true);
+			reweightInfo(info);
 			return info;
 		}
 
@@ -288,6 +309,7 @@ public abstract class MiningHeuristic extends WeightedHeuristic {
 
 			// Split the data up and save it
 			info = partitionInformation(info, article);
+			reweightInfo(info);
 			return info;
 		} catch (Exception e) {
 			e.printStackTrace();

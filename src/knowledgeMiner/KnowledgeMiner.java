@@ -73,7 +73,7 @@ public class KnowledgeMiner {
 	/** The current version of Wikipedia being used. */
 	public static String wikiVersion_ = ENWIKI_DEFAULT;
 
-	public static int runID_ = -1;
+	public int runID_ = -1;
 
 	/** The last index to seed with. */
 	private int endCount_ = -1;
@@ -486,6 +486,7 @@ public class KnowledgeMiner {
 		int end = -1;
 		String filename = null;
 		boolean mappingCyc = false;
+		int runID = -1;
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].equals("preprocess"))
 				preprocess = true;
@@ -500,7 +501,7 @@ public class KnowledgeMiner {
 				filename = args[i];
 			} else if (args[i].equals("-i")) {
 				i++;
-				runID_ = Integer.parseInt(args[i]);
+				runID = Integer.parseInt(args[i]);
 			} else if (args[i].equals("-m")) {
 				mappingRun_ = true;
 			} else if (args[i].equals("-c")) {
@@ -511,7 +512,7 @@ public class KnowledgeMiner {
 		if (preprocess)
 			km.preprocess();
 
-		if (runID_ != -1)
+		if (runID != -1)
 			readInOntologyMappings();
 
 		// Link an input file to KM

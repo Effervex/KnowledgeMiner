@@ -51,7 +51,7 @@ public class WEKAAsserterTest {
 		ontology_.close();
 	}
 
-	@Test
+//	@Test
 	public void testRecursiveGeneralise() throws Exception {
 		sut_.generalising_ = true;
 		Map<Pair<String, String>, Boolean> examined = new HashMap<>();

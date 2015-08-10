@@ -49,7 +49,7 @@ public class TextToCycMappingTest {
 	 */
 	@BeforeClass
 	public static void setUp() throws Exception {
-		KnowledgeMiner.getInstance();
+		KnowledgeMiner.newInstance("Enwiki_20110722");
 		cyc_ = ResourceAccess.requestOntologySocket();
 		wmi_ = ResourceAccess.requestWMISocket();
 		mappingRoot_ = new CycMapper();
@@ -75,18 +75,18 @@ public class TextToCycMappingTest {
 				new OntologyConcept("Director-Movie"), cyc_);
 
 		WeightedSet<OntologyConcept> results = mappingRoot_.mapTextToCyc(
-				"Bill Clinton", true, true, false, true, wmi_, cyc_);
+				"Bill Clinton", false, true, false, true, wmi_, cyc_);
 		Collection<OntologyConcept> mostLikely = results.getMostLikely();
 		assertEquals(mostLikely.size(), 1);
 		assertTrue(mostLikely.contains(new OntologyConcept("BillClinton")));
 
 		results = mappingRoot_.mapTextToCyc(
 				"[[Gary Oldman]] (1990-1992) [[Ethan Hawke]] (1998-2004)",
-				false, true, false, true, wmi_, cyc_);
+				false, false, false, true, wmi_, cyc_);
 		assertTrue(results.isEmpty());
 
 		results = mappingRoot_.mapTextToCyc("Gary Oldman (1980-1983)", false,
-				true, false, true, wmi_, cyc_);
+				false, true, true, wmi_, cyc_);
 		mostLikely = results.getMostLikely();
 		assertEquals(mostLikely.size(), 1);
 		OntologyConcept temporalArg = new OntologyConcept("GaryOldman");
@@ -95,7 +95,7 @@ public class TextToCycMappingTest {
 		assertTrue(mostLikely.contains(temporalArg));
 
 		results = mappingRoot_.mapTextToCyc("[[Gary Oldman]] (1980-1983)",
-				false, true, false, true, wmi_, cyc_);
+				false, false, true, true, wmi_, cyc_);
 		mostLikely = results.getMostLikely();
 		assertEquals(mostLikely.size(), 1);
 		temporalArg = new OntologyConcept("GaryOldman");
@@ -104,9 +104,9 @@ public class TextToCycMappingTest {
 		assertTrue(mostLikely.contains(temporalArg));
 
 		results = mappingRoot_.mapTextToCyc("[[film director|director]]",
-				false, true, false, true, wmi_, cyc_);
+				false, false, true, true, wmi_, cyc_);
 		mostLikely = results.getMostLikely();
-		assertEquals(mostLikely.size(), 1);
+		assertEquals(mostLikely.size(), 6);
 		assertTrue(mostLikely.contains(new OntologyConcept("Director-Movie")));
 
 		results = mappingRoot_.mapTextToCyc("origin", false, true, false, true,
@@ -125,51 +125,74 @@ public class TextToCycMappingTest {
 		// Single term
 		OntologyConcept.parsingArgs_ = true;
 		HierarchicalWeightedSet<OntologyConcept> results = mappingRoot_
-				.mapTextToCyc("Actress", true, true, false, true, wmi_, cyc_);
+				.mapTextToCyc("Actress", true, false, true, true, wmi_, cyc_);
 		HierarchicalWeightedSet<OntologyConcept>[] flattened = results
 				.listHierarchy();
 		assertEquals(flattened.length, 1);
+		assertEquals(flattened[0].getMostLikely().size(), 3);
 		OntologyConcept item = OntologyConcept.parseArgument("Actor");
-		assertEquals(flattened[0].getMostLikely().size(), 1);
+		assertTrue(flattened[0].getMostLikely().contains(item));
+		item = OntologyConcept.parseArgument("\"Actress\"");
+		assertTrue(flattened[0].getMostLikely().contains(item));
+		item = OntologyConcept
+				.parseArgument("(CollectionIntersectionFn (TheSet FemaleHuman Actor))");
 		assertTrue(flattened[0].getMostLikely().contains(item));
 
 		// Dual terms
-		results = mappingRoot_.mapTextToCyc("Actress, model", true, true,
-				false, true, wmi_, cyc_);
+		results = mappingRoot_.mapTextToCyc("Actress, model", true, false,
+				true, true, wmi_, cyc_);
 		flattened = results.listHierarchy();
-		assertEquals(flattened.length, 4);
-		item = OntologyConcept.parseArgument("\"Actress, model\"");
+		assertEquals(flattened.length, 3);
 		assertEquals(flattened[0].getMostLikely().size(), 1);
-		assertTrue(flattened[0].getMostLikely().contains(item));
-		item = OntologyConcept.parseArgument("\"Actress,model\"");
-		assertEquals(flattened[1].getMostLikely().size(), 1);
-		assertTrue(flattened[1].getMostLikely().contains(item));
-		item = OntologyConcept.parseArgument("Actor");
-		assertEquals(flattened[2].getMostLikely().size(), 1);
-		assertTrue(flattened[2].getMostLikely().contains(item));
-		item = OntologyConcept.parseArgument("FashionModel");
-		assertEquals(flattened[3].getMostLikely().size(), 1);
-		assertTrue(flattened[3].getMostLikely().contains(item));
+		assertTrue(flattened[0].getMostLikely().contains(
+				OntologyConcept.parseArgument("\"Actress, model\"")));
+		assertEquals(flattened[1].getMostLikely().size(), 3);
+		assertTrue(flattened[1].getMostLikely().contains(
+				OntologyConcept.parseArgument("\"Actress\"")));
+		assertTrue(flattened[1].getMostLikely().contains(
+				OntologyConcept.parseArgument("Actor")));
+		assertTrue(flattened[1]
+				.getMostLikely()
+				.contains(
+						OntologyConcept
+								.parseArgument("(CollectionIntersectionFn (TheSet FemaleHuman Actor))")));
+		assertEquals(flattened[2].getMostLikely().size(), 8);
+		assertTrue(flattened[2].getMostLikely().contains(
+				OntologyConcept.parseArgument("\"model\"")));
+		assertTrue(flattened[2].getMostLikely().contains(
+				OntologyConcept.parseArgument("FashionModel")));
+		assertTrue(flattened[2].getMostLikely().contains(
+				OntologyConcept.parseArgument("ProfessionalModel")));
+		assertTrue(flattened[2].getMostLikely().contains(
+				OntologyConcept.parseArgument("Model-Artifact")));
+		assertTrue(flattened[2].getMostLikely().contains(
+				OntologyConcept.parseArgument("(MakingFn Model-Artifact)")));
+		assertTrue(flattened[2].getMostLikely().contains(
+				OntologyConcept.parseArgument("model")));
+		assertTrue(flattened[2].getMostLikely().contains(
+				OntologyConcept.parseArgument("DisplayingSomething")));
+		assertTrue(flattened[2].getMostLikely().contains(
+				OntologyConcept.parseArgument("ProductTypeByBrand")));
 
 		// Newline terms
-		results = mappingRoot_.mapTextToCyc("Actress\n model", true, true,
-				false, true, wmi_, cyc_);
+		results = mappingRoot_.mapTextToCyc("Actress\n model", true, false,
+				true, true, wmi_, cyc_);
 		flattened = results.listHierarchy();
 		assertEquals(flattened.length, 3);
 		item = OntologyConcept.parseArgument("\"Actress model\"");
 		assertEquals(flattened[0].getMostLikely().size(), 1);
 		assertTrue(flattened[0].getMostLikely().contains(item));
-		item = OntologyConcept.parseArgument("FashionModel");
-		assertEquals(flattened[1].getMostLikely().size(), 1);
-		assertTrue(flattened[1].getMostLikely().contains(item));
 		item = OntologyConcept.parseArgument("Actor");
-		assertEquals(flattened[2].getMostLikely().size(), 1);
+		assertEquals(flattened[1].getMostLikely().size(), 3);
+		assertTrue(flattened[1].getMostLikely().contains(item));
+		item = OntologyConcept.parseArgument("FashionModel");
+		assertEquals(flattened[2].getMostLikely().size(), 8);
 		assertTrue(flattened[2].getMostLikely().contains(item));
 
 		results = mappingRoot_.mapTextToCyc("13 February 1967 (US)", true,
-				true, false, true, wmi_, cyc_);
+				false, true, true, wmi_, cyc_);
 		flattened = results.listHierarchy();
-		assertEquals(flattened.length, 3);
+		assertEquals(flattened.length, 2);
 		item = OntologyConcept.parseArgument("\"13 February 1967 (US)\"");
 		assertEquals(flattened[0].getMostLikely().size(), 1);
 		assertTrue(flattened[0].getMostLikely().contains(item));
@@ -181,9 +204,9 @@ public class TextToCycMappingTest {
 		assertTrue(flattened[1].getMostLikely().contains(item));
 
 		results = mappingRoot_.mapTextToCyc("13 February 1967 (US)\n(Test",
-				true, true, false, true, wmi_, cyc_);
+				true, false, true, true, wmi_, cyc_);
 		flattened = results.listHierarchy();
-		assertEquals(flattened.length, 5);
+		assertEquals(flattened.length, 4);
 		item = OntologyConcept.parseArgument("\"13 February 1967 (US) (Test\"");
 		assertEquals(flattened[0].getMostLikely().size(), 1);
 		assertTrue(flattened[0].getMostLikely().contains(item));
@@ -199,15 +222,12 @@ public class TextToCycMappingTest {
 		assertTrue(flattened[3].getMostLikely().contains(item));
 		item = OntologyConcept.parseArgument("\"13 February 1967\"");
 		assertTrue(flattened[3].getMostLikely().contains(item));
-		item = OntologyConcept.parseArgument("\"13February1967\"");
-		assertEquals(flattened[4].getMostLikely().size(), 1);
-		assertTrue(flattened[4].getMostLikely().contains(item));
 
 		// Numerical values
 		results = mappingRoot_
 				.mapTextToCyc(
 						"1,022,234,000 (2010, [[List of continents by population|2nd]])",
-						true, true, false, true, wmi_, cyc_);
+						true, false, true, true, wmi_, cyc_);
 		flattened = results.listHierarchy();
 		assertEquals(flattened.length, 6);
 		item = OntologyConcept.parseArgument("\"1,022,234,000 (2010, 2nd)\"");
@@ -343,9 +363,9 @@ public class TextToCycMappingTest {
 
 	@Test
 	public void testTextToCyc_IntervalParse() throws Exception {
+		OntologyConcept.parsingArgs_ = true;
 		TextToCyc_IntervalParse mapper = new TextToCyc_IntervalParse(
 				mappingRoot_);
-		OntologyConcept.parsingArgs_ = true;
 		String value = "1987-2012";
 		WeightedSet<OntologyConcept> results = mapper.mapSourceToTarget(value,
 				wmi_, cyc_);
@@ -479,6 +499,7 @@ public class TextToCycMappingTest {
 
 	@Test
 	public void testTextToCyc_FunctionParser() throws Exception {
+		OntologyConcept.parsingArgs_ = true;
 		ConceptMiningTask.addMapping(wmi_.getArticleByTitle("Horse"),
 				new OntologyConcept("Horse"), cyc_);
 		ConceptMiningTask.addMapping(wmi_.getArticleByTitle("Lamivudine"),
@@ -494,9 +515,10 @@ public class TextToCycMappingTest {
 		assertEquals(results.size(), 0);
 
 		results = mapper.mapSourceToTarget("Small [[horse]]", wmi_, cyc_);
-		assertTrue(results.contains(OntologyConcept
-				.parseArgument("(SmallFn Horse)")));
-		assertEquals(results.size(), 1);
+		OntologyConcept funcConcept = new OntologyConcept("SmallFn", "Horse");
+		assertTrue(results.contains(funcConcept));
+		assertEquals(results.getMostLikely().size(), 5);
+		assertEquals(results.size(), 5);
 
 		// Function with multi-word alias
 		// Also, conflicting functions (SideEffectOf/SideEffectOfDrugSubstance)

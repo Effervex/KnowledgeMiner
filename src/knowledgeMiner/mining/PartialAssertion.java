@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -290,14 +291,12 @@ public class PartialAssertion extends MinedAssertion {
 			if (relation_ instanceof MappableConcept) {
 				expandedRelation = ((MappableConcept) relation_).mapThing(
 						mapper, wmi, ontology);
-				// TODO Check it is in fact a relation!
-
-				// No relation found.
-				// TODO Modify this to allow relation creation (if arg known)
-				if (expandedRelation.isEmpty())
-					return aq;
 			} else
 				expandedRelation.add((OntologyConcept) relation_);
+			// Check it is in fact a relation!
+			checkIfRelation(expandedRelation, ontology);
+			if (expandedRelation.isEmpty())
+				return aq;
 
 			// Expand the args
 			WeightedSet<OntologyConcept>[] expandedArgs = new WeightedSet[args_.length];
@@ -323,6 +322,26 @@ public class PartialAssertion extends MinedAssertion {
 			aq.scaleAll(weight);
 		}
 		return aq;
+	}
+
+	private void checkIfRelation(WeightedSet<OntologyConcept> expandedRelation,
+			OntologySocket ontology) {
+		Collection<OntologyConcept> removables = new ArrayList<>();
+		for (OntologyConcept rel : expandedRelation) {
+			// Check if a relation (binary)
+			if (!ontology.isa(rel.getIdentifier(),
+					CommonConcepts.BINARY_PREDICATE.getID())) {
+				removables.add(rel);
+			}
+		}
+		expandedRelation.removeAll(removables);
+		if (expandedRelation instanceof HierarchicalWeightedSet
+				&& ((HierarchicalWeightedSet) expandedRelation).hasSubSets()) {
+			for (WeightedSet<OntologyConcept> lower : ((HierarchicalWeightedSet<OntologyConcept>) expandedRelation)
+					.getSubSets()) {
+				checkIfRelation(lower, ontology);
+			}
+		}
 	}
 
 	@Override

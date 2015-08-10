@@ -95,16 +95,6 @@ public class ConceptMiningTask implements Runnable {
 	private WMISocket wmi_;
 
 	/**
-	 * Constructor for a new ConceptMiningTask
-	 * 
-	 */
-	private ConceptMiningTask() {
-		processables_ = new TreeSet<>();
-		km_ = KnowledgeMiner.getInstance();
-		iteration_ = KnowledgeMiner.runID_;
-	}
-
-	/**
 	 * Constructor for a new ConceptMiningTask with a single Cyc Term to begin
 	 * with.
 	 * 
@@ -115,8 +105,10 @@ public class ConceptMiningTask implements Runnable {
 	 *            The iteration to run the mappings in.
 	 */
 	public ConceptMiningTask(ConceptModule conceptModule, int runIteration) {
-		this();
-		processables_.add(conceptModule);
+		km_ = KnowledgeMiner.getInstance();
+		processables_ = new TreeSet<>();
+		if (conceptModule != null)
+			processables_.add(conceptModule);
 		iteration_ = runIteration;
 	}
 
@@ -479,7 +471,7 @@ public class ConceptMiningTask implements Runnable {
 			// TODO Remove all KM assertions no longer produced by KM
 
 			// Then, make the mining assertions
-			concept.makeAssertions(articleTitle, ontology_);
+			concept.makeAssertions(iteration_, articleTitle, ontology_);
 			if (trackAsserted_) {
 				if (assertedConcepts_ == null)
 					assertedConcepts_ = new ArrayList<>();
@@ -647,8 +639,7 @@ public class ConceptMiningTask implements Runnable {
 		for (Integer childArt : children) {
 			ConceptModule cm = new ConceptModule(childArt, parents,
 					autoAssertions);
-			ConceptMiningTask childTask = new ConceptMiningTask(cm,
-					KnowledgeMiner.runID_);
+			ConceptMiningTask childTask = new ConceptMiningTask(cm, iteration_);
 			km_.processConcept(childTask);
 		}
 	}
@@ -747,9 +738,9 @@ public class ConceptMiningTask implements Runnable {
 				+ " others.";
 	}
 
-	private static void processInput(BufferedReader in, String input)
+	private static void processInput(BufferedReader in, String input, int runID)
 			throws Exception {
-		ConceptMiningTask cmt = new ConceptMiningTask();
+		ConceptMiningTask cmt = new ConceptMiningTask(null, runID);
 		// KnowledgeMinerPreprocessor.ENABLE_PREPROCESSING = false;
 		cmt.wmi_ = ResourceAccess.requestWMISocket();
 		cmt.ontology_ = ResourceAccess.requestOntologySocket();
@@ -785,7 +776,7 @@ public class ConceptMiningTask implements Runnable {
 			String map = in.readLine().trim();
 			ConceptModule cm = parseConceptModule(map, cmt.wmi_, cmt.ontology_);
 			if (cm != null) {
-				cmt = new ConceptMiningTask(cm, KnowledgeMiner.runID_);
+				cmt = new ConceptMiningTask(cm, runID);
 				cmt.setTrackAsserted(true);
 				cmt.run(true);
 				System.out.println(cmt.getAssertedConcepts());
@@ -941,7 +932,7 @@ public class ConceptMiningTask implements Runnable {
 					CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(),
 					null, concept, CycConstants.WIKI_VERSION,
 					new StringConcept(article + ""));
-			return assertion.makeAssertion(concept, ontology);
+			return assertion.makeAssertion(-1, concept, ontology);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -1046,6 +1037,7 @@ public class ConceptMiningTask implements Runnable {
 
 		String input = null;
 		StringBuilder article = null;
+		int runID = -1;
 		try {
 			// Process the args
 			for (int i = 0; i < args.length; i++) {
@@ -1055,7 +1047,7 @@ public class ConceptMiningTask implements Runnable {
 					input = "interactive";
 				} else if (args[i].equals("-r")) {
 					i++;
-					KnowledgeMiner.runID_ = Integer.parseInt(args[i]);
+					runID = Integer.parseInt(args[i]);
 					// KnowledgeMiner.readInOntologyMappings();
 				} else {
 					if (article == null)
@@ -1074,7 +1066,7 @@ public class ConceptMiningTask implements Runnable {
 							.getArticleByTitle(article.toString());
 					ConceptModule cm = new ConceptModule(artID);
 					ConceptMiningTask cmt = new ConceptMiningTask(cm,
-							KnowledgeMiner.runID_);
+							runID);
 					cmt.run();
 					break;
 				} else {
@@ -1088,7 +1080,7 @@ public class ConceptMiningTask implements Runnable {
 									+ "\tOr 'exit'");
 					input = in.readLine().trim();
 				}
-				processInput(in, input);
+				processInput(in, input, runID);
 				System.out.println();
 			} catch (Exception e) {
 				e.printStackTrace();

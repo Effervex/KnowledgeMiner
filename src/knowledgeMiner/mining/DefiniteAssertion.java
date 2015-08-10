@@ -107,16 +107,19 @@ public class DefiniteAssertion extends MinedAssertion {
 	/**
 	 * Asserts this assertion into Cyc.
 	 * 
+	 * @param runIter
+	 *            The run ID of the assertion. -1 if no run info.
 	 * @param substitute
 	 *            The substitution for placeholders (can be null).
 	 * @param ontology
 	 *            The Cyc access.
+	 * 
 	 * @return The assertion's ID.
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	public int makeAssertion(OntologyConcept substitute, OntologySocket ontology)
-			throws Exception {
+	public int makeAssertion(int runIter, OntologyConcept substitute,
+			OntologySocket ontology) throws Exception {
 		// Perform the assertion
 		Object[] args = new Object[args_.length + 1];
 		args[0] = relation_.getIdentifier();
@@ -126,13 +129,6 @@ public class DefiniteAssertion extends MinedAssertion {
 		long now = System.currentTimeMillis();
 		LoggerFactory.getLogger("ASSERTION")
 				.info("Asserted: {}", asPredicate());
-		// Higher order collections
-		// if (assertionID_ == -1 && isHierarchical()
-		// && relation_ == CycConstants.GENLS.getConcept()) {
-		// relation_ = CycConstants.ISA.getConcept();
-		// args[0] = relation_.getIdentifier();
-		// assertionID_ = ontology.assertToOntology(microtheory_, args);
-		// }
 
 		if (assertionID_ == -1) {
 			setStatus(-1);
@@ -140,7 +136,7 @@ public class DefiniteAssertion extends MinedAssertion {
 		} else {
 			String creationDate = ontology.getProperty(assertionID_, false,
 					DAGObject.CREATION_DATE);
-			long diff = NEWLY_CREATED_EPSILON + 1;
+			long diff = NEWLY_CREATED_EPSILON;
 			try {
 				diff = now - Long.parseLong(creationDate);
 			} catch (NumberFormatException nfe) {
@@ -153,13 +149,12 @@ public class DefiniteAssertion extends MinedAssertion {
 			IOManager.getInstance().writeAssertion(substitute, this);
 			// Add provenance data
 			if (heuristic_ != null)
-				ontology.setProperty(assertionID_, false, HeuristicProvenance.PROVENANCE,
-						heuristic_.toString());
-			// Add run ID data
-			if (KnowledgeMiner.runID_ != -1)
 				ontology.setProperty(assertionID_, false,
-						KnowledgeMiner.RUN_ID, KnowledgeMiner.runID_ + "");
-			
+						HeuristicProvenance.PROVENANCE, heuristic_.toString());
+			// Add run ID data (if none exists)
+			if (getStatus() == 1 && runIter != -1)
+				ontology.setProperty(assertionID_, false,
+						KnowledgeMiner.RUN_ID, runIter + "");
 		}
 
 		return assertionID_;

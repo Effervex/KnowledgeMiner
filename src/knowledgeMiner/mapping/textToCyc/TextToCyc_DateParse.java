@@ -58,7 +58,7 @@ public class TextToCyc_DateParse extends
 				source, true, true, true);
 		for (OntologyConcept concept : concepts) {
 			if (ontology.isa(concept.getIdentifier(),
-					CommonConcepts.DATE.getID()))
+					CommonConcepts.TIME_INTERVAL.getID()))
 				results.add(concept);
 		}
 		return results;

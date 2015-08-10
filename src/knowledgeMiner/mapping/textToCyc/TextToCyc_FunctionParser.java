@@ -85,9 +85,9 @@ public class TextToCyc_FunctionParser extends
 	 *            The ontology access.
 	 * @return All possible function-arguments found in the text.
 	 */
-	protected Collection<OntologyConcept> createPossibleFunction(int textIndex,
-			boolean prefixText, String[] split, Object[] isaFunction,
-			WMISocket wmi, OntologySocket ontology) {
+	protected WeightedSet<OntologyConcept> createPossibleFunction(
+			int textIndex, boolean prefixText, String[] split,
+			Object[] isaFunction, WMISocket wmi, OntologySocket ontology) {
 		// Process the function text
 		String possibleFunction = null;
 		if (prefixText)
@@ -103,9 +103,8 @@ public class TextToCyc_FunctionParser extends
 		// Also check "'s" pattern
 		possibleFunction = possibleFunction.replaceAll(FUNCTION_STRING,
 				FUNCTION_STRING + "'s");
-		functionConcepts.addAll(ontology
-				.findFilteredConceptByName(possibleFunction, false, true, true,
-						isaFunction));
+		functionConcepts.addAll(ontology.findFilteredConceptByName(
+				possibleFunction, false, true, true, isaFunction));
 
 		// Process the remaining text
 		String remText = null;
@@ -131,11 +130,11 @@ public class TextToCyc_FunctionParser extends
 	 *            ontology access.
 	 * @return All valid combined functions.
 	 */
-	private Collection<OntologyConcept> resolveFunctionCombination(
+	private HierarchicalWeightedSet<OntologyConcept> resolveFunctionCombination(
 			Collection<OntologyConcept> functionConcepts,
 			HierarchicalWeightedSet<OntologyConcept> functionTarget,
 			OntologySocket ontology) {
-		Collection<OntologyConcept> results = new ArrayList<>();
+		HierarchicalWeightedSet<OntologyConcept> results = new HierarchicalWeightedSet<>();
 		for (OntologyConcept func : functionConcepts) {
 			// Combine the two and accept ontology's arg checking
 			for (OntologyConcept arg : functionTarget) {
@@ -143,7 +142,18 @@ public class TextToCyc_FunctionParser extends
 						arg.getIdentifier(), 1)) {
 					OntologyConcept combined = new OntologyConcept(
 							func.getIdentifier(), arg.getIdentifier());
-					results.add(combined);
+					results.add(combined, functionTarget.getWeight(arg));
+				}
+			}
+			// If lower, recurse in
+			if (functionTarget.hasSubSets()) {
+				for (WeightedSet<OntologyConcept> lowerSet : functionTarget
+						.getSubSets()) {
+					HierarchicalWeightedSet<OntologyConcept> lower = resolveFunctionCombination(
+							functionConcepts,
+							(HierarchicalWeightedSet<OntologyConcept>) lowerSet,
+							ontology);
+					results.addLower(lower);
 				}
 			}
 		}

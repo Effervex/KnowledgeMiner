@@ -23,6 +23,10 @@ import com.google.common.base.Predicate;
  * @author Sam Sarjant
  */
 public class MappingSuite<Source, Target> {
+	public static final int ADDITIVE = 0;
+
+	public static final int MAXIMUM = 1;
+
 	/** The mapping heuristics used. */
 	private ArrayList<MappingHeuristic<Source, Target>> mappingHeuristics_;
 
@@ -37,14 +41,17 @@ public class MappingSuite<Source, Target> {
 
 	private Predicate<Source> preProcessFilter_;
 
+	private int aggregationType_;
+
 	/**
 	 * Constructor for a new MappingSuite
 	 */
-	public MappingSuite() {
+	public MappingSuite(int aggregationType) {
 		mappingHeuristics_ = new ArrayList<>();
 		postProcessors_ = new ArrayList<>();
 		preProcessors_ = new ArrayList<>();
 		nonRecursivePreprocessors_ = new ArrayList<>();
+		aggregationType_ = aggregationType;
 	}
 
 	/**
@@ -147,17 +154,21 @@ public class MappingSuite<Source, Target> {
 			Collection<Source> processed = preprocessor.process(source, wmi,
 					ontology);
 			// If the processed output does differ from the input, recurse in
-			if (!processed.isEmpty()
-					&& (processed.size() > 1 || !processed.iterator().next()
-							.equals(source))) {
+			if (!processed.isEmpty()) {
 				// Add each processed source as a sub-value.
+				boolean changed = false;
 				for (Source processedSource : processed) {
+					if (processedSource.equals(source))
+						continue;
+					changed = true;
+					// TODO There's a stack overflow infinite loop here.
 					HierarchicalWeightedSet<Source> lower = preProcessSource(
 							processedSource, wmi, ontology);
 					if (!lower.isEmpty())
 						result.addLower(lower);
 				}
-				break;
+				if (changed)
+					break;
 			}
 		}
 		return result;
@@ -192,8 +203,21 @@ public class MappingSuite<Source, Target> {
 					|| !disabledHeuristics.contains(heuristic.getClass())) {
 				WeightedSet<Target> result = heuristic.mapSourceToTarget(
 						source, wmi, ontology);
-				if (!result.isEmpty())
-					mappings.addAll(result, heuristic.getWeight());
+				if (!result.isEmpty()) {
+					// Additive
+					if (aggregationType_ == ADDITIVE)
+						mappings.addAll(result, heuristic.getWeight());
+					else if (aggregationType_ == MAXIMUM) {
+						// Maximum
+						for (Target t : result) {
+							double newWeight = result.getWeight(t);
+							if (!mappings.contains(t)
+									|| mappings.getWeight(t) < newWeight)
+								mappings.set(t, newWeight);
+						}
+						// Cannot deal with subsets.
+					}
+				}
 			}
 		}
 

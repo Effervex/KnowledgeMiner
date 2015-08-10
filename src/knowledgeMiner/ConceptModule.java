@@ -259,13 +259,17 @@ public class ConceptModule extends MinedInformation implements
 	 * Make the standard assertions regarding the mapping contained by this
 	 * MinedInformation.
 	 * 
+	 * @param articleTitle
+	 *            The article title
+	 * @param runIter
+	 *            The current run iteration
 	 * @param ontology
-	 * @param artID
+	 *            The ontology access.
 	 * 
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	private void makeWikiMappingAssertions(String articleTitle,
+	private void makeWikiMappingAssertions(String articleTitle, int runIter,
 			OntologySocket ontology) throws Exception {
 		String strURL = WMISocket.getArticleURL(articleTitle,
 				WMISocket.WIKIPEDIA_URL);
@@ -276,31 +280,35 @@ public class ConceptModule extends MinedInformation implements
 		// Wiki URL
 		new DefiniteAssertion(CycConstants.WIKIPEDIA_URL.getConcept(),
 				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null,
-				concept_, new StringConcept(strURL)).makeAssertion(concept_,
-				ontology);
+				concept_, new StringConcept(strURL)).makeAssertion(runIter,
+				concept_, ontology);
 
 		// Synonymous External Concept
 		new DefiniteAssertion(
 				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getConcept(),
 				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null,
 				concept_, CycConstants.WIKI_VERSION, new StringConcept(
-						articleID_ + "")).makeAssertion(concept_, ontology);
+						articleID_ + "")).makeAssertion(runIter, concept_,
+				ontology);
 	}
 
 	/**
 	 * Perform assertion addition, being careful not to change the type of the
 	 * concept.
 	 * 
+	 * @param runIter
+	 *            The run iteration in which the assertions are being made.
 	 * @param ontology
 	 *            The ontology access.
+	 * 
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	protected void performAssertionAdding(OntologySocket ontology)
+	protected void performAssertionAdding(int runIter, OntologySocket ontology)
 			throws Exception {
 		Collection<Integer> assertionIDs = new ArrayList<>();
 		for (DefiniteAssertion assertion : getConcreteAssertions()) {
-			int id = assertion.makeAssertion(concept_, ontology);
+			int id = assertion.makeAssertion(runIter, concept_, ontology);
 			if (id != -1) {
 				assertionIDs.add(id);
 			}
@@ -349,12 +357,15 @@ public class ConceptModule extends MinedInformation implements
 	/**
 	 * Perform any auto-assertions defined by external factors.
 	 * 
+	 * @param runIter
+	 *            The run iteration in which the assertions are being made.
 	 * @param ontology
 	 *            The ontology access.
+	 * 
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	protected void performAutoAssertions(OntologySocket ontology)
+	protected void performAutoAssertions(int runIter, OntologySocket ontology)
 			throws Exception {
 		if (autoAssertions_ != null && parents_ != null
 				&& isChildOfParents(ontology)) {
@@ -362,8 +373,8 @@ public class ConceptModule extends MinedInformation implements
 				if (assertion instanceof PartialAssertion)
 					assertion = ((PartialAssertion) assertion).instantiate(
 							getMappableSelfRef(), concept_);
-				((DefiniteAssertion) assertion).makeAssertion(concept_,
-						ontology);
+				((DefiniteAssertion) assertion).makeAssertion(runIter,
+						concept_, ontology);
 			}
 		}
 	}
@@ -616,18 +627,21 @@ public class ConceptModule extends MinedInformation implements
 	/**
 	 * Make the assertions contained within this ConceptModule.
 	 * 
+	 * @param runIter
+	 *            The run iteration in which the assertions are being made.
 	 * @param articleTitle
 	 *            The article title.
+	 * 
 	 * @throws Exception
 	 */
-	public void makeAssertions(String articleTitle, OntologySocket ontology)
-			throws Exception {
+	public void makeAssertions(int runIter, String articleTitle,
+			OntologySocket ontology) throws Exception {
 		// Assert type
 		int numAssertions = 0;
 		if (createdConcept_) {
 			new DefiniteAssertion(CycConstants.ISA.getConcept(),
 					CycConstants.BASE_MICROTHEORY.getConceptName(), null,
-					concept_, type_).makeAssertion(concept_, ontology);
+					concept_, type_).makeAssertion(runIter, concept_, ontology);
 			significantChange_ = true;
 		} else {
 			// Count the number of assertions
@@ -640,10 +654,10 @@ public class ConceptModule extends MinedInformation implements
 			performAssertionRemoval(ontology);
 
 			// Perform the assertions
-			performAssertionAdding(ontology);
+			performAssertionAdding(runIter, ontology);
 
 			// Perform auto-assertions
-			performAutoAssertions(ontology);
+			performAutoAssertions(runIter, ontology);
 		}
 		if (!significantChange_) {
 			int newNumAssertions = ontology.getAllAssertions(concept_, 2,
@@ -651,12 +665,12 @@ public class ConceptModule extends MinedInformation implements
 			significantChange_ = newNumAssertions != numAssertions;
 		}
 
-		makeWikiMappingAssertions(articleTitle, ontology);
+		makeWikiMappingAssertions(articleTitle, runIter, ontology);
 		DefiniteAssertion weightAssertion = new DefiniteAssertion(
 				CycConstants.MAPPING_CONFIDENCE.getConcept(),
 				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null,
 				concept_, new PrimitiveConcept(getModuleWeight()));
-		weightAssertion.makeAssertion(concept_, ontology);
+		weightAssertion.makeAssertion(runIter, concept_, ontology);
 	}
 
 	@Override

@@ -54,7 +54,7 @@ public class TextToCyc_TimeContextParse extends
 		if (m.matches()) {
 			// Match item
 			HierarchicalWeightedSet<OntologyConcept> arguments = mapper_
-					.mapTextToCyc(m.group(1), false, false, false, false, wmi, ontology);
+					.mapTextToCyc(m.group(1).trim(), false, false, false, true, wmi, ontology);
 			if (arguments.isEmpty())
 				return new WeightedSet<>();
 

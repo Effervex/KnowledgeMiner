@@ -6,9 +6,11 @@ package knowledgeMiner.mapping.textToCyc;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 import knowledgeMiner.mapping.MappingPreProcessor;
+import util.UtilityMethods;
 import util.wikipedia.WikiParser;
 
 /**
@@ -20,7 +22,12 @@ public class SplitNewLinePreProcessor extends MappingPreProcessor<String> {
 	@Override
 	public Collection<String> process(String input, WMISocket wmi,
 			OntologySocket cyc) {
-		return WikiParser.split(input, "\n");
+		// Split on commas and trim
+		ArrayList<String> split = UtilityMethods.split(input, '\n');
+		for (int i = 0; i < split.size(); i++) {
+			split.set(i, split.get(i).trim());
+		}
+		return split;
 	}
 
 	@Override

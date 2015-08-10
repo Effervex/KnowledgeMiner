@@ -47,7 +47,6 @@ public class KnowledgeMinerTriggered {
 
 	public KnowledgeMinerTriggered(String[] args) {
 		km_ = KnowledgeMiner.newInstance("enwiki_20110722");
-		KnowledgeMiner.runID_ = -1;
 		// KnowledgeMiner.readInOntologyMappings(KnowledgeMiner.runID_);
 	}
 

@@ -67,9 +67,11 @@ public abstract class MappingHeuristic<Source, Target> extends
 			WeightedSet<Target> mappedTarget = mapSourceInternal(s, wmi, ontology);
 			if (!mappedTarget.isEmpty()
 					&& mappedTarget
-							.getWeight(mappedTarget.getOrdered().first()) > 1)
+							.getWeight(mappedTarget.getOrdered().first()) > 1) {
 				mappedTarget
 						.normaliseWeightTo1(KnowledgeMiner.CUTOFF_THRESHOLD);
+				mappedTarget.scaleAll(weight_);
+			}
 			return mappedTarget;
 		} catch (Exception e) {
 			e.printStackTrace();

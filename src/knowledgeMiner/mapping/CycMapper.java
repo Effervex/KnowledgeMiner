@@ -79,9 +79,9 @@ public class CycMapper {
 	 */
 	public CycMapper(KnowledgeMiner knowledgeMiner) {
 		super();
-		cycToWikiMapping_ = new MappingSuite<>();
-		wikiToCycMapping_ = new MappingSuite<>();
-		textToCycMapping_ = new MappingSuite<>();
+		cycToWikiMapping_ = new MappingSuite<>(MappingSuite.ADDITIVE);
+		wikiToCycMapping_ = new MappingSuite<>(MappingSuite.ADDITIVE);
+		textToCycMapping_ = new MappingSuite<>(MappingSuite.MAXIMUM);
 
 		try {
 			initialiseHeuristics(knowledgeMiner);
