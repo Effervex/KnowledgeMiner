@@ -1245,7 +1245,7 @@ public class ConceptMiningTask implements Runnable {
 			builder.append(states[i] + ": " + milliMean + "ms +- "
 					+ milliVariance + "ms (# " + values.length + ")\n");
 			stateTimes_[i].clear();
-		}
+		}  
 		return builder.toString();
 	}
 }
