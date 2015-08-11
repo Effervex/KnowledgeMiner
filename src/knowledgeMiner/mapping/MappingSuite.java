@@ -11,7 +11,6 @@ import java.util.Collection;
 import java.util.List;
 
 import knowledgeMiner.KnowledgeMiner;
-import util.collection.CacheMap;
 import util.collection.HierarchicalWeightedSet;
 import util.collection.WeightedSet;
 

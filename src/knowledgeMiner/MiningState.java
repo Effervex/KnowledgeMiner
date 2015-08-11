@@ -9,5 +9,5 @@ package knowledgeMiner;
  * @author Sam Sarjant
  */
 public enum MiningState {
-	ASSERTED, CONSISTENT, MAPPED, REVERSE_MAPPED, UNMAPPED, UNMINED;
+	UNMINED, UNMAPPED, MAPPED, REVERSE_MAPPED, CONSISTENT, ASSERTED;
 }

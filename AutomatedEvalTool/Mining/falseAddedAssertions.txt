@@ -1,5 +1,7 @@
 (abstract UmaThurman PulpFiction-Movie)
 (abstract UmaThurman PulpFiction-TheMovie)
+(assets Netherlands AmsterdamAdmirals)
+(assets Netherlands CityOfAmsterdamNetherlands)
 (businessPartners UmaThurman ArpadBusson-NationalPresident)
 (disjointWith (CitizenFn Italy) HeavyMetalMusicPerformer)
 (disjointWith (CollectionUnionFn (TheSet PlantBLO AnimalBLO)) ChilePepper)

@@ -27,6 +27,8 @@ import knowledgeMiner.mining.MiningHeuristic;
 import knowledgeMiner.mining.wikipedia.FirstSentenceMiner;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.math3.stat.StatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +49,7 @@ import cyc.StringConcept;
  * 
  * @author Sam Sarjant
  */
+@SuppressWarnings("unchecked")
 public class ConceptMiningTask implements Runnable {
 	private static final int BIG_ENOUGH = (int) Math.pow(2, 20);
 
@@ -66,6 +69,15 @@ public class ConceptMiningTask implements Runnable {
 
 	/** The number of asserted concepts. */
 	public static int assertedCount_ = 0;
+
+	/** Debug feature for tracking run times for each state of the process. */
+	public static ArrayList<Double>[] stateTimes_;
+
+	static {
+		stateTimes_ = new ArrayList[MiningState.values().length];
+		for (MiningState ms : MiningState.values())
+			stateTimes_[ms.ordinal()] = new ArrayList<>();
+	}
 
 	/** The interactive interface for interactive mode. */
 	public static InteractiveMode interactiveInterface_ = new InteractiveMode();
@@ -263,18 +275,55 @@ public class ConceptMiningTask implements Runnable {
 		int conceptID = concept.getID();
 		if (conceptID < 0 || iteration_ < 0)
 			return false;
+		int iter = getConceptState(concept, ontology_);
+		return iter >= iteration_;
+	}
+
+	/**
+	 * Gets the current mapped state of a concept. That is, how many times it
+	 * has been processed.
+	 *
+	 * @param concept
+	 *            The concept to get the state for.
+	 * @return The current run state of the concept.
+	 */
+	public static int getConceptState(OntologyConcept concept,
+			OntologySocket ontology) {
+		int conceptID = concept.getID();
 		int iter = getState(conceptID, ontologyStates_);
 		if (iter == 0) {
-			String strIteration = ontology_.getProperty(concept, true,
+			String strIteration = ontology.getProperty(concept, true,
 					KnowledgeMiner.RUN_ID);
 			if (strIteration == null)
-				return false;
+				return 0;
 			else {
 				iter = Short.parseShort(strIteration);
 				setConceptState(conceptID, iter);
 			}
 		}
-		return iter >= iteration_;
+		return iter;
+	}
+
+	/**
+	 * Gets the current mapped state of an article. That is, how many times it
+	 * has been processed.
+	 *
+	 * @param concept
+	 *            The concept to get the state for.
+	 * @return The current run state of the concept.
+	 */
+	public static int getArticleState(int article, OntologySocket ontology) {
+		int iter = getState(article, artStates_);
+		if (iter == 0) {
+			OntologyConcept concept = KnowledgeMiner.getConceptMapping(article,
+					ontology);
+			if (concept != null) {
+				iter = getConceptState(concept, ontology);
+				setArticleState(article, iter);
+			} else
+				iter = 0;
+		}
+		return iter;
 	}
 
 	/**
@@ -309,10 +358,11 @@ public class ConceptMiningTask implements Runnable {
 	 *            changes.
 	 */
 	private void runInternal(ConceptModule cm, boolean singleMapping) {
+		long startTime = System.nanoTime();
+		MiningState state = cm.getState();
 		try {
 			logger_.info(cm.toFlatString());
 			km_.getInterface().update(cm, processables_);
-			MiningState state = cm.getState();
 			switch (state) {
 			case UNMINED:
 				// If unmined: Mine article (except children)
@@ -354,6 +404,13 @@ public class ConceptMiningTask implements Runnable {
 			ontology_ = ResourceAccess.requestOntologySocket();
 		}
 
+		long endTime = System.nanoTime();
+
+		recordRuntime(state.ordinal(), endTime - startTime);
+	}
+
+	private synchronized void recordRuntime(int ordinal, long time) {
+		stateTimes_[ordinal].add(time * 1d);
 	}
 
 	/**
@@ -451,15 +508,9 @@ public class ConceptMiningTask implements Runnable {
 				setConceptState(concept.getConcept().getID(), iteration_);
 
 				// Note mining details on node
-				if (iteration_ != -1) {
-					int newIter = 0;
-					String oldIter = ontology_.getProperty(
-							concept.getConcept(), true, KnowledgeMiner.RUN_ID);
-					if (oldIter != null)
-						newIter = Integer.parseInt(oldIter);
+				if (iteration_ != -1)
 					ontology_.setProperty(concept.getConcept(), true,
-							KnowledgeMiner.RUN_ID, "" + (newIter + 1));
-				}
+							KnowledgeMiner.RUN_ID, "" + iteration_);
 			}
 			// Firstly, record the mapping
 			String articleTitle = wmi_.getPageTitle(concept.getArticle(), true);
@@ -994,16 +1045,6 @@ public class ConceptMiningTask implements Runnable {
 		return new OntologyConcept(name);
 	}
 
-	public static int getArticleState(int article) {
-		// TODO Read iter state from concept
-		return getState(article, artStates_);
-	}
-
-	public static int getConceptState(OntologyConcept concept) {
-		// TODO Read iter state from concept
-		return getState(concept.getID(), ontologyStates_);
-	}
-
 	/**
 	 * Gets the state of a indexed thing from an array of states. Requires a
 	 * little more than basic array access, as the value returned must be
@@ -1015,13 +1056,13 @@ public class ConceptMiningTask implements Runnable {
 	 *            The array of indexed things.
 	 * @param currentOnly
 	 *            If we only check current states.
-	 * @return The state of the indexed thing.
+	 * @return The state of the indexed thing. 0 if unknown.
 	 */
 	public static int getState(int index, int[] array) {
 		if (index < 0)
-			return -1;
+			return 0;
 		if (index >= array.length)
-			return -1;
+			return 0;
 		return array[index];
 	}
 
@@ -1065,8 +1106,7 @@ public class ConceptMiningTask implements Runnable {
 					int artID = ResourceAccess.requestWMISocket()
 							.getArticleByTitle(article.toString());
 					ConceptModule cm = new ConceptModule(artID);
-					ConceptMiningTask cmt = new ConceptMiningTask(cm,
-							runID);
+					ConceptMiningTask cmt = new ConceptMiningTask(cm, runID);
 					cmt.run();
 					break;
 				} else {
@@ -1191,5 +1231,21 @@ public class ConceptMiningTask implements Runnable {
 
 		ontologyStates_[concept.intValue()] = state;
 		logger_.trace("Set concept state to {} for {}.", state, concept);
+	}
+
+	public static String printRuntimes() {
+		StringBuilder builder = new StringBuilder();
+		MiningState[] states = MiningState.values();
+		for (int i = 0; i < stateTimes_.length - 1; i++) {
+			Double[] valD = stateTimes_[i]
+					.toArray(new Double[stateTimes_[i].size()]);
+			double[] values = ArrayUtils.toPrimitive(valD);
+			double milliMean = StatUtils.mean(values) / 1000000;
+			double milliVariance = StatUtils.variance(values) / 1000000;
+			builder.append(states[i] + ": " + milliMean + "ms +- "
+					+ milliVariance + "ms (# " + values.length + ")\n");
+			stateTimes_[i].clear();
+		}
+		return builder.toString();
 	}
 }

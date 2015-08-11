@@ -73,7 +73,8 @@ public class KnowledgeMiner {
 	/** The current version of Wikipedia being used. */
 	public static String wikiVersion_ = ENWIKI_DEFAULT;
 
-	public int runID_ = -1;
+	/** The current run ID. */
+	private int runID_ = -1;
 
 	/** The last index to seed with. */
 	private int endCount_ = -1;
@@ -357,6 +358,11 @@ public class KnowledgeMiner {
 			builder.append(" (" + format.format(percent * 100) + "%). ETA "
 					+ UtilityMethods.toTimeFormat(remaining));
 		}
+		
+		// Concept Mining Task Times
+		System.out.println(ConceptMiningTask.printRuntimes());
+		
+		
 		System.out
 				.println("\n\n\n\n" + builder + "\n" + executor_ + "\n\n\n\n");
 		LoggerFactory.getLogger("STATUS").info(builder.toString());
@@ -512,8 +518,10 @@ public class KnowledgeMiner {
 		if (preprocess)
 			km.preprocess();
 
-		if (runID != -1)
+		if (runID != -1) {
 			readInOntologyMappings();
+			km.runID_ = runID;
+		}
 
 		// Link an input file to KM
 		String resourceName = RESOURCE_WIKIPEDIA;

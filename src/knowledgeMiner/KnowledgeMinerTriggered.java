@@ -129,15 +129,16 @@ public class KnowledgeMinerTriggered {
 			// If the concept is mined, skip it
 			int iteration = 0;
 			if (concept_.getConcept() != null)
-				iteration = ConceptMiningTask.getConceptState(concept_
-						.getConcept());
+				iteration = ConceptMiningTask.getConceptState(
+						concept_.getConcept(), ontology);
 			else
-				iteration = ConceptMiningTask.getArticleState(concept_
-						.getArticle());
+				iteration = ConceptMiningTask.getArticleState(
+						concept_.getArticle(), ontology);
 			iteration++;
 
 			// Map the core concept
-			ConceptMiningTask cmt = new ConceptMiningTask(concept_.clone(), iteration);
+			ConceptMiningTask cmt = new ConceptMiningTask(concept_.clone(),
+					iteration);
 			cmt.setTrackAsserted(true);
 			cmt.run();
 
