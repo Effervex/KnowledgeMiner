@@ -17,6 +17,7 @@ import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
+import knowledgeMiner.mining.WeightedStanding;
 
 import org.slf4j.LoggerFactory;
 
@@ -797,5 +798,9 @@ public class ConceptModule extends MinedInformation implements
 			else
 				concept = concept_.toString();
 		return createString(article, concept);
+	}
+
+	public Collection<DefiniteAssertion> getDeletedAssertions() {
+		return deletedAssertions_;
 	}
 }

@@ -10,6 +10,7 @@
  ******************************************************************************/
 package knowledgeMiner;
 
+import graph.core.EdgeModifier;
 import graph.inference.CommonQuery;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
@@ -70,9 +71,9 @@ public class DisjointnessDisambiguator {
 		Collection<DefiniteAssertion> existingAssertions = new ArrayList<>();
 		
 		// TODO Get ALL type-bound assertions!
+		OntologyConcept concept = conceptModule.getConcept();
 
 		// For every ISA
-		OntologyConcept concept = conceptModule.getConcept();
 		Collection<OntologyConcept> isaTruths = null;
 		Collection<OntologyConcept> genlTruths = null;
 		if (!conceptModule.isCreatedConcept()) {

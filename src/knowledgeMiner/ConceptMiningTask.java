@@ -85,7 +85,7 @@ public class ConceptMiningTask implements Runnable {
 	/** The frequency at which the output files are updated. */
 	public static final int UPDATE_INTERVAL = 100;
 
-	public static boolean usingMinedProperty_ = false;
+	public static boolean onlyMining = false;
 
 	/** A collection for keeping track of all asserted conceptModules. */
 	private Collection<ConceptModule> assertedConcepts_;
@@ -578,6 +578,29 @@ public class ConceptMiningTask implements Runnable {
 				return mapped;
 			}
 
+			// If only mining
+			if (onlyMining) {
+				// Look up any known mapping and return that
+				int article = concept.getArticle();
+				OntologyConcept ontCon = concept.getConcept();
+				if (article == -1) {
+					article = KnowledgeMiner.getArtMapping(
+							concept.getConcept(), ontology_);
+				}
+				if (ontCon == null) {
+					ontCon = KnowledgeMiner.getConceptMapping(
+							concept.getArticle(), ontology_);
+				}
+				if (article != -1 && ontCon != null) {
+					ConceptModule cm = new ConceptModule(concept.getConcept(),
+							article, 1, true);
+					cm.mergeInformation(concept);
+					cm.setState(1, MiningState.REVERSE_MAPPED);
+					mapped.add(cm);
+				}
+				return mapped;
+			}
+
 			boolean cycToWiki = concept.isCycToWiki();
 			if (reversedOrder)
 				cycToWiki = !cycToWiki;
@@ -665,7 +688,6 @@ public class ConceptMiningTask implements Runnable {
 		cm.buildDisambiguationGrid(ontology_, wmi_);
 	}
 
-	@SuppressWarnings("unchecked")
 	public Collection<ConceptModule> getAssertedConcepts() {
 		if (assertedConcepts_ == null)
 			return CollectionUtils.EMPTY_COLLECTION;
@@ -1237,15 +1259,15 @@ public class ConceptMiningTask implements Runnable {
 		StringBuilder builder = new StringBuilder();
 		MiningState[] states = MiningState.values();
 		for (int i = 0; i < stateTimes_.length - 1; i++) {
-			Double[] valD = stateTimes_[i]
-					.toArray(new Double[stateTimes_[i].size()]);
+			Double[] valD = stateTimes_[i].toArray(new Double[stateTimes_[i]
+					.size()]);
 			double[] values = ArrayUtils.toPrimitive(valD);
 			double milliMean = StatUtils.mean(values) / 1000000;
 			double milliVariance = StatUtils.variance(values) / 1000000;
 			builder.append(states[i] + ": " + milliMean + "ms +- "
 					+ milliVariance + "ms (# " + values.length + ")\n");
 			stateTimes_[i].clear();
-		}  
+		}
 		return builder.toString();
 	}
 }

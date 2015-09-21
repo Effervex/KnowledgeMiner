@@ -329,6 +329,8 @@ public class PartialAssertion extends MinedAssertion {
 		Collection<OntologyConcept> removables = new ArrayList<>();
 		for (OntologyConcept rel : expandedRelation) {
 			// Check if a relation (binary)
+			if (rel.equals(CycConstants.ISA_GENLS.getConcept()))
+					continue;
 			if (!ontology.isa(rel.getIdentifier(),
 					CommonConcepts.BINARY_PREDICATE.getID())) {
 				removables.add(rel);

@@ -44,6 +44,9 @@ public abstract class KMSocket {
 	/** If the socket can be restarted. */
 	protected boolean canRestart_;
 
+	/** If the socket connected successfully. */
+	protected boolean connected_;
+
 	/**
 	 * Restarts the connection by closing this socket and opening a new one.
 	 * Returns false if no commands have been issued since the last restart
@@ -55,13 +58,15 @@ public abstract class KMSocket {
 	protected boolean restartConnection() {
 		if (!canRestart_)
 			return false;
-		
+
 		try {
 			disconnect();
 			connect();
 			canRestart_ = false;
+			connected_ = true;
 		} catch (Exception e) {
 			e.printStackTrace();
+			connected_ = false;
 			return false;
 		}
 		return true;
@@ -79,10 +84,11 @@ public abstract class KMSocket {
 			port_ = port;
 			access_ = access;
 			connect();
+			connected_ = true;
 		} catch (Exception e) {
 			System.err.println("Could not connect to socket ("
 					+ getMachineName() + ":" + getPort() + ")");
-			e.printStackTrace();
+			connected_ = false;
 		}
 	}
 
@@ -94,6 +100,7 @@ public abstract class KMSocket {
 			in_.close();
 			out_.close();
 			socket_.close();
+			connected_ = false;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -141,6 +148,10 @@ public abstract class KMSocket {
 
 	public long getCommandCount() {
 		return commandCount_;
+	}
+
+	public boolean isConnected() {
+		return connected_;
 	}
 
 	/**

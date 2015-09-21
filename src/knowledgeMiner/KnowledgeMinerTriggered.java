@@ -64,7 +64,6 @@ public class KnowledgeMinerTriggered {
 		logger_.info("Starting triggered waiting cycle.");
 		DAGSocket ontology = (DAGSocket) ResourceAccess.requestOntologySocket();
 
-		ConceptMiningTask.usingMinedProperty_ = true;
 		// Forever, continue re-checking for a trigger every interval.
 		while (true) {
 			try {

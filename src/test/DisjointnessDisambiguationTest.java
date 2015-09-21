@@ -1,5 +1,6 @@
 package test;
 
+import static org.junit.Assert.*;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
@@ -68,11 +69,25 @@ public class DisjointnessDisambiguationTest {
 		KnowledgeMinerPreprocessor.getInstance().writeHeuristics();
 	}
 
+	@Test
+	public void testIsolatedDD() throws Exception {
+		Integer article = wmi_.getArticleByTitle("Film");
+		OntologyConcept concept = new OntologyConcept("Movie-CW");
+		ConceptModule cm = new ConceptModule(concept, article, 1, true);
+		KnowledgeMiner.getInstance().getMiner()
+				.mineArticle(cm, MinedInformation.ALL_TYPES, wmi_, cyc_);
+		// Build the DD grid
+		cm.buildDisambiguationGrid(cyc_, wmi_);
+		// Disambiguate.
+		cm.disambiguateAssertions(cyc_);
+		assertTrue(cm.getDeletedAssertions().isEmpty());
+	}
+
 	private void addArticleMappings() throws Exception {
 		// Movie
 		OntologyConcept concept = new OntologyConcept("Movie-CW");
 		int article = wmi_.getArticleByTitle("Film");
-		
+
 		int result = ConceptMiningTask.addMapping(article, concept, cyc_);
 
 		// Genre

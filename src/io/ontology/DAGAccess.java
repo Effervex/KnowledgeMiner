@@ -10,13 +10,14 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 
 public class DAGAccess extends OntologyAccess {
-	public DAGAccess(int port) throws UnknownHostException,
-			IOException {
+	public DAGAccess(int port) throws UnknownHostException, IOException {
 		super(port);
 		cacheMapActive_ = false;
 		DAGSocket dag = (DAGSocket) requestSocket();
-		for (CommonConcepts cc : CommonConcepts.values()) {
-			cc.setID(dag.getConceptID(cc.getNodeName()));
+		if (dag != null) {
+			for (CommonConcepts cc : CommonConcepts.values()) {
+				cc.setID(dag.getConceptID(cc.getNodeName()));
+			}
 		}
 	}
 

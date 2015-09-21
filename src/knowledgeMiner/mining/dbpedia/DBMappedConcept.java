@@ -46,6 +46,8 @@ public class DBMappedConcept extends MappableConcept {
 	private boolean allowString_ = false;
 	/** If primitives are parsde. Defaults to true. */
 	private boolean allowPrimitives_ = true;
+	/** The mappable resource Wikipedia article ID. */
+	private int resID_;
 
 	/** A cache of mappings from DBpedia URIs to concepts. */
 	public static final Map<String, WeightedSet<OntologyConcept>> predMappings_ = new HashMap<>();
@@ -55,18 +57,17 @@ public class DBMappedConcept extends MappableConcept {
 		predicate_ = predicate;
 	}
 
-	public DBMappedConcept(RDFNode resource, boolean predicate,
-			boolean allowPrimitives, boolean allowString) {
+	public DBMappedConcept(RDFNode resource, int resourceID, boolean predicate) {
 		super(resource);
 		predicate_ = predicate;
-		allowPrimitives_ = allowPrimitives;
-		allowString_ = allowString;
+		resID_ = resourceID;
 	}
 
 	public DBMappedConcept(DBMappedConcept existing) {
 		super(existing);
 		predicate_ = existing.predicate_;
 		allowString_ = existing.allowString_;
+		resID_ = existing.resID_;
 	}
 
 	@Override
@@ -79,26 +80,29 @@ public class DBMappedConcept extends MappableConcept {
 
 			// Check if it's an article
 			String namespace = res.getNameSpace();
+			if (namespace == null)
+				return new WeightedSet<>(0);
 			if (predicate_) {
 				return mapToPredicate(res, mapper, wmi, ontology);
 			} else if (namespace.equals(DBPediaNamespace.DBPEDIA.getURI())) {
 				// Look up the wikiPageID (if any)
-				RDFNode artID = DBPediaAlignmentMiner.askSingularQuery(
-						"?id",
-						"<"
-								+ res.getURI()
-								+ "> "
-								+ DBPediaNamespace.format(
-										DBPediaNamespace.DBPEDIAOWL,
-										"wikiPageID") + " ?id");
-				if (artID != null) {
-					int article = artID.asLiteral().getInt();
+				if (resID_ == 0) {
+					RDFNode artID = DBPediaAlignmentMiner.askSingularQuery(
+							"?id",
+							"<"
+									+ res.getURI()
+									+ "> "
+									+ DBPediaNamespace.format(
+											DBPediaNamespace.DBPEDIAOWL,
+											"wikiPageID") + " ?id");
+					if (artID != null)
+						resID_ = artID.asLiteral().getInt();
+				}
+				if (resID_ != 0) {
 					try {
-						if (article != -1) {
-							WikipediaMappedConcept wmc = new WikipediaMappedConcept(
-									article);
-							return wmc.mapThing(mapper, wmi, ontology);
-						}
+						WikipediaMappedConcept wmc = new WikipediaMappedConcept(
+								resID_);
+						return wmc.mapThing(mapper, wmi, ontology);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}

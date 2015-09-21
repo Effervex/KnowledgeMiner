@@ -1,2 +1,4 @@
 (genls Isomorphism OneToOneFunction)
+(isa TheScout-Film Organization)
+(isa TrueStories-Film Organization)
 (isa deportee ActorSlot)

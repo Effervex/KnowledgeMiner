@@ -114,7 +114,10 @@ public abstract class KMAccess<S extends KMSocket> {
 	 * @return The socket assigned to this thread.
 	 */
 	public synchronized S requestSocket() {
-		return threadSocket_.get();
+		S socket = threadSocket_.get();
+		if (socket.isConnected())
+			return socket;
+		return null;
 	}
 
 	/**

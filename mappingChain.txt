@@ -1,1 +1,14 @@
+MINING: 'The Scout (film)' (w=1.0)
+ MAPPING: 'The Scout (film)':[M] (w=1.0)
+  REVERSE_MAPPING: 'The Scout (film)':[M] => TheScout-Film (w=1.0)
+   DISAMBIGUATING: TheScout-Film <=> 'The Scout (film)':[M] (w=1.0)
+    ASSERTING: TheScout-Film <=> 'The Scout (film)':[CM] (w=0.50094837)
+     COMPLETE: TheScout-Film <=> 'The Scout (film)':[CM] (w=0.50094837)
+
+MINING: 'True Stories (film)' (w=1.0)
+ MAPPING: 'True Stories (film)':[M] (w=1.0)
+  REVERSE_MAPPING: 'True Stories (film)':[M] => TrueStories-Film (w=1.0)
+   DISAMBIGUATING: TrueStories-Film <=> 'True Stories (film)':[M] (w=1.0)
+    ASSERTING: TrueStories-Film <=> 'True Stories (film)':[CM] (w=0.46292603)
+     COMPLETE: TrueStories-Film <=> 'True Stories (film)':[CM] (w=0.46292603)
 

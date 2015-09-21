@@ -205,6 +205,11 @@ public class InteractiveMode {
 						numAdditions_++;
 					else
 						numRemovals_++;
+				} else if (input.equalsIgnoreCase("S")) {
+					if (added)
+						skipAssertionAddition_ = 1;
+					else
+						skipAssertionRemoval_ = 1;
 				} else if (input.equalsIgnoreCase("SS")) {
 					if (added)
 						skipAssertionAddition_ = 10;

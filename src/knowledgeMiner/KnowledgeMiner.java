@@ -283,7 +283,6 @@ public class KnowledgeMiner {
 		seedIndex_ = startIndex;
 		endCount_ = end;
 		startTime_ = System.currentTimeMillis();
-		ConceptMiningTask.usingMinedProperty_ = false;
 
 		// Load up the executor with a list of article/concept IDs
 		ConceptModule cm = null;
@@ -358,19 +357,19 @@ public class KnowledgeMiner {
 			builder.append(" (" + format.format(percent * 100) + "%). ETA "
 					+ UtilityMethods.toTimeFormat(remaining));
 		}
-		
+
 		// Concept Mining Task Times
-		System.out.println(ConceptMiningTask.printRuntimes());
-		
-		
-		System.out
-				.println("\n\n\n\n" + builder + "\n" + executor_ + "\n\n\n\n");
-		LoggerFactory.getLogger("STATUS").info(builder.toString());
+		String runTimes = ConceptMiningTask.printRuntimes();
+		System.out.println("\n\n\n\n" + builder + "\n" + executor_ + "\n"
+				+ runTimes);
+		LoggerFactory.getLogger("STATUS").info(
+				builder.toString() + "\n" + runTimes);
+		System.out.println("\n\n\n\n");
 		((FSTSerialisationMechanism) SerialisationMechanism.FST.getSerialiser())
 				.reset();
-		
+
 		// TODO Begin predicate refinement
-	
+
 		try {
 			IOManager.getInstance().flush();
 			miner_.printCurrentHeuristicStates();
@@ -512,6 +511,8 @@ public class KnowledgeMiner {
 				mappingRun_ = true;
 			} else if (args[i].equals("-c")) {
 				mappingCyc = true;
+			} else if (args[i].equals("-M")) {
+				ConceptMiningTask.onlyMining = true;
 			}
 		}
 

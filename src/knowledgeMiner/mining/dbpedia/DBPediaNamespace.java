@@ -3,7 +3,8 @@ package knowledgeMiner.mining.dbpedia;
 public enum DBPediaNamespace {
 	DBPEDIA("dbp", "http://dbpedia.org/resource/"), DBPEDIAOWL("dbowl",
 			"http://dbpedia.org/ontology/"), DBPEDIAPROP("dbpprop",
-			"http://dbpedia.org/property/");
+			"http://dbpedia.org/property/"), RDFS("rdfs",
+			"http://www.w3.org/2000/01/rdf-schema#");
 
 	private String uri_;
 	private String shortName_;
