@@ -1,4 +1,8 @@
+watchedfields
+verifiedfields
+verifiedrevid
 wikipediaArticleName-Canonical
 wikipediaArticleSynonym
 wikipediaComment
+seeAlso
 conceptImage

@@ -116,6 +116,24 @@ public class DBMappedConceptTest {
 	}
 
 	@Test
+	public void testConceptCreation() throws Exception {
+		OntologyConcept.parsingArgs_ = true;
+		if (ontology_.inOntology("city"))
+			ontology_.removeConcept("city");
+				
+		RDFNode queryResult = DBPediaAlignmentMiner.askSingularQuery(
+				"?predicate",
+				DBPediaNamespace.format(DBPediaNamespace.DBPEDIA, "WWCA")
+						+ " ?predicate "
+						+ DBPediaNamespace.format(DBPediaNamespace.DBPEDIA,
+								"Gary,_Indiana"));
+		DBMappedConcept mappable = new DBMappedConcept(queryResult, true);
+		mappable.mapThing(mapper_, wmi_, ontology_);
+		
+		assertTrue(ontology_.inOntology("city"));
+	}
+
+	@Test
 	public void testMapThingArticle() {
 		// Primitive mapping
 		OntologyConcept.parsingArgs_ = true;

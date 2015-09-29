@@ -72,6 +72,8 @@ public abstract class OntologySocket extends KMSocket {
 
 	public abstract int findEdgeIDByArgs(Object... edgeArgs);
 
+	public abstract Collection<String[]> findEdges(Object... indexArgs);
+
 	public abstract Collection<OntologyConcept> findFilteredConceptByName(
 			String name, boolean caseSensitive, boolean exactString,
 			boolean allowAliases, Object... queryArgs);

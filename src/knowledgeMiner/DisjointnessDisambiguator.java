@@ -10,8 +10,8 @@
  ******************************************************************************/
 package knowledgeMiner;
 
-import graph.core.EdgeModifier;
-import graph.inference.CommonQuery;
+import graph.core.CommonConcepts;
+import io.ontology.DAGSocket;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
@@ -27,6 +27,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import util.UtilityMethods;
 import cyc.CycConstants;
 import cyc.MappableConcept;
 import cyc.OntologyConcept;
@@ -69,20 +70,24 @@ public class DisjointnessDisambiguator {
 	private Collection<DefiniteAssertion> getExistingAssertions(
 			ConceptModule conceptModule, OntologySocket ontology) {
 		Collection<DefiniteAssertion> existingAssertions = new ArrayList<>();
-		
+
 		// TODO Get ALL type-bound assertions!
 		OntologyConcept concept = conceptModule.getConcept();
 
-		// For every ISA
+		// Get isa and genls truths (including removed)
 		Collection<OntologyConcept> isaTruths = null;
 		Collection<OntologyConcept> genlTruths = null;
 		if (!conceptModule.isCreatedConcept()) {
-			isaTruths = ontology.quickQuery(CommonQuery.DIRECTISA,
-					concept.getIdentifier());
-			// For every GENLS
-			genlTruths = ontology.quickQuery(CommonQuery.DIRECTGENLS,
-					concept.getIdentifier());
+			try {
+				isaTruths = parseTaxonomic(concept.getIdentifier(),
+						CommonConcepts.ISA, (DAGSocket) ontology);
+				genlTruths = parseTaxonomic(concept.getIdentifier(),
+						CommonConcepts.GENLS, (DAGSocket) ontology);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
+
 		// Add any concretes
 		Collection<DefiniteAssertion> concreteTaxonomics = new ArrayList<>();
 		for (DefiniteAssertion concrete : conceptModule
@@ -112,6 +117,42 @@ public class DisjointnessDisambiguator {
 	}
 
 	/**
+	 * Parse all taxonomic collections from a concept, removed and non-removed.
+	 *
+	 * @param conceptID
+	 *            The concept being parsed
+	 * @param predicate
+	 *            The isa/genls to parse
+	 * @param ontology
+	 *            The ontology access.
+	 * @return The taxonomic assertions about the concept.
+	 * @throws Exception
+	 *             Should something go awry...
+	 */
+	private Collection<OntologyConcept> parseTaxonomic(String conceptID,
+			CommonConcepts predicate, DAGSocket ontology) throws Exception {
+		Collection<OntologyConcept> result = new ArrayList<>();
+		String queryResult = ontology.command("findedges", predicate.getID()
+				+ " (1) " + conceptID + " (2)", false);
+		String[] split = queryResult.split("\\|");
+		for (int i = 1; i < split.length; i++) {
+			int id = Integer.parseInt(split[i]);
+			String[] edge = ontology.findEdgeByID(id);
+			// Parse predicate and removed
+			int edgeID = Integer.parseInt(edge[0]);
+			if (edgeID == predicate.getID())
+				result.add(OntologyConcept.parseArgument(edge[2]));
+			else if (edgeID == CommonConcepts.REMOVED.getID()) {
+				edge = UtilityMethods.splitToArray(
+						UtilityMethods.shrinkString(edge[1], 1), ' ');
+				result.add(OntologyConcept.parseArgument(edge[2]));
+			}
+		}
+
+		return result;
+	}
+
+	/**
 	 * Appends the assertion grid and all associated grids with the concept's
 	 * existing assertions.
 	 * 
@@ -128,7 +169,7 @@ public class DisjointnessDisambiguator {
 		if (conceptModule.isCreatedConcept())
 			return new AssertionGrid(coreAssertionGrid_,
 					conceptModule.getConcept(), conceptModule.getStanding(),
-					new ArrayList<DefiniteAssertion>(0), ASSERTION_REMOVAL);
+					new ArrayList<DefiniteAssertion>(0), false);
 		else {
 			WeightedStanding standing = new WeightedStanding(
 					conceptModule.getStanding());
@@ -136,7 +177,6 @@ public class DisjointnessDisambiguator {
 				standing.addStanding(null, TermStanding.COLLECTION, 1);
 			else
 				standing.addStanding(null, TermStanding.INDIVIDUAL, 1);
-			// TODO Need to test assertion removal.
 			return new AssertionGrid(coreAssertionGrid_,
 					conceptModule.getConcept(), standing, existingAssertions,
 					assertionRemoval);
@@ -162,23 +202,59 @@ public class DisjointnessDisambiguator {
 			caseNumber_ = -1;
 			return;
 		}
+		boolean assertionRemoval = ASSERTION_REMOVAL
+				&& !conceptHasChildren(conceptModule, (DAGSocket) ontology);
 
 		Collection<DefiniteAssertion> existingAssertions = getExistingAssertions(
 				conceptModule, ontology);
 		currentAssertionGrid_ = integrateGroundTruths(conceptModule,
-				existingAssertions, ASSERTION_REMOVAL, ontology);
+				existingAssertions, assertionRemoval, ontology);
 		consistentAssertions_ = currentAssertionGrid_
 				.findMaximalConjoint(ontology);
 		caseNumber_ = 0;
 
 		// Note the removed assertions
 		logger_.trace("Added " + consistentAssertions_.size());
-		if (ASSERTION_REMOVAL) {
+		if (assertionRemoval) {
 			existingAssertions.removeAll(consistentAssertions_);
 			removedAssertions_ = existingAssertions;
 			logger_.trace("Removed " + removedAssertions_.size());
 		} else
 			removedAssertions_ = CollectionUtils.EMPTY_COLLECTION;
+	}
+
+	/**
+	 * Checks if the concept has any children. If so, does not allow assertion
+	 * removal.
+	 *
+	 * @param conceptModule
+	 *            The concept to check.
+	 * @param ontology
+	 *            The ontology access.
+	 * @return True if the concept has children.
+	 */
+	private boolean conceptHasChildren(ConceptModule conceptModule,
+			DAGSocket ontology) {
+		if (conceptModule.isCreatedConcept())
+			return false;
+		try {
+			// Isa
+			OntologyConcept concept = conceptModule.getConcept();
+			String result = ontology.command(
+					"findedges",
+					CommonConcepts.ISA.getID() + " (1) "
+							+ concept.getIdentifier() + " (3) [0,1)", false);
+			if (result.startsWith("1"))
+				return true;
+			// Genls
+			result = ontology.command("findedges", CommonConcepts.GENLS.getID()
+					+ " (1) " + concept.getIdentifier() + " (3) [0,1)", false);
+			if (result.startsWith("1"))
+				return true;
+		} catch (Exception e) {
+			return true;
+		}
+		return false;
 	}
 
 	public float getConjointWeight() {

@@ -328,6 +328,32 @@ public class DAGSocket extends OntologySocket {
 	}
 
 	@Override
+	public Collection<String[]> findEdges(Object... indexArgs) {
+		Collection<String[]> assertions = new ArrayList<>();
+		try {
+			String result = command("findedges", StringUtils.join(indexArgs, " "),
+					true);
+			String[] split = result.split("\\|");
+			if (Integer.parseInt(split[0]) <= 0)
+				return assertions;
+			for (int i = 1; i < split.length; i++) {
+				assertions.add(findEdgeByID(Integer.parseInt(split[i])));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.err.println("Error finding edges with arguments "
+					+ indexArgs);
+			logger_.error("allAssertions: {}", (Object) indexArgs);
+			if (restartConnection()) {
+				Collection<String[]> result = findEdges(indexArgs);
+				canRestart_ = true;
+				return result;
+			}
+		}
+		return assertions;
+	}
+
+	@Override
 	public Collection<OntologyConcept> findFilteredConceptByName(String name,
 			boolean caseSensitive, boolean exactString, boolean allowAliases,
 			Object... queryArgs) {
@@ -365,8 +391,8 @@ public class DAGSocket extends OntologySocket {
 				// Alias check.
 				if (allowAliases
 						|| split[i].startsWith("(")
-						|| findConceptByID(Integer.parseInt(split[i]))
-								.equalsIgnoreCase(name)) {
+						|| findConceptByID(Integer.parseInt(split[i])).equals(
+								name)) {
 					OntologyConcept concept = OntologyConcept
 							.parseArgument(split[i]);
 					if (concept != null)
@@ -812,5 +838,13 @@ public class DAGSocket extends OntologySocket {
 			}
 		}
 		return propNodes;
+	}
+
+	public void refinePredicate(int refineEvidence) {
+		try {
+			command("refine", refineEvidence + " 0.5", false);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

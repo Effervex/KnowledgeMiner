@@ -18,9 +18,9 @@ import io.ontology.OntologySocket;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -29,17 +29,20 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import knowledgeMiner.mining.DefiniteAssertion;
+import knowledgeMiner.mining.wikipedia.WikipediaMappedConcept;
 
 import org.apache.commons.lang3.StringUtils;
 
-import cyc.OntologyConcept;
-import knowledgeMiner.mining.DefiniteAssertion;
 import util.UtilityMethods;
+import cyc.OntologyConcept;
 
 /**
  * A class for allowing a user to interactively evaluate if results are correct
@@ -47,8 +50,6 @@ import util.UtilityMethods;
  * automatically evaluate results during processing.
  */
 public class InteractiveMode {
-	private static final String ADDED_ASSERTIONS = "AddedAssertions.txt";
-
 	private static final File IGNORED_PRED_FOLDER = new File(
 			"AutomatedEvalTool/IgnoredPredicates");
 
@@ -58,11 +59,10 @@ public class InteractiveMode {
 	private static final File MINING_FOLDER = new File(
 			"AutomatedEvalTool/Mining");
 
-	private static final String REMOVED_ASSERTIONS = "RemovedAssertions.txt";
-	public static final File FALSE_ASSERTIONS_FILE = new File(
-			"evaluatedFalseAssertions.txt");
 	/** If the mapping/mining should involve the user. */
 	public static boolean interactiveMode_ = false;
+
+	private static InteractiveMode instance_;
 
 	public static final File MAPPINGS_FILE = new File("evaluatedMappings.txt");
 
@@ -71,8 +71,11 @@ public class InteractiveMode {
 	public static final File TRUE_ASSERTIONS_FILE = new File(
 			"evaluatedTrueAssertions.txt");
 
-	private Map<String, Boolean> globalAdditions_;
-	private Map<String, Boolean> globalRemovals_;
+	private static final Pattern MAP_ART_PATTERN = Pattern
+			.compile(WikipediaMappedConcept.PREFIX + "\\('(\\d+)'\\)");
+
+	private Collection<String> trueAssertions_;
+	private Collection<String> falseAssertions_;
 
 	/** Predicates that are ignored for evaluation. */
 	private Set<String> ignoredAdditionPreds_;
@@ -80,8 +83,8 @@ public class InteractiveMode {
 	/** Input and output streams. */
 	private BufferedReader in = new BufferedReader(new InputStreamReader(
 			System.in));
-	private Map<String, Boolean> localAdditions_;
-	private Map<String, Boolean> localRemovals_;
+	private Collection<String> localAdditions_;
+	private Collection<String> localRemovals_;
 
 	/** The evaluated mappings. */
 	private Map<String, Boolean> mappings_;
@@ -102,27 +105,35 @@ public class InteractiveMode {
 	/** If mappings are skipped. */
 	private int skipMapping_ = 0;
 
-	public InteractiveMode() {
+	private InteractiveMode() {
 		try {
 			// Creates directory structure if needed
-			File directory = new File("AutomatedEvalTool");
-			if (!directory.exists())
-				directory.mkdir();
-			MINING_FOLDER.mkdir();
+			MINING_FOLDER.mkdirs();
 			MAPPING_FOLDER.mkdir();
 			IGNORED_PRED_FOLDER.mkdir();
 
 			// Load the mappings and assertions
 			mappings_ = loadMappingEvaluations();
-			localAdditions_ = new TreeMap<>();
-			localRemovals_ = new TreeMap<>();
-			globalAdditions_ = loadAdditionEvaluations();
-			globalRemovals_ = loadRemovalEvaluations();
-			ignoredAdditionPreds_ = loadIgnoredAdditionPreds();
-			ignoredRemovalPreds_ = loadIgnoredRemovalPreds();
+			localAdditions_ = new HashSet<>();
+			localRemovals_ = new HashSet<>();
+			OntologySocket ontology = ResourceAccess.requestOntologySocket();
+			trueAssertions_ = loadAssertions(new File(MINING_FOLDER,
+					"trueAssertions.txt"), ontology);
+			falseAssertions_ = loadAssertions(new File(MINING_FOLDER,
+					"falseAssertions.txt"), ontology);
+			ignoredAdditionPreds_ = loadIgnoredPreds(new File(
+					IGNORED_PRED_FOLDER, "additionPredicates.txt"));
+			ignoredRemovalPreds_ = loadIgnoredPreds(new File(
+					IGNORED_PRED_FOLDER, "removalPredicates.txt"));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static InteractiveMode getInstance() {
+		if (instance_ == null)
+			instance_ = new InteractiveMode();
+		return instance_;
 	}
 
 	/**
@@ -157,14 +168,24 @@ public class InteractiveMode {
 		}
 
 		// Check prior results
-		Map<String, Boolean> global = (added) ? globalAdditions_
-				: globalRemovals_;
-		Map<String, Boolean> local = (added) ? localAdditions_ : localRemovals_;
-		Boolean known = global.get(assertion);
-		String typeWord = (added) ? "addition" : "removal";
-		if (known != null) {
-			out.println(known + " " + typeWord + ": " + assertion);
-			local.put(assertion, known);
+		Collection<String> correct = trueAssertions_;
+		Collection<String> incorrect = falseAssertions_;
+		Collection<String> local = localAdditions_;
+		String typeWord = "ADDITION";
+		if (!added) {
+			correct = falseAssertions_;
+			incorrect = trueAssertions_;
+			local = localRemovals_;
+			typeWord = "REMOVAL";
+		}
+		String knownWord = null;
+		if (correct.contains(assertion))
+			knownWord = "CORRECT";
+		else if (incorrect.contains(assertion))
+			knownWord = "INCORRECT";
+		if (knownWord != null) {
+			out.println(knownWord + " " + typeWord + ": " + assertion);
+			local.add(assertion);
 			if (added)
 				numAdditions_++;
 			else
@@ -184,23 +205,22 @@ public class InteractiveMode {
 		do {
 			repeat = false;
 
-			out.print(typeWord.toUpperCase() + ": " + dagtotext + " "
-					+ assertion + "\n"
+			out.print(typeWord + ": " + dagtotext + " " + assertion + "\n"
 					+ "(t)rue, (f)alse, e(x)plain concepts, "
 					+ "(s)kip, (ss)kip 10, (sss)kip 100, Skip (a)ll, "
 					+ "(i)gnore predicate, sa(v)e progress?\n > ");
 			try {
 				String input = in.readLine();
 				if (input.equalsIgnoreCase("T")) {
-					global.put(assertion, true);
-					local.put(assertion, true);
+					correct.add(assertion);
+					local.add(assertion);
 					if (added)
 						numAdditions_++;
 					else
 						numRemovals_++;
 				} else if (input.equalsIgnoreCase("F")) {
-					global.put(assertion, false);
-					local.put(assertion, false);
+					incorrect.add(assertion);
+					local.add(assertion);
 					if (added)
 						numAdditions_++;
 					else
@@ -285,45 +305,42 @@ public class InteractiveMode {
 		ontology.close();
 	}
 
-	/**
-	 * Loads the added assertions from file
-	 * 
-	 * @return Returns a hashmap of added assertions
-	 */
-	protected Map<String, Boolean> loadAdditionEvaluations() {
-
-		Map<String, Boolean> h = new TreeMap<String, Boolean>();
-		BufferedReader br = null;
+	private Collection<String> loadAssertions(File file, OntologySocket ontology) {
+		Collection<String> assertions = new HashSet<>();
 		try {
-			File f = new File(MINING_FOLDER, "true" + ADDED_ASSERTIONS);
-			if (!f.exists())
-				f.createNewFile();
+			BufferedReader reader = new BufferedReader(new FileReader(file));
+			String strAssertion;
+			line: while ((strAssertion = reader.readLine()) != null) {
+				// TODO Deal with mapArts, etc
+				Matcher m = MAP_ART_PATTERN.matcher(strAssertion);
+				int start = 0;
+				StringBuilder compiledAssertion = new StringBuilder();
+				while (m.find()) {
+					// Parse the mappable article
+					int id = Integer.parseInt(m.group(1));
+					OntologyConcept concept = KnowledgeMiner.getConceptMapping(
+							id, ontology);
+					if (concept == null)
+						continue line;
 
-			br = new BufferedReader(new FileReader(f));
-			String line;
+					// Replace the mappable with the actual
+					compiledAssertion.append(strAssertion.subSequence(start,
+							m.start()));
+					compiledAssertion.append(concept.toPrettyString());
+					start = m.end();
+				}
+				// Add the last part
+				if (start != 0)
+					strAssertion = compiledAssertion.toString()
+							+ strAssertion.substring(start);
 
-			// Add all true assertions to the hashmap
-			while ((line = br.readLine()) != null)
-				h.put(line, true);
-
-			br.close();
-
-			f = new File(MINING_FOLDER, "false" + ADDED_ASSERTIONS);
-			if (!f.exists())
-				f.createNewFile();
-
-			br = new BufferedReader(new FileReader(f));
-
-			// Add all false assertions to the hashmap
-			while ((line = br.readLine()) != null)
-				h.put(line, false);
-
-			br.close();
+				assertions.add(strAssertion);
+			}
+			reader.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		// Return hashmap with true and false assertions
-		return h;
+		return assertions;
 	}
 
 	/**
@@ -331,42 +348,14 @@ public class InteractiveMode {
 	 * 
 	 * @return Set of ignored addition predicates
 	 */
-	protected Set<String> loadIgnoredAdditionPreds() {
+	protected Set<String> loadIgnoredPreds(File ignoredFile) {
 		Set<String> set = new HashSet<String>();
 		BufferedReader br = null;
 		try {
-			File f = new File(IGNORED_PRED_FOLDER, "additionPredicates.txt");
-			if (!f.exists())
-				f.createNewFile();
+			if (!ignoredFile.exists())
+				ignoredFile.createNewFile();
 
-			br = new BufferedReader(new FileReader(f));
-			String line;
-
-			// Add all true assertions to the hashmap
-			while ((line = br.readLine()) != null)
-				set.add(line);
-
-			br.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return set;
-	}
-
-	/**
-	 * Loads the list of ignored removal predicates from file
-	 * 
-	 * @return Set of ignored removal predicates
-	 */
-	protected Set<String> loadIgnoredRemovalPreds() {
-		Set<String> set = new HashSet<String>();
-		BufferedReader br = null;
-		try {
-			File f = new File(IGNORED_PRED_FOLDER, "removalPredicates.txt");
-			if (!f.exists())
-				f.createNewFile();
-
-			br = new BufferedReader(new FileReader(f));
+			br = new BufferedReader(new FileReader(ignoredFile));
 			String line;
 
 			// Add all true assertions to the hashmap
@@ -422,95 +411,14 @@ public class InteractiveMode {
 		return h;
 	}
 
-	/**
-	 * Loads the removed assertions from file
-	 * 
-	 * @return Returns a hashmap of removed assertions
-	 */
-	protected Map<String, Boolean> loadRemovalEvaluations() {
-
-		Map<String, Boolean> h = new TreeMap<String, Boolean>();
-		BufferedReader br = null;
-		try {
-			File f = new File(MINING_FOLDER, "true" + REMOVED_ASSERTIONS);
-			if (!f.exists())
-				f.createNewFile();
-
-			br = new BufferedReader(new FileReader(f));
-			String line;
-
-			// Add all true assertions to the hashmap
-			while ((line = br.readLine()) != null)
-				h.put(line, true);
-
-			br.close();
-
-			f = new File(MINING_FOLDER, "false" + REMOVED_ASSERTIONS);
-			if (!f.exists())
-				f.createNewFile();
-
-			br = new BufferedReader(new FileReader(f));
-
-			// Add all false assertions to the hashmap
-			while ((line = br.readLine()) != null)
-				h.put(line, false);
-
-			br.close();
-		} catch (Exception e) {
-			e.printStackTrace();
+	private void writeAssertions(Collection<String> assertions, File outfile)
+			throws IOException {
+		BufferedWriter writer = new BufferedWriter(new FileWriter(outfile));
+		for (String assertion : assertions) {
+			writer.write(assertion + "\n");
 		}
-		// Return hashmap with true and false assertions
-		return h;
-	}
 
-	/**
-	 * Writes the mapping of assertions to file.
-	 * 
-	 * @param trueFilename
-	 *            The output filename for true assertions.
-	 * @param falseFilename
-	 *            The output filename for false assertions.
-	 * @param local
-	 *            The local map of assertions (evaluated this run).
-	 * @param global
-	 *            The global map of assertions (evaluated all time).
-	 * @return An int array of true counts [local, global].
-	 */
-	protected int[] writeAssertionsToFile(String trueFilename,
-			String falseFilename, Map<String, Boolean> local,
-			Map<String, Boolean> global) throws FileNotFoundException,
-			IOException {
-		int[] counts = new int[2];
-		File trueAddedAssertions = new File(MINING_FOLDER, trueFilename);
-		File falseAddedAssertions = new File(MINING_FOLDER, falseFilename);
-		BufferedWriter trueWriter = new BufferedWriter(new OutputStreamWriter(
-				new FileOutputStream(trueAddedAssertions)));
-		BufferedWriter falseWriter = new BufferedWriter(new OutputStreamWriter(
-				new FileOutputStream(falseAddedAssertions)));
-
-		// For each entry in the additions hashmap, write to correct
-		// file
-		for (Map.Entry<String, Boolean> entry : global.entrySet()) {
-			String key = entry.getKey();
-			Boolean value = entry.getValue();
-
-			if (value) {
-				trueWriter.write(key);
-				trueWriter.newLine();
-				// Increment true additions if a false is encountered
-				counts[1]++;
-				if (local.containsKey(key))
-					counts[0]++;
-			} else {
-				falseWriter.write(key);
-				falseWriter.newLine();
-				// TODO Deal with opposites as negatives
-			}
-		}
-		trueWriter.close();
-		falseWriter.close();
-
-		return counts;
+		writer.close();
 	}
 
 	/**
@@ -606,26 +514,39 @@ public class InteractiveMode {
 	public void saveEvaluations() {
 		try {
 			// If we're evaluating mining (assertions)
-			if (globalAdditions_.size() > 0 || globalRemovals_.size() > 0) {
+			if (trueAssertions_.size() > 0 || falseAssertions_.size() > 0) {
 
 				// Start out with trueAdditions/Removals the size of
 				// additions_/removals_
+				writeAssertions(trueAssertions_, new File(MINING_FOLDER,
+						"trueAssertions.txt"));
+				writeAssertions(falseAssertions_, new File(MINING_FOLDER,
+						"falseAssertions.txt"));
 
-				int[] additions = writeAssertionsToFile("true"
-						+ ADDED_ASSERTIONS, "false" + ADDED_ASSERTIONS,
-						localAdditions_, globalAdditions_);
-				int[] removals = writeAssertionsToFile("true"
-						+ REMOVED_ASSERTIONS, "false" + REMOVED_ASSERTIONS,
-						localRemovals_, globalRemovals_);
+				// Count local additions
+				int[] additionCounts = new int[2];
+				for (String localAdd : localAdditions_) {
+					if (trueAssertions_.contains(localAdd))
+						additionCounts[0]++;
+					else if (falseAssertions_.contains(localAdd))
+						additionCounts[1]++;
+				}
+				int[] removalCounts = new int[2];
+				for (String localRem : localRemovals_) {
+					if (trueAssertions_.contains(localRem))
+						removalCounts[1]++;
+					else if (falseAssertions_.contains(localRem))
+						removalCounts[0]++;
+				}
 
 				// Output the statistics
 				StringBuilder localVals = new StringBuilder();
-				localVals.append(percentToStr(additions[0], numAdditions_)
-						+ " locally correct additions (" + additions[0] + "/"
-						+ numAdditions_ + ")\n");
-				localVals.append(percentToStr(removals[0], numRemovals_)
-						+ " locally correct removals (" + removals[0] + "/"
-						+ numRemovals_ + ")");
+				localVals.append(percentToStr(additionCounts[0], numAdditions_)
+						+ " locally correct additions (" + additionCounts[0]
+						+ "/" + numAdditions_ + ")\n");
+				localVals.append(percentToStr(removalCounts[0], numRemovals_)
+						+ " locally correct removals (" + removalCounts[0]
+						+ "/" + numRemovals_ + ")");
 				System.out.println(localVals);
 			}
 			// If we're evaluating mappings

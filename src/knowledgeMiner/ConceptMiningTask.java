@@ -51,7 +51,10 @@ import cyc.StringConcept;
  */
 @SuppressWarnings("unchecked")
 public class ConceptMiningTask implements Runnable {
-	private static final int BIG_ENOUGH = (int) Math.pow(2, 20);
+	private static final int _BIG_ENOUGH = (int) Math.pow(2, 20);
+	
+	/** Mappings from an indexed article to a given ontology (ID). */
+	private static int[] artStates_ = new int[_BIG_ENOUGH];
 
 	/** The chance that a child is created. */
 	private static final float CHILD_CREATION_THRESHOLD = .1f;
@@ -59,33 +62,27 @@ public class ConceptMiningTask implements Runnable {
 	private final static Logger logger_ = LoggerFactory
 			.getLogger(ConceptMiningTask.class);
 
-	/** Mappings from an indexed article to a given ontology (ID). */
-	private static int[] artStates_ = new int[BIG_ENOUGH];
-
 	/** Mappings from an indexed concept (ID) to a given article. */
-	private static int[] ontologyStates_ = new int[BIG_ENOUGH];
+	private static int[] ontologyStates_ = new int[_BIG_ENOUGH];
 
 	static final byte UNMAPPABLE_PRIOR = -1;
 
 	/** The number of asserted concepts. */
 	public static int assertedCount_ = 0;
 
+	public static boolean onlyMining = false;
+
 	/** Debug feature for tracking run times for each state of the process. */
 	public static ArrayList<Double>[] stateTimes_;
+
+	/** The frequency at which the output files are updated. */
+	public static final int UPDATE_INTERVAL = 100;
 
 	static {
 		stateTimes_ = new ArrayList[MiningState.values().length];
 		for (MiningState ms : MiningState.values())
 			stateTimes_[ms.ordinal()] = new ArrayList<>();
 	}
-
-	/** The interactive interface for interactive mode. */
-	public static InteractiveMode interactiveInterface_ = new InteractiveMode();
-
-	/** The frequency at which the output files are updated. */
-	public static final int UPDATE_INTERVAL = 100;
-
-	public static boolean onlyMining = false;
 
 	/** A collection for keeping track of all asserted conceptModules. */
 	private Collection<ConceptModule> assertedConcepts_;
@@ -280,53 +277,6 @@ public class ConceptMiningTask implements Runnable {
 	}
 
 	/**
-	 * Gets the current mapped state of a concept. That is, how many times it
-	 * has been processed.
-	 *
-	 * @param concept
-	 *            The concept to get the state for.
-	 * @return The current run state of the concept.
-	 */
-	public static int getConceptState(OntologyConcept concept,
-			OntologySocket ontology) {
-		int conceptID = concept.getID();
-		int iter = getState(conceptID, ontologyStates_);
-		if (iter == 0) {
-			String strIteration = ontology.getProperty(concept, true,
-					KnowledgeMiner.RUN_ID);
-			if (strIteration == null)
-				return 0;
-			else {
-				iter = Short.parseShort(strIteration);
-				setConceptState(conceptID, iter);
-			}
-		}
-		return iter;
-	}
-
-	/**
-	 * Gets the current mapped state of an article. That is, how many times it
-	 * has been processed.
-	 *
-	 * @param concept
-	 *            The concept to get the state for.
-	 * @return The current run state of the concept.
-	 */
-	public static int getArticleState(int article, OntologySocket ontology) {
-		int iter = getState(article, artStates_);
-		if (iter == 0) {
-			OntologyConcept concept = KnowledgeMiner.getConceptMapping(article,
-					ontology);
-			if (concept != null) {
-				iter = getConceptState(concept, ontology);
-				setArticleState(article, iter);
-			} else
-				iter = 0;
-		}
-		return iter;
-	}
-
-	/**
 	 * If this asserted concept is for the original concept.
 	 * 
 	 * @param concept
@@ -340,6 +290,10 @@ public class ConceptMiningTask implements Runnable {
 			ConceptModule original) {
 		return concept.getArticle().equals(original.getArticle())
 				|| concept.getConcept().equals(original.getConcept());
+	}
+
+	private synchronized void recordRuntime(int ordinal, long time) {
+		stateTimes_[ordinal].add(time * 1d);
 	}
 
 	/**
@@ -407,10 +361,6 @@ public class ConceptMiningTask implements Runnable {
 		long endTime = System.nanoTime();
 
 		recordRuntime(state.ordinal(), endTime - startTime);
-	}
-
-	private synchronized void recordRuntime(int ordinal, long time) {
-		stateTimes_[ordinal].add(time * 1d);
 	}
 
 	/**
@@ -517,7 +467,7 @@ public class ConceptMiningTask implements Runnable {
 			IOManager.getInstance().writeMapping(concept, articleTitle);
 
 			// Interactive - manual evaluation if correct mapping
-			interactiveInterface_.evaluateMapping(concept);
+			InteractiveMode.getInstance().evaluateMapping(concept);
 
 			// TODO Remove all KM assertions no longer produced by KM
 
@@ -794,7 +744,7 @@ public class ConceptMiningTask implements Runnable {
 
 		// Flush the interface
 		if (InteractiveMode.interactiveMode_)
-			interactiveInterface_.saveEvaluations();
+			InteractiveMode.getInstance().saveEvaluations();
 		km_.getInterface().flush();
 	}
 
@@ -843,6 +793,7 @@ public class ConceptMiningTask implements Runnable {
 			addMapping(cmt.wmi_.getArticleByTitle(art), concept2, cmt.ontology_);
 		} else if (InteractiveMode.interactiveMode_ || input.equals("4")
 				|| input.equals("6")) {
+			InteractiveMode.getInstance();
 			InteractiveMode.interactiveMode_ |= input.equals("7");
 			System.out
 					.println("Enter term/article to process '#$<termname>' or '<article>'.");
@@ -863,7 +814,7 @@ public class ConceptMiningTask implements Runnable {
 			staticMap(cmt, input);
 
 		if (InteractiveMode.interactiveMode_)
-			interactiveInterface_.saveEvaluations();
+			InteractiveMode.getInstance().saveEvaluations();
 
 		IOManager.getInstance().flush();
 	}
@@ -1068,6 +1019,53 @@ public class ConceptMiningTask implements Runnable {
 	}
 
 	/**
+	 * Gets the current mapped state of an article. That is, how many times it
+	 * has been processed.
+	 *
+	 * @param concept
+	 *            The concept to get the state for.
+	 * @return The current run state of the concept.
+	 */
+	public static int getArticleState(int article, OntologySocket ontology) {
+		int iter = getState(article, artStates_);
+		if (iter == 0) {
+			OntologyConcept concept = KnowledgeMiner.getConceptMapping(article,
+					ontology);
+			if (concept != null) {
+				iter = getConceptState(concept, ontology);
+				setArticleState(article, iter);
+			} else
+				iter = 0;
+		}
+		return iter;
+	}
+
+	/**
+	 * Gets the current mapped state of a concept. That is, how many times it
+	 * has been processed.
+	 *
+	 * @param concept
+	 *            The concept to get the state for.
+	 * @return The current run state of the concept.
+	 */
+	public static int getConceptState(OntologyConcept concept,
+			OntologySocket ontology) {
+		int conceptID = concept.getID();
+		int iter = getState(conceptID, ontologyStates_);
+		if (iter == 0) {
+			String strIteration = ontology.getProperty(concept, true,
+					KnowledgeMiner.RUN_ID);
+			if (strIteration == null)
+				return 0;
+			else {
+				iter = Short.parseShort(strIteration);
+				setConceptState(conceptID, iter);
+			}
+		}
+		return iter;
+	}
+
+	/**
 	 * Gets the state of a indexed thing from an array of states. Requires a
 	 * little more than basic array access, as the value returned must be
 	 * converted to the appropriate state value.
@@ -1202,6 +1200,22 @@ public class ConceptMiningTask implements Runnable {
 		return cm;
 	}
 
+	public static String printRuntimes() {
+		StringBuilder builder = new StringBuilder();
+		MiningState[] states = MiningState.values();
+		for (int i = 0; i < stateTimes_.length - 1; i++) {
+			Double[] valD = stateTimes_[i].toArray(new Double[stateTimes_[i]
+					.size()]);
+			double[] values = ArrayUtils.toPrimitive(valD);
+			double milliMean = StatUtils.mean(values) / 1000000;
+			double milliVariance = StatUtils.variance(values) / 1000000;
+			builder.append(states[i] + ": " + milliMean + "ms +- "
+					+ milliVariance + "ms (# " + values.length + ")\n");
+			stateTimes_[i].clear();
+		}
+		return builder.toString();
+	}
+
 	/**
 	 * Sets the state of an article to a given state (e.g. completed, pending,
 	 * etc). This also takes the runID for which this state is being set, to
@@ -1253,21 +1267,5 @@ public class ConceptMiningTask implements Runnable {
 
 		ontologyStates_[concept.intValue()] = state;
 		logger_.trace("Set concept state to {} for {}.", state, concept);
-	}
-
-	public static String printRuntimes() {
-		StringBuilder builder = new StringBuilder();
-		MiningState[] states = MiningState.values();
-		for (int i = 0; i < stateTimes_.length - 1; i++) {
-			Double[] valD = stateTimes_[i].toArray(new Double[stateTimes_[i]
-					.size()]);
-			double[] values = ArrayUtils.toPrimitive(valD);
-			double milliMean = StatUtils.mean(values) / 1000000;
-			double milliVariance = StatUtils.variance(values) / 1000000;
-			builder.append(states[i] + ": " + milliMean + "ms +- "
-					+ milliVariance + "ms (# " + values.length + ")\n");
-			stateTimes_[i].clear();
-		}
-		return builder.toString();
 	}
 }

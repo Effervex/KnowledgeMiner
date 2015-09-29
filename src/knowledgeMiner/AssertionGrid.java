@@ -12,6 +12,7 @@ package knowledgeMiner;
 
 import graph.core.CommonConcepts;
 import graph.inference.CommonQuery;
+import io.ontology.DAGSocket;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
@@ -116,6 +117,7 @@ public class AssertionGrid {
 		if (existingGrid.assertionGrid_ == null)
 			return;
 		int oldLength = existingGrid.assertionGrid_.length;
+
 		if (assertionRemoval && !existingAssertions.isEmpty()) {
 			seedStack_ = new ArrayList<>(existingGrid.seedStack_);
 			int newLength = oldLength + existingAssertions.size();
@@ -692,7 +694,7 @@ public class AssertionGrid {
 				// Check collection first
 				boolean asserted = false;
 				// If a collection, the predicate is/can be genls, and is not
-				// disjoint with existing genls
+				// disjoint with existing genls, and isn't a useless self-genls edge
 				OntologyConcept relation = assertion.getRelation();
 				if (isaCollection_
 						&& (relation
@@ -863,8 +865,8 @@ public class AssertionGrid {
 				return -1;
 			float value = completedWeight_ + calculatePotentialWeight();
 			// Adjust the concept weight to ignore the existing assertions.
-//			if (conceptIsaTruths_ == null && conceptGenlTruths_ == null)
-//				value -= 1;
+			// if (conceptIsaTruths_ == null && conceptGenlTruths_ == null)
+			// value -= 1;
 			return value / weightSum_ * standingWeight_;
 		}
 

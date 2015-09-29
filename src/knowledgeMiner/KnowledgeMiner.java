@@ -64,6 +64,7 @@ public class KnowledgeMiner {
 	public static final String RUN_ID = "runID";
 	private static final String RESOURCE_WIKIPEDIA = "Wikipedia";
 	private static final String RESOURCE_ONTOLOGY = "Ontology";
+	private static final int REFINE_EVIDENCE = 100;
 
 	/** If new concepts are being created. */
 	public static boolean mappingRun_ = false;
@@ -102,7 +103,7 @@ public class KnowledgeMiner {
 	/** The mining aspect of KnowledgeMiner. */
 	private CycMiner miner_;
 
-	private OntologySocket ontology_;
+	private DAGSocket ontology_;
 
 	private CycPreprocessor preprocessor_;
 
@@ -128,6 +129,7 @@ public class KnowledgeMiner {
 		singleThread_ = wikiVersion.equals(ENWIKI_DEFAULT);
 		if (!singleThread_)
 			IOManager.newInstance();
+		// TODO Temporary throttling threads
 		int numThreads = (singleThread_) ? 1 : getNumThreads();
 
 		ResourceAccess.newInstance();
@@ -143,7 +145,7 @@ public class KnowledgeMiner {
 				1, numThreads));
 
 		interface_ = new MappingChainInterface(); // new SimpleListInterface();
-		ontology_ = ResourceAccess.requestOntologySocket();
+		ontology_ = (DAGSocket) ResourceAccess.requestOntologySocket();
 		wiki_ = ResourceAccess.requestWMISocket();
 
 		if (!singleThread_) {
@@ -368,7 +370,8 @@ public class KnowledgeMiner {
 		((FSTSerialisationMechanism) SerialisationMechanism.FST.getSerialiser())
 				.reset();
 
-		// TODO Begin predicate refinement
+		// Begin predicate refinement
+		ontology_.refinePredicate(REFINE_EVIDENCE);
 
 		try {
 			IOManager.getInstance().flush();
@@ -558,6 +561,8 @@ public class KnowledgeMiner {
 						+ " existing mappings.");
 			// Reading in each runID
 			for (int i = 0; i < split.length; i++) {
+				if (split[i].isEmpty())
+					continue;
 				String inputID = split[i++].trim().substring(1);
 				String[] edgeRunSplit = split[i].trim().split("\\|");
 				if (edgeRunSplit[0].equals("1")) {

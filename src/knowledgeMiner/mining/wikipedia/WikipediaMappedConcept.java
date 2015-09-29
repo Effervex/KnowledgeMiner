@@ -20,6 +20,7 @@ import cyc.OntologyConcept;
  * @author Sam Sarjant
  */
 public class WikipediaMappedConcept extends MappableConcept {
+	public static final String PREFIX = "mapArt";
 	private static final long serialVersionUID = 1L;
 
 	public WikipediaMappedConcept(int article) {
@@ -49,7 +50,8 @@ public class WikipediaMappedConcept extends MappableConcept {
 	@Override
 	public String toPrettyString() {
 		try {
-			return "mapArt('"
+			return PREFIX
+					+ "('"
 					+ ResourceAccess.requestWMISocket().getPageTitle(
 							(int) mappableThing_, true) + "')";
 		} catch (IOException e) {
@@ -65,7 +67,7 @@ public class WikipediaMappedConcept extends MappableConcept {
 
 	@Override
 	public String toString() {
-		return "mapArt('" + mappableThing_ + "')";
+		return PREFIX + "('" + mappableThing_ + "')";
 	}
 
 	@Override

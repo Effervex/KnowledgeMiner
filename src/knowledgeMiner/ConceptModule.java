@@ -17,7 +17,6 @@ import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
-import knowledgeMiner.mining.WeightedStanding;
 
 import org.slf4j.LoggerFactory;
 
@@ -308,11 +307,26 @@ public class ConceptModule extends MinedInformation implements
 	protected void performAssertionAdding(int runIter, OntologySocket ontology)
 			throws Exception {
 		Collection<Integer> assertionIDs = new ArrayList<>();
-		for (DefiniteAssertion assertion : getConcreteAssertions()) {
-			int id = assertion.makeAssertion(runIter, concept_, ontology);
-			if (id != -1) {
-				assertionIDs.add(id);
+		int oldSize = 0;
+		Collection<DefiniteAssertion> assertions = getConcreteAssertions();
+		// Repeat assertions until sure nothing changes
+		while (assertions.size() > 0 && assertions.size() != oldSize) {
+			Collection<DefiniteAssertion> failed = new ArrayList<>();
+			oldSize = assertions.size();
+			for (DefiniteAssertion assertion : assertions) {
+				// Ignore self-referential genls edges
+				if (assertion.getRelation().equals(
+						CycConstants.GENLS.getConcept())
+						&& assertion.getArgs()[0]
+								.equals(assertion.getArgs()[1]))
+					continue;
+				int id = assertion.makeAssertion(runIter, concept_, ontology);
+				if (id != -1)
+					assertionIDs.add(id);
+				else
+					failed.add(assertion);
 			}
+			assertions = failed;
 		}
 		//
 		// // Check type has not changed. If so, start again, checking after
@@ -496,11 +510,11 @@ public class ConceptModule extends MinedInformation implements
 		// Perform evaluation if interactive mode on
 		if (InteractiveMode.interactiveMode_) {
 			for (DefiniteAssertion assertion : getConcreteAssertions())
-				ConceptMiningTask.interactiveInterface_.evaluateAddition(
-						assertion, ontology);
+				InteractiveMode.getInstance().evaluateAddition(assertion,
+						ontology);
 			for (DefiniteAssertion removed : deletedAssertions_)
-				ConceptMiningTask.interactiveInterface_.evaluateRemoval(
-						removed, ontology);
+				InteractiveMode.getInstance()
+						.evaluateRemoval(removed, ontology);
 		}
 
 		return miningWeight_;
