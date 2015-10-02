@@ -43,7 +43,7 @@ public class DisjointnessDisambiguator {
 	public final static Logger logger_ = LoggerFactory
 			.getLogger(AssertionGrid.class);
 
-	private static final boolean ASSERTION_REMOVAL = true;
+	private static final boolean ASSERTION_REMOVAL = false;
 
 	private Collection<DefiniteAssertion> consistentAssertions_;
 

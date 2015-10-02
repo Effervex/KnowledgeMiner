@@ -3,6 +3,7 @@
  ******************************************************************************/
 package knowledgeMiner;
 
+import graph.core.CommonConcepts;
 import io.IOManager;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
@@ -22,6 +23,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import knowledgeMiner.debugInterface.ConceptThreadInterface;
 import knowledgeMiner.debugInterface.MappingChainInterface;
@@ -31,7 +34,6 @@ import knowledgeMiner.mining.wikipedia.FirstSentenceMiner;
 import knowledgeMiner.preprocessing.CycPreprocessor;
 import knowledgeMiner.preprocessing.KnowledgeMinerPreprocessor;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
 import util.UtilityMethods;
@@ -65,6 +67,8 @@ public class KnowledgeMiner {
 	private static final String RESOURCE_WIKIPEDIA = "Wikipedia";
 	private static final String RESOURCE_ONTOLOGY = "Ontology";
 	private static final int REFINE_EVIDENCE = 100;
+	private static final Pattern XY_SUB_PATTERN = Pattern
+			.compile("\\?X/(\\d+),\\?Y/\"(\\d+)\"");
 
 	/** If new concepts are being created. */
 	public static boolean mappingRun_ = false;
@@ -371,7 +375,7 @@ public class KnowledgeMiner {
 				.reset();
 
 		// Begin predicate refinement
-		ontology_.refinePredicate(REFINE_EVIDENCE);
+		// ontology_.refinePredicate(REFINE_EVIDENCE);
 
 		try {
 			IOManager.getInstance().flush();
@@ -516,6 +520,8 @@ public class KnowledgeMiner {
 				mappingCyc = true;
 			} else if (args[i].equals("-M")) {
 				ConceptMiningTask.onlyMining = true;
+			} else if (args[i].equals("-I")) {
+				InteractiveMode.interactiveMode_ = true;
 			}
 		}
 
@@ -545,16 +551,21 @@ public class KnowledgeMiner {
 		System.out.println("Beginning preloading.");
 		DAGSocket ontology = (DAGSocket) ResourceAccess.requestOntologySocket();
 
+		// TODO Rewrite to look at the node run, not the edges on the node
+		// q (assertedSentence (synonymousExternalConcept ?X Enwiki_20110722
+		// ?Y))
+
 		// Search for all runIDs using mapping edges
 		String delimiter = "#";
-		String mapArgs = "getprop E $1 " + RUN_ID + " " + delimiter + " T";
-		String wikiEdges = "findedges "
-				+ CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getID() + " (1) "
-				+ CycConstants.WIKI_VERSION.getConceptName() + " (3)";
-		String regEx = "\\|(\\d+)";
+		String mapArgs = "getprop N $1 " + RUN_ID + " " + delimiter + " T";
+		String mappedNodes = "query F ("
+				+ CommonConcepts.ASSERTED_SENTENCE.getID() + " ("
+				+ CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getID() + " ?X "
+				+ CycConstants.WIKI_VERSION.getConceptName() + " ?Y))";
+		String regEx = XY_SUB_PATTERN.pattern();
 		try {
-			String result = ontology.command("map", mapArgs + "\n" + wikiEdges
-					+ "\n" + regEx, false);
+			String result = ontology.command("map", mapArgs + "\n"
+					+ mappedNodes + "\n" + regEx, false);
 			String[] split = result.split(delimiter);
 			if (split.length > 0)
 				System.out.println("Preloading " + (split.length / 2)
@@ -563,24 +574,20 @@ public class KnowledgeMiner {
 			for (int i = 0; i < split.length; i++) {
 				if (split[i].isEmpty())
 					continue;
-				String inputID = split[i++].trim().substring(1);
-				String[] edgeRunSplit = split[i].trim().split("\\|");
-				if (edgeRunSplit[0].equals("1")) {
-					String[] edgeArgs = ontology.findEdgeByID(Integer
-							.parseInt(inputID));
-					if (StringUtils.isNumeric(edgeArgs[1])) {
-						int mappingIter = Integer.parseInt(edgeRunSplit[1]);
-						if (mappingIter == 0)
-							continue;
-						int conceptID = Integer.parseInt(edgeArgs[1]);
-						ConceptMiningTask.setConceptState(conceptID,
-								mappingIter);
+				String inputSubs = split[i++].trim();
+				String[] nodeRunSplit = split[i].trim().split("\\|");
+				if (nodeRunSplit[0].equals("1")) {
+					int runID = Integer.parseInt(nodeRunSplit[1]);
 
-						// Set the article state
-						int artID = Integer.parseInt(UtilityMethods
-								.shrinkString(edgeArgs[3], 1));
-						ConceptMiningTask.setArticleState(artID, mappingIter);
-					}
+					// Parse the subs
+					Matcher m = XY_SUB_PATTERN.matcher(inputSubs);
+					m.find();
+					int conceptID = Integer.parseInt(m.group(1));
+					int articleID = Integer.parseInt(m.group(2));
+
+					// Set the states
+					ConceptMiningTask.setConceptState(conceptID, runID);
+					ConceptMiningTask.setArticleState(articleID, runID);
 				}
 			}
 			if (split.length > 0)

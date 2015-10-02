@@ -52,7 +52,7 @@ import cyc.StringConcept;
 @SuppressWarnings("unchecked")
 public class ConceptMiningTask implements Runnable {
 	private static final int _BIG_ENOUGH = (int) Math.pow(2, 20);
-	
+
 	/** Mappings from an indexed article to a given ontology (ID). */
 	private static int[] artStates_ = new int[_BIG_ENOUGH];
 
@@ -391,16 +391,6 @@ public class ConceptMiningTask implements Runnable {
 			return !originalConcept(concept, original);
 		}
 
-		// Remove list articles
-		try {
-			if (concept.getArticle() != -1
-					&& WikiParser.isAListOf(wmi_.getPageTitle(
-							concept.getArticle(), true)))
-				return true;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
 		// Stop on completed articles/concepts (from this run)
 		if (concept.getConcept() != null) {
 			if (isConceptProcessed(concept.getConcept()))
@@ -415,6 +405,16 @@ public class ConceptMiningTask implements Runnable {
 		if (concept.getArticle() == -1
 				&& (concept.getConcept() == null || concept.isCreatedConcept()))
 			return true;
+
+		// Remove list articles
+		try {
+			if (concept.getArticle() != -1
+					&& WikiParser.isAListOf(wmi_.getPageTitle(
+							concept.getArticle(), true)))
+				return true;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
 		return false;
 	}

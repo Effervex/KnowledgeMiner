@@ -53,6 +53,11 @@ public class InteractiveMode {
 	private static final File IGNORED_PRED_FOLDER = new File(
 			"AutomatedEvalTool/IgnoredPredicates");
 
+	private static InteractiveMode instance_;
+
+	private static final Pattern MAP_ART_PATTERN = Pattern
+			.compile(WikipediaMappedConcept.PREFIX + "\\('(\\d+)'\\)");
+
 	private static final File MAPPING_FOLDER = new File(
 			"AutomatedEvalTool/Mapping");
 
@@ -62,8 +67,6 @@ public class InteractiveMode {
 	/** If the mapping/mining should involve the user. */
 	public static boolean interactiveMode_ = false;
 
-	private static InteractiveMode instance_;
-
 	public static final File MAPPINGS_FILE = new File("evaluatedMappings.txt");
 
 	public static final int NUM_DISAMBIGUATED = 3;
@@ -71,21 +74,16 @@ public class InteractiveMode {
 	public static final File TRUE_ASSERTIONS_FILE = new File(
 			"evaluatedTrueAssertions.txt");
 
-	private static final Pattern MAP_ART_PATTERN = Pattern
-			.compile(WikipediaMappedConcept.PREFIX + "\\('(\\d+)'\\)");
-
-	private Collection<String> trueAssertions_;
 	private Collection<String> falseAssertions_;
-
 	/** Predicates that are ignored for evaluation. */
 	private Set<String> ignoredAdditionPreds_;
+
 	private Set<String> ignoredRemovalPreds_;
 	/** Input and output streams. */
 	private BufferedReader in = new BufferedReader(new InputStreamReader(
 			System.in));
 	private Collection<String> localAdditions_;
 	private Collection<String> localRemovals_;
-
 	/** The evaluated mappings. */
 	private Map<String, Boolean> mappings_;
 
@@ -96,14 +94,16 @@ public class InteractiveMode {
 	private int numRemovals_ = 0;
 
 	private PrintStream out = System.out;
+
 	/** If assertion additions are skipped. */
 	private int skipAssertionAddition_ = 0;
-
 	/** If assertion removals are skipped. */
 	private int skipAssertionRemoval_ = 0;
 
 	/** If mappings are skipped. */
 	private int skipMapping_ = 0;
+
+	private Collection<String> trueAssertions_;
 
 	private InteractiveMode() {
 		try {
@@ -130,12 +130,6 @@ public class InteractiveMode {
 		}
 	}
 	
-	public static InteractiveMode getInstance() {
-		if (instance_ == null)
-			instance_ = new InteractiveMode();
-		return instance_;
-	}
-
 	/**
 	 * A convenience method called by both evaluate addition and evaluate
 	 * removal.
@@ -277,34 +271,6 @@ public class InteractiveMode {
 		} while (repeat);
 	}
 
-	private String percentToStr(double count, double total) {
-		if (total > 0 && count > 0)
-			return round(100 * count / total, 2) + "%";
-		else
-			return "NaN%";
-	}
-
-	private void processFile(File assertionFile, boolean isAddition)
-			throws IOException {
-		DAGSocket ontology = (DAGSocket) ResourceAccess.requestOntologySocket();
-		BufferedReader in = new BufferedReader(new FileReader(assertionFile));
-		String line = null;
-		while ((line = in.readLine()) != null) {
-			line = line.trim();
-			ArrayList<String> split = UtilityMethods.split(
-					UtilityMethods.shrinkString(line, 1), ' ');
-			String relation = split.get(0);
-			if (isAddition)
-				evaluateAddition(line, relation, ontology);
-			else
-				evaluateRemoval(line, relation, ontology);
-		}
-		in.close();
-
-		saveEvaluations();
-		ontology.close();
-	}
-
 	private Collection<String> loadAssertions(File file, OntologySocket ontology) {
 		Collection<String> assertions = new HashSet<>();
 		try {
@@ -341,6 +307,44 @@ public class InteractiveMode {
 			e.printStackTrace();
 		}
 		return assertions;
+	}
+
+	private String percentToStr(double count, double total) {
+		if (total > 0 && count > 0)
+			return round(100 * count / total, 2) + "%";
+		else
+			return "NaN%";
+	}
+
+	private void processFile(File assertionFile, boolean isAddition)
+			throws IOException {
+		DAGSocket ontology = (DAGSocket) ResourceAccess.requestOntologySocket();
+		BufferedReader in = new BufferedReader(new FileReader(assertionFile));
+		String line = null;
+		while ((line = in.readLine()) != null) {
+			line = line.trim();
+			ArrayList<String> split = UtilityMethods.split(
+					UtilityMethods.shrinkString(line, 1), ' ');
+			String relation = split.get(0);
+			if (isAddition)
+				evaluateAddition(line, relation, ontology);
+			else
+				evaluateRemoval(line, relation, ontology);
+		}
+		in.close();
+
+		saveEvaluations();
+		ontology.close();
+	}
+
+	private void writeAssertions(Collection<String> assertions, File outfile)
+			throws IOException {
+		BufferedWriter writer = new BufferedWriter(new FileWriter(outfile));
+		for (String assertion : assertions) {
+			writer.write(assertion + "\n");
+		}
+
+		writer.close();
 	}
 
 	/**
@@ -409,16 +413,6 @@ public class InteractiveMode {
 		}
 		// Return hashmap with true and false assertions
 		return h;
-	}
-
-	private void writeAssertions(Collection<String> assertions, File outfile)
-			throws IOException {
-		BufferedWriter writer = new BufferedWriter(new FileWriter(outfile));
-		for (String assertion : assertions) {
-			writer.write(assertion + "\n");
-		}
-
-		writer.close();
 	}
 
 	/**
@@ -539,6 +533,10 @@ public class InteractiveMode {
 						removalCounts[0]++;
 				}
 
+				// Output stats
+				outputStats(additionCounts, "additions");
+				outputStats(additionCounts, "removals");
+
 				// Output the statistics
 				StringBuilder localVals = new StringBuilder();
 				localVals.append(percentToStr(additionCounts[0], numAdditions_)
@@ -620,6 +618,20 @@ public class InteractiveMode {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void outputStats(int[] counts, String typeStr) {
+		StringBuilder builder = new StringBuilder();
+		builder.append(typeStr + ":");
+		builder.append("  Precision: " + counts[0] / (1f * counts[0] + counts[1]));
+//		builder.append("  Recall: " + counts[0] / (1f * counts[0] + FN));
+		System.out.println(builder.toString());
+	}
+
+	public static InteractiveMode getInstance() {
+		if (instance_ == null)
+			instance_ = new InteractiveMode();
+		return instance_;
 	}
 
 	/**

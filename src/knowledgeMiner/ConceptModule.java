@@ -6,6 +6,7 @@ package knowledgeMiner;
 import graph.core.CommonConcepts;
 import io.IOManager;
 import io.ResourceAccess;
+import io.ontology.DAGSocket;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
@@ -18,6 +19,7 @@ import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
 import cyc.CycConstants;
@@ -270,26 +272,54 @@ public class ConceptModule extends MinedInformation implements
 	 *             Should something go awry...
 	 */
 	private void makeWikiMappingAssertions(String articleTitle, int runIter,
-			OntologySocket ontology) throws Exception {
+			DAGSocket ontology) throws Exception {
 		String strURL = WMISocket.getArticleURL(articleTitle,
 				WMISocket.WIKIPEDIA_URL);
 
-		// TODO Unassert any old Wiki mappings (unless they are the same as
-		// this)
-
 		// Wiki URL
-		new DefiniteAssertion(CycConstants.WIKIPEDIA_URL.getConcept(),
+		int newWiki = new DefiniteAssertion(
+				CycConstants.WIKIPEDIA_URL.getConcept(),
 				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null,
 				concept_, new StringConcept(strURL)).makeAssertion(runIter,
 				concept_, ontology);
+		unassertOldWikiAssertions(newWiki, ontology,
+				CycConstants.WIKIPEDIA_URL.getID());
 
 		// Synonymous External Concept
-		new DefiniteAssertion(
+		int newSynConcept = new DefiniteAssertion(
 				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getConcept(),
 				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null,
 				concept_, CycConstants.WIKI_VERSION, new StringConcept(
 						articleID_ + "")).makeAssertion(runIter, concept_,
 				ontology);
+		unassertOldWikiAssertions(newSynConcept, ontology,
+				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getID());
+	}
+
+	/**
+	 * Unasserts any edges using the same predicate. Sort of like
+	 * StrictlyFunctional, but works for any edge.
+	 * 
+	 * @param newConcept
+	 *            The newly asserted assertion not to remove.
+	 * @param ontology
+	 *            The ontology access.
+	 * @param args
+	 *            The args to search with (in order).
+	 */
+	private void unassertOldWikiAssertions(int newConcept, DAGSocket ontology,
+			int... args) {
+		String[] indexArgs = new String[args.length * 2];
+		for (int i = 0; i < args.length; i++) {
+			indexArgs[i * 2] = args[i] + "";
+			indexArgs[i * 2 + 1] = "(" + (i + 1) + ")";
+		}
+
+		Collection<Integer> edges = ontology.findEdgeIDs(indexArgs);
+		for (Integer edgeID : edges) {
+			if (newConcept != edgeID)
+				ontology.unassert(null, edgeID, true);
+		}
 	}
 
 	/**
@@ -680,7 +710,7 @@ public class ConceptModule extends MinedInformation implements
 			significantChange_ = newNumAssertions != numAssertions;
 		}
 
-		makeWikiMappingAssertions(articleTitle, runIter, ontology);
+		makeWikiMappingAssertions(articleTitle, runIter, (DAGSocket) ontology);
 		DefiniteAssertion weightAssertion = new DefiniteAssertion(
 				CycConstants.MAPPING_CONFIDENCE.getConcept(),
 				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(), null,
