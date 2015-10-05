@@ -46,7 +46,7 @@ public class RemoveUseless implements Preprocessor {
 	 */
 	private boolean shouldRemove(OntologyConcept concept,
 			OntologySocket ontology) throws Exception {
-		if (ontology.isInfoless(concept))
+		if (ontology.isInfoless(concept, false, false))
 			return true;
 
 		return false;
@@ -60,7 +60,7 @@ public class RemoveUseless implements Preprocessor {
 			try {
 				String str = in.readLine();
 				OntologyConcept concept = new OntologyConcept(str);
-				if (ontology.isInfoless(concept))
+				if (ontology.isInfoless(concept, false, false))
 					System.out.println("true");
 				else
 					System.out.println("false");

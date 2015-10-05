@@ -14,8 +14,8 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import cyc.OntologyConcept;
 import cyc.CycConstants;
+import cyc.OntologyConcept;
 
 public abstract class OntologySocket extends KMSocket {
 	public static final int NON_EXISTENT_ID = -56434;
@@ -127,32 +127,27 @@ public abstract class OntologySocket extends KMSocket {
 		return isa(concept.getIdentifier(), CommonConcepts.COLLECTION.getID());
 	}
 
-	public boolean isInfoless(OntologyConcept concept) throws Exception {
+	public boolean isInfoless(OntologyConcept concept, boolean ignorePrimitive,
+			boolean ignoreString) throws Exception {
 		if (!inOntology(concept.getConceptName()))
 			return true;
 
-		for (CommonConcepts cc : CommonConcepts.values()) {
-			if (concept.getConceptName().equals(cc.getNodeName()))
-				return false;
-		}
+		String ident = concept.getIdentifier();
+		if (isa(ident, CommonConcepts.PREDICATE.getID())) {
+			// For each of its arguments TODO Assume two
+			for (int i = 1; i <= 2; i++) {
+				Collection<OntologyConcept> argIsa = quickQuery(
+						CommonQuery.MINARGNISA, ident, "'" + i);
+				for (OntologyConcept oc : argIsa)
+					if (validConstraint(oc, ignorePrimitive, ignoreString))
+						return false;
 
-		if (isa(concept.getIdentifier(), CommonConcepts.PREDICATE.getID())) {
-			Collection<String[]> assertions = getAllAssertions(concept, 1);
-			if (!assertions.isEmpty())
-				return false;
-
-			// Predicate needs to have some form of definition to it
-			assertions = getAllAssertions(concept, 2);
-			for (String[] assertion : assertions) {
-				OntologyConcept oc = OntologyConcept
-						.parseArgument(assertion[0]);
-				if (oc.getConceptName().matches("arg.*Isa")
-						|| oc.getConceptName().matches("arg.*Genl")
-						|| oc.getIdentifier().equals(
-								CommonConcepts.GENLPREDS.getNodeName()))
-					return false;
+				Collection<OntologyConcept> argGenls = quickQuery(
+						CommonQuery.MINARGNGENL, ident, "'" + i);
+				for (OntologyConcept oc : argGenls)
+					if (validConstraint(oc, false, false))
+						return false;
 			}
-
 			return true;
 		}
 
@@ -185,6 +180,29 @@ public abstract class OntologySocket extends KMSocket {
 		return false;
 	}
 
+	/**
+	 * Checks if a constraint is valid or infoless.
+	 *
+	 * @param constraint
+	 *            The constraint to check
+	 * @param ignorePrimitive
+	 *            If primitive constraints should be ignored.
+	 * @param ignoreString
+	 *            If string constraints should be ignored
+	 * @return True if the constraint is valid.
+	 */
+	private boolean validConstraint(OntologyConcept constraint,
+			boolean ignorePrimitive, boolean ignoreString) {
+		if (constraint.getID() == CommonConcepts.THING.getID())
+			return false;
+		if (ignorePrimitive && genls(constraint, "Number-General"))
+			return false;
+		if (ignoreString
+				&& genls(constraint, CommonConcepts.CHARACTER_STRING.getID()))
+			return false;
+		return true;
+	}
+
 	public boolean isValidArg(Object predicate, Object concept, int argNum) {
 		if (predicate.equals(CycConstants.ISA_GENLS.getConcept()
 				.getIdentifier())) {
@@ -206,7 +224,7 @@ public abstract class OntologySocket extends KMSocket {
 	public abstract String query(String microtheory, Object... queryArgs);
 
 	public abstract Collection<OntologyConcept> quickQuery(CommonQuery cq,
-			Object args);
+			Object... args);
 
 	public abstract boolean removeConcept(Object name);
 
@@ -232,4 +250,6 @@ public abstract class OntologySocket extends KMSocket {
 			boolean forceRemove);
 
 	public abstract boolean validConstantName(String cycTerm);
+
+	public abstract boolean conceptHasChildren(Object concept);
 }

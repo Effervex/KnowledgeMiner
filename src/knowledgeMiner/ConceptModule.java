@@ -202,7 +202,8 @@ public class ConceptModule extends MinedInformation implements
 		return concept;
 	}
 
-	private String createString(String article, String concept) {
+	private String createString(String article, String concept,
+			boolean withWeight) {
 		// Only a concept
 		if (article == null)
 			return concept;
@@ -228,7 +229,9 @@ public class ConceptModule extends MinedInformation implements
 		default:
 			break;
 		}
-		return output + " (w=" + getModuleWeight() + ")";
+		if (withWeight)
+			return output + " (w=" + getModuleWeight() + ")";
+		return output;
 	}
 
 	private OntologyConcept determineType(OntologySocket ontology) {
@@ -283,7 +286,7 @@ public class ConceptModule extends MinedInformation implements
 				concept_, new StringConcept(strURL)).makeAssertion(runIter,
 				concept_, ontology);
 		unassertOldWikiAssertions(newWiki, ontology,
-				CycConstants.WIKIPEDIA_URL.getID());
+				CycConstants.WIKIPEDIA_URL.getID(), concept_.getID());
 
 		// Synonymous External Concept
 		int newSynConcept = new DefiniteAssertion(
@@ -293,7 +296,9 @@ public class ConceptModule extends MinedInformation implements
 						articleID_ + "")).makeAssertion(runIter, concept_,
 				ontology);
 		unassertOldWikiAssertions(newSynConcept, ontology,
-				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getID());
+				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getID(),
+				concept_.getID(),
+				CycConstants.WIKI_VERSION.getID());
 	}
 
 	/**
@@ -330,12 +335,14 @@ public class ConceptModule extends MinedInformation implements
 	 *            The run iteration in which the assertions are being made.
 	 * @param ontology
 	 *            The ontology access.
-	 * 
+	 * @param noSemantic
+	 *            If the concept should assert semantic assertions (opposed to
+	 *            no constraint, or primitive assertions).
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	protected void performAssertionAdding(int runIter, OntologySocket ontology)
-			throws Exception {
+	protected void performAssertionAdding(int runIter, OntologySocket ontology,
+			boolean noSemantic) throws Exception {
 		Collection<Integer> assertionIDs = new ArrayList<>();
 		int oldSize = 0;
 		Collection<DefiniteAssertion> assertions = getConcreteAssertions();
@@ -344,6 +351,11 @@ public class ConceptModule extends MinedInformation implements
 			Collection<DefiniteAssertion> failed = new ArrayList<>();
 			oldSize = assertions.size();
 			for (DefiniteAssertion assertion : assertions) {
+				if (noSemantic
+						&& !ontology.isInfoless(assertion.getRelation(), true,
+								true))
+					continue;
+
 				// Ignore self-referential genls edges
 				if (assertion.getRelation().equals(
 						CycConstants.GENLS.getConcept())
@@ -406,15 +418,22 @@ public class ConceptModule extends MinedInformation implements
 	 *            The run iteration in which the assertions are being made.
 	 * @param ontology
 	 *            The ontology access.
-	 * 
+	 * @param noSemantic
+	 *            If the concept should assert semantic assertions (opposed to
+	 *            no constraint, or primitive assertions).
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	protected void performAutoAssertions(int runIter, OntologySocket ontology)
-			throws Exception {
+	protected void performAutoAssertions(int runIter, OntologySocket ontology,
+			boolean noSemantic) throws Exception {
 		if (autoAssertions_ != null && parents_ != null
 				&& isChildOfParents(ontology)) {
 			for (MinedAssertion assertion : autoAssertions_) {
+				if (noSemantic
+						&& !ontology.isInfoless(
+								(OntologyConcept) assertion.getRelation(),
+								true, true))
+					continue;
 				if (assertion instanceof PartialAssertion)
 					assertion = ((PartialAssertion) assertion).instantiate(
 							getMappableSelfRef(), concept_);
@@ -695,14 +714,19 @@ public class ConceptModule extends MinedInformation implements
 		}
 
 		if (!KnowledgeMiner.mappingRun_) {
+			boolean noSemantic = KnowledgeMiner.onlyMineLeaf_
+					&& !isCreatedConcept()
+					&& ontology.conceptHasChildren(concept_.getIdentifier());
+
 			// Perform the removals
-			performAssertionRemoval(ontology);
+			if (!noSemantic)
+				performAssertionRemoval(ontology);
 
 			// Perform the assertions
-			performAssertionAdding(runIter, ontology);
+			performAssertionAdding(runIter, ontology, noSemantic);
 
 			// Perform auto-assertions
-			performAutoAssertions(runIter, ontology);
+			performAutoAssertions(runIter, ontology, noSemantic);
 		}
 		if (!significantChange_) {
 			int newNumAssertions = ontology.getAllAssertions(concept_, 2,
@@ -776,10 +800,10 @@ public class ConceptModule extends MinedInformation implements
 			miningWeight_ = weight;
 	}
 
-	public String toPrettyString() {
+	public String toPrettyString(boolean withWeight) {
 		String article = articleToString();
 		String concept = conceptToString();
-		return createString(article, concept);
+		return createString(article, concept, withWeight);
 	}
 
 	/**
@@ -841,7 +865,7 @@ public class ConceptModule extends MinedInformation implements
 				concept = concept_.getID() + "C";
 			else
 				concept = concept_.toString();
-		return createString(article, concept);
+		return createString(article, concept, true);
 	}
 
 	public Collection<DefiniteAssertion> getDeletedAssertions() {

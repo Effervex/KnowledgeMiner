@@ -45,7 +45,7 @@ public enum CycConstants {
 	UNIVERSAL_VOCAB_MT("UniversalVocabularyMt"),
 	URLFN("URLFn"),
 	WIKIPEDIA_COMMENT("wikipediaComment"),
-	WIKIPEDIA_URL("wikipediaArticleURL-Expansion");
+	WIKIPEDIA_URL("wikipediaArticleURL-Expansion"), THING("Thing");
 
 	public static OntologyConcept WIKI_VERSION;
 	private OntologyConcept concept_;

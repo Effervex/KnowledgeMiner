@@ -5,6 +5,7 @@ package cyc;
 
 import graph.core.PrimitiveNode;
 import io.ResourceAccess;
+import io.ontology.OntologySocket;
 
 import java.io.Serializable;
 

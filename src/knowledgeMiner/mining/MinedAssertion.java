@@ -23,6 +23,12 @@ public abstract class MinedAssertion extends WeightedInformation implements
 		Serializable {
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * The weight assigned to this assertion as a representation of confidence
+	 * in the assertion.
+	 */
+	private double weight_ = 1;
+
 	/** The arguments of the relation. */
 	protected AssertionArgument[] args_;
 
@@ -39,19 +45,10 @@ public abstract class MinedAssertion extends WeightedInformation implements
 	protected AssertionArgument relation_;
 
 	/**
-	 * The weight assigned to this assertion as a representation of confidence
-	 * in the assertion.
+	 * Constructor for an empty MinedAssertion (all null)
 	 */
-	private double weight_ = 1;
-
-	@Override
-	public double getWeight() {
-		return weight_;
-	}
-
-	@Override
-	public void setWeight(double weight) {
-		weight_ = weight;
+	protected MinedAssertion() {
+		super(null);
 	}
 
 	/**
@@ -89,13 +86,6 @@ public abstract class MinedAssertion extends WeightedInformation implements
 	}
 
 	/**
-	 * Constructor for an empty MinedAssertion (all null)
-	 */
-	protected MinedAssertion() {
-		super(null);
-	}
-
-	/**
 	 * Determines which microtheory to use for the assertion based on the
 	 * relation.
 	 * 
@@ -112,7 +102,8 @@ public abstract class MinedAssertion extends WeightedInformation implements
 				|| relation.equals(CycConstants.SYNONYM_RELATION_CANONICAL)
 				|| ResourceAccess.requestOntologySocket().evaluate(null,
 						CommonConcepts.GENLPREDS.getID(),
-						relation.getIdentifier(), CommonConcepts.TERM_STRING.getID()))
+						relation.getIdentifier(),
+						CommonConcepts.TERM_STRING.getID()))
 			return CycConstants.LEXICAL_MICROTHEORY;
 		else if (relation.equals(CycConstants.WIKIPEDIA_URL.getConcept())
 				|| relation.toString().startsWith("synonymousExternal"))
@@ -140,10 +131,12 @@ public abstract class MinedAssertion extends WeightedInformation implements
 					.getConcept())
 					|| ontology.evaluate(null,
 							CommonConcepts.GENLPREDS.getID(),
-							relation.getIdentifier(), CommonConcepts.ISA.getID())
+							relation.getIdentifier(),
+							CommonConcepts.ISA.getID())
 					|| ontology.evaluate(null,
 							CommonConcepts.GENLPREDS.getID(),
-							relation.getIdentifier(), CommonConcepts.GENLS.getID());
+							relation.getIdentifier(),
+							CommonConcepts.GENLS.getID());
 	}
 
 	@Override
@@ -176,6 +169,13 @@ public abstract class MinedAssertion extends WeightedInformation implements
 		return true;
 	}
 
+	public int getArgIndex(AssertionArgument argument) {
+		for (int i = 0; i < args_.length; i++)
+			if (args_[i].equals(argument))
+				return i;
+		return -1;
+	}
+
 	/**
 	 * Gets the arguments of the assertion.
 	 * 
@@ -191,6 +191,11 @@ public abstract class MinedAssertion extends WeightedInformation implements
 
 	public AssertionArgument getRelation() {
 		return relation_;
+	}
+
+	@Override
+	public double getWeight() {
+		return weight_;
 	}
 
 	@Override
@@ -213,19 +218,21 @@ public abstract class MinedAssertion extends WeightedInformation implements
 		return isHierarchical_;
 	}
 
-	/**
-	 * Creates a temporal microtheory within the given interval.
-	 * 
-	 * @param baseMicrotheory
-	 *            The base microtheory to wrap the temporal interval around.
-	 * @param interval
-	 *            The time interval to represent.
-	 * @return A String representing the microtheory bound to a temporal subset.
-	 */
-	public static String compileTemporalMicrotheory(String baseMicrotheory,
-			String interval) {
-		return "(MtSpace " + baseMicrotheory + " '(MtTimeWithGranularityDimFn "
-				+ interval + " Null-TimeParameter))";
+	public abstract MinedAssertion replaceArg(AssertionArgument original,
+			AssertionArgument replacement);
+
+	@Override
+	public void setWeight(double weight) {
+		weight_ = weight;
+	}
+
+	public String toPrettyString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("(" + relation_.toPrettyString());
+		for (AssertionArgument arg : args_)
+			builder.append(" " + arg.toPrettyString());
+		builder.append(")");
+		return builder.toString();
 	}
 
 	@Override
@@ -240,22 +247,18 @@ public abstract class MinedAssertion extends WeightedInformation implements
 		return builder.toString();
 	}
 
-	public String toPrettyString() {
-		StringBuilder builder = new StringBuilder();
-		builder.append("(" + relation_.toPrettyString());
-		for (AssertionArgument arg : args_)
-			builder.append(" " + arg.toPrettyString());
-		builder.append(")");
-		return builder.toString();
+	/**
+	 * Creates a temporal microtheory within the given interval.
+	 * 
+	 * @param baseMicrotheory
+	 *            The base microtheory to wrap the temporal interval around.
+	 * @param interval
+	 *            The time interval to represent.
+	 * @return A String representing the microtheory bound to a temporal subset.
+	 */
+	public static String compileTemporalMicrotheory(String baseMicrotheory,
+			String interval) {
+		return "(MtSpace " + baseMicrotheory + " '(MtTimeWithGranularityDimFn "
+				+ interval + " Null-TimeParameter))";
 	}
-
-	public int getArgIndex(AssertionArgument argument) {
-		for (int i = 0; i < args_.length; i++)
-			if (args_[i].equals(argument))
-				return i;
-		return -1;
-	}
-
-	public abstract MinedAssertion replaceArg(AssertionArgument original,
-			AssertionArgument replacement);
 }

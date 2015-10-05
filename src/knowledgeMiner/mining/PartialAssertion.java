@@ -1,7 +1,6 @@
 package knowledgeMiner.mining;
 
 import graph.core.CommonConcepts;
-import graph.inference.CommonQuery;
 import io.ontology.OntologySocket;
 import io.resources.WMISocket;
 
@@ -9,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -30,13 +28,13 @@ public class PartialAssertion extends MinedAssertion {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final double NO_CONSTRAINT_REWEIGHT = 0.001;
+	public static final double NO_CONSTRAINT_REWEIGHT = 0.001;
 
 	/** Optional sub-assertions for hierarchically structured mined information. */
 	private Collection<PartialAssertion> subAssertions_;
 
 	/** A reweighted cache of the relations during expansion. */
-	private transient Map<OntologyConcept, Double> reweightCache_;
+	private transient Map<OntologyConcept, Boolean> reweightCache_;
 
 	public PartialAssertion() {
 		super();
@@ -178,41 +176,23 @@ public class PartialAssertion extends MinedAssertion {
 	private double constraintFactor(OntologyConcept relation,
 			WeightedSet<OntologyConcept>[] expandedArgs, OntologySocket ontology) {
 		if (reweightCache_.containsKey(relation))
-			return reweightCache_.get(relation);
+			return reweightCache_.get(relation) ? 1 : NO_CONSTRAINT_REWEIGHT;
 		if (relation.equals(CycConstants.ISA_GENLS.getConcept()))
 			return 1;
+		// Can probably just check for any and all assertions, ignoring
+		// primitives and strings.
 
-		int nullIndex = 0;
-		for (int i = 0; i < expandedArgs.length; i++) {
-			if (expandedArgs[i] == null) {
-				nullIndex = i;
-				break;
-			}
-		}
-
-		// Check if there are constraints
-		Collection<OntologyConcept> constraints = ontology.quickQuery(
-				CommonQuery.ARGNISA, relation.getIdentifier() + " '"
-						+ (nullIndex + 1));
-		if (constraints.size() > 1) {
-			reweightCache_.put(relation, 1d);
-			return 1;
-		}
-		if (constraints.isEmpty()
-				|| constraints.iterator().next().getID() == CommonConcepts.THING
-						.getID()) {
-			// Check the arg genls
-			constraints = ontology.quickQuery(CommonQuery.ARGNGENL,
-					relation.getIdentifier() + " '" + (nullIndex + 1));
-			if (constraints.size() >= 1) {
-				reweightCache_.put(relation, 1d);
+		try {
+			boolean constrained = ontology.isInfoless(relation, true, true);
+			reweightCache_.put(relation, constrained);
+			if (constrained)
 				return 1;
-			}
-			reweightCache_.put(relation, NO_CONSTRAINT_REWEIGHT);
-			return NO_CONSTRAINT_REWEIGHT;
+			else
+				return NO_CONSTRAINT_REWEIGHT;
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		reweightCache_.put(relation, 1d);
-		return 1;
+		return NO_CONSTRAINT_REWEIGHT;
 	}
 
 	/**
@@ -330,7 +310,7 @@ public class PartialAssertion extends MinedAssertion {
 		for (OntologyConcept rel : expandedRelation) {
 			// Check if a relation (binary)
 			if (rel.equals(CycConstants.ISA_GENLS.getConcept()))
-					continue;
+				continue;
 			if (!ontology.isa(rel.getIdentifier(),
 					CommonConcepts.BINARY_PREDICATE.getID())) {
 				removables.add(rel);
@@ -456,8 +436,9 @@ public class PartialAssertion extends MinedAssertion {
 					: args_[i]);
 		}
 
-		return new DefiniteAssertion(newRelation, microtheory_,
+		DefiniteAssertion da = new DefiniteAssertion(newRelation, microtheory_,
 				getProvenance(), newArgs);
+		return da;
 	}
 
 	@Override

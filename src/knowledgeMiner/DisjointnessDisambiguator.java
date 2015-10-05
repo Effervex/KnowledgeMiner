@@ -58,7 +58,7 @@ public class DisjointnessDisambiguator {
 
 	private Collection<DefiniteAssertion> removedAssertions_;
 
-	private int caseNumber_ = 0;
+	private float disambiguatedWeight_ = 0;
 
 	public DisjointnessDisambiguator(Collection<PartialAssertion> assertions,
 			MappableConcept coreConcept, OntologySocket ontology, WMISocket wmi) {
@@ -198,20 +198,22 @@ public class DisjointnessDisambiguator {
 	public void findMaximalConjoint(ConceptModule conceptModule,
 			OntologySocket ontology) {
 		// Null grid check
-		if (coreAssertionGrid_.isEmpty()) {
-			caseNumber_ = -1;
+		if (coreAssertionGrid_.isEmpty())
 			return;
-		}
-		boolean assertionRemoval = ASSERTION_REMOVAL
-				&& !conceptHasChildren(conceptModule, (DAGSocket) ontology);
 
+		// If the concept has children, only keep the information-less
+		// assertions
+		boolean hasChildren = !conceptModule.isCreatedConcept()
+				&& ontology.conceptHasChildren(conceptModule.getConcept()
+						.getIdentifier());
+		boolean assertionRemoval = ASSERTION_REMOVAL && !hasChildren;
 		Collection<DefiniteAssertion> existingAssertions = getExistingAssertions(
 				conceptModule, ontology);
 		currentAssertionGrid_ = integrateGroundTruths(conceptModule,
 				existingAssertions, assertionRemoval, ontology);
 		consistentAssertions_ = currentAssertionGrid_
 				.findMaximalConjoint(ontology);
-		caseNumber_ = 0;
+		disambiguatedWeight_ = currentAssertionGrid_.getCaseWeight(0);
 
 		// Note the removed assertions
 		logger_.trace("Added " + consistentAssertions_.size());
@@ -223,60 +225,26 @@ public class DisjointnessDisambiguator {
 			removedAssertions_ = CollectionUtils.EMPTY_COLLECTION;
 	}
 
-	/**
-	 * Checks if the concept has any children. If so, does not allow assertion
-	 * removal.
-	 *
-	 * @param conceptModule
-	 *            The concept to check.
-	 * @param ontology
-	 *            The ontology access.
-	 * @return True if the concept has children.
-	 */
-	private boolean conceptHasChildren(ConceptModule conceptModule,
-			DAGSocket ontology) {
-		if (conceptModule.isCreatedConcept())
-			return false;
-		try {
-			// Isa
-			OntologyConcept concept = conceptModule.getConcept();
-			String result = ontology.command(
-					"findedges",
-					CommonConcepts.ISA.getID() + " (1) "
-							+ concept.getIdentifier() + " (3) [0,1)", false);
-			if (result.startsWith("1"))
-				return true;
-			// Genls
-			result = ontology.command("findedges", CommonConcepts.GENLS.getID()
-					+ " (1) " + concept.getIdentifier() + " (3) [0,1)", false);
-			if (result.startsWith("1"))
-				return true;
-		} catch (Exception e) {
-			return true;
-		}
-		return false;
-	}
-
 	public float getConjointWeight() {
-		if (caseNumber_ == -1)
-			return 0;
-		return currentAssertionGrid_.getCaseWeight(caseNumber_);
+		return disambiguatedWeight_;
 	}
 
 	public boolean isCollection() {
-		if (caseNumber_ == -1)
+		if (currentAssertionGrid_ == null)
 			return false;
-		return currentAssertionGrid_.isCollection(caseNumber_);
+		return currentAssertionGrid_.isCollection(0);
 	}
 
+	@SuppressWarnings("unchecked")
 	public Collection<DefiniteAssertion> getConsistentAssertions() {
-		if (caseNumber_ == -1)
+		if (consistentAssertions_ == null)
 			return Collections.EMPTY_LIST;
 		return consistentAssertions_;
 	}
 
+	@SuppressWarnings("unchecked")
 	public Collection<DefiniteAssertion> getRemovedAssertions() {
-		if (caseNumber_ == -1)
+		if (removedAssertions_ == null)
 			return Collections.EMPTY_LIST;
 		return removedAssertions_;
 	}

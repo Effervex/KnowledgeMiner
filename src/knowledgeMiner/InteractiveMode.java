@@ -74,6 +74,8 @@ public class InteractiveMode {
 	public static final File TRUE_ASSERTIONS_FILE = new File(
 			"evaluatedTrueAssertions.txt");
 
+	private static final boolean PROMPT_USER = false;
+
 	private Collection<String> falseAssertions_;
 	/** Predicates that are ignored for evaluation. */
 	private Set<String> ignoredAdditionPreds_;
@@ -186,6 +188,9 @@ public class InteractiveMode {
 				numRemovals_++;
 			return;
 		}
+		
+		if (!PROMPT_USER)
+			return;
 
 		// Ask user
 		String dagtotext = null;
@@ -452,12 +457,16 @@ public class InteractiveMode {
 			return;
 
 		// Check prior results
-		String conceptStr = concept.toPrettyString();
+		String conceptStr = concept.toPrettyString(false);
 		Boolean known = mappings_.get(conceptStr);
 		if (known != null) {
 			out.println(known + ": " + conceptStr);
 			return;
 		}
+		
+		if (!PROMPT_USER)
+			return;
+		
 		// Ask user
 		out.print("EVALUATE MAPPING: " + conceptStr
 				+ ": (t)rue, (f)alse, (s)kip, (ss)kip 10, (sss)kip 100, "

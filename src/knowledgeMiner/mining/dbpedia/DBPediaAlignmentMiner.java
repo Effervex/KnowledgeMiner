@@ -128,10 +128,17 @@ public class DBPediaAlignmentMiner extends DBPediaMiningHeuristic {
 		if (artID == -1)
 			return;
 
-		Collection<Map<String, RDFNode>> queryResults = askQuery("?property",
-				"?hasValue", "?article", "?valID", "?article dbowl:wikiPageID "
-						+ artID, "?article ?property ?hasValue",
-				"OPTIONAL {?hasValue dbowl:wikiPageID ?valID}");
+		// TODO Restricted to DBOntology - it's cleaner.
+		Collection<Map<String, RDFNode>> queryResults = askQuery(
+				"?property",
+				"?hasValue",
+				"?article",
+				"?valID",
+				"?article dbowl:wikiPageID " + artID,
+				"?article ?property ?hasValue",
+				"OPTIONAL {?hasValue dbowl:wikiPageID ?valID}",
+				"FILTER regex(str(?property), \""
+						+ DBPediaNamespace.DBPEDIAOWL.getURI() + "\")");
 
 		// Convert triples to partial assertions
 		for (Map<String, RDFNode> triple : queryResults) {

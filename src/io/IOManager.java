@@ -206,7 +206,7 @@ public class IOManager {
 	public void writeMapping(ConceptModule concept, String articleTitle)
 			throws Exception {
 		OntologyConcept cycTerm = concept.getConcept();
-		System.out.println(concept.toPrettyString() + " ("
+		System.out.println(concept.toPrettyString(false) + " ("
 				+ concept.getConcreteAssertions().size() + " assertions).");
 		if (mappings_ != null) {
 			StringBuilder buffer = new StringBuilder();

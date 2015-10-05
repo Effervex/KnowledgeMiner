@@ -3,6 +3,7 @@
  ******************************************************************************/
 package io.ontology;
 
+import graph.core.CommonConcepts;
 import graph.core.DAGNode;
 import graph.core.cli.DAGPortHandler;
 import graph.inference.CommonQuery;
@@ -690,8 +691,10 @@ public class DAGSocket extends OntologySocket {
 	}
 
 	@Override
-	public Collection<OntologyConcept> quickQuery(CommonQuery cq, Object args) {
-		String query = cq.toString() + " " + noNewLine(args.toString());
+	public Collection<OntologyConcept> quickQuery(CommonQuery cq,
+			Object... args) {
+		String query = cq.toString() + " "
+				+ noNewLine(StringUtils.join(args, " "));
 		try {
 			String[] split = command("query*", query, true).split("\\|");
 			int size = Integer.parseInt(split[0]);
@@ -817,6 +820,33 @@ public class DAGSocket extends OntologySocket {
 				canRestart_ = true;
 				return result;
 			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the concept has any children. If so, does not allow assertion
+	 * removal.
+	 *
+	 * @param conceptModule
+	 *            The concept to check.
+	 * @return True if the concept has children.
+	 */
+	@Override
+	public boolean conceptHasChildren(Object concept) {
+		try {
+			// Isa
+			String result = command("findedges", CommonConcepts.ISA.getID()
+					+ " (1) " + concept + " (3) [0,1)", false);
+			if (result.startsWith("1"))
+				return true;
+			// Genls
+			result = command("findedges", CommonConcepts.GENLS.getID()
+					+ " (1) " + concept + " (3) [0,1)", false);
+			if (result.startsWith("1"))
+				return true;
+		} catch (Exception e) {
+			return true;
 		}
 		return false;
 	}

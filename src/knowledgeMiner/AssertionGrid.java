@@ -694,7 +694,8 @@ public class AssertionGrid {
 				// Check collection first
 				boolean asserted = false;
 				// If a collection, the predicate is/can be genls, and is not
-				// disjoint with existing genls, and isn't a useless self-genls edge
+				// disjoint with existing genls, and isn't a useless self-genls
+				// edge
 				OntologyConcept relation = assertion.getRelation();
 				if (isaCollection_
 						&& (relation
@@ -949,5 +950,40 @@ public class AssertionGrid {
 				return result;
 			return 0;
 		}
+	}
+
+	/**
+	 * Returns all informationless assertions (as though all taxonomic
+	 * information was conflicting).
+	 *
+	 * @param concept
+	 *            The concept to ground the informationless assertions to.
+	 * @return A collection of definite assertions where all assertions are
+	 *         informationless.
+	 */
+	public Collection<DefiniteAssertion> getInformationlessAssertions(
+			OntologyConcept concept, OntologySocket ontology) {
+		Collection<DefiniteAssertion> infoless = new HashSet<>();
+		for (int x = 0; x < assertionGrid_.length; x++) {
+			if (assertionGrid_[x][0] == null)
+				continue;
+			try {
+				double bestWeight = -1;
+				for (int y = 0; y < assertionGrid_[x].length; y++) {
+					if (weightGrid_[x][y] < bestWeight)
+						break;
+					OntologyConcept relation = (OntologyConcept) assertionGrid_[x][y]
+							.getRelation();
+					if (!relation.equals(CycConstants.ISA_GENLS.getConcept())
+							&& ontology.isInfoless(relation, true, true)) {
+						infoless.add((DefiniteAssertion) assertionGrid_[x][y]);
+						bestWeight = weightGrid_[x][y];
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return infoless;
 	}
 }

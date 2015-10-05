@@ -14,6 +14,7 @@ import static org.junit.Assert.*;
 
 import java.util.Collection;
 
+import graph.core.CommonConcepts;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
 
@@ -21,6 +22,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import cyc.CycConstants;
 import cyc.OntologyConcept;
 
 public class DAGSocketTest {
@@ -43,4 +45,27 @@ public class DAGSocketTest {
 		assertTrue(results.isEmpty());
 	}
 
+	@Test
+	public void testIsInfoless() throws Exception {
+		// Base
+		OntologyConcept concept = CycConstants.ISA.getConcept();
+		assertFalse(sut_.isInfoless(concept, false, false));
+		assertFalse(sut_.isInfoless(concept, false, true));
+		assertFalse(sut_.isInfoless(concept, true, false));
+		assertFalse(sut_.isInfoless(concept, true, true));
+		
+		// Primitive
+		concept = new OntologyConcept("charSequenceOfMaximumLength-lowercase");
+		assertFalse(sut_.isInfoless(concept, false, false));
+		assertFalse(sut_.isInfoless(concept, false, true));
+		assertTrue(sut_.isInfoless(concept, true, false));
+		assertTrue(sut_.isInfoless(concept, true, true));
+
+		// String
+		concept = new OntologyConcept(CommonConcepts.PRETTY_STRING.getID());
+		assertFalse(sut_.isInfoless(concept, false, false));
+		assertTrue(sut_.isInfoless(concept, false, true));
+		assertFalse(sut_.isInfoless(concept, true, false));
+		assertTrue(sut_.isInfoless(concept, true, true));
+	}
 }

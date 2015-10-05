@@ -74,6 +74,8 @@ public class KnowledgeMiner {
 	public static boolean mappingRun_ = false;
 
 	public static boolean onlineWeightUpdating_ = false;
+	
+	public static boolean onlyMineLeaf_ = true;
 
 	/** The current version of Wikipedia being used. */
 	public static String wikiVersion_ = ENWIKI_DEFAULT;
