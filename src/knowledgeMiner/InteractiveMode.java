@@ -10,6 +10,7 @@
  ******************************************************************************/
 package knowledgeMiner;
 
+import graph.core.CommonConcepts;
 import graph.inference.CommonQuery;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
@@ -43,6 +44,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import util.UtilityMethods;
 import cyc.OntologyConcept;
+import cyc.PrimitiveConcept;
 
 /**
  * A class for allowing a user to interactively evaluate if results are correct
@@ -64,6 +66,8 @@ public class InteractiveMode {
 	private static final File MINING_FOLDER = new File(
 			"AutomatedEvalTool/Mining");
 
+	private static final boolean PROMPT_USER = false;
+
 	/** If the mapping/mining should involve the user. */
 	public static boolean interactiveMode_ = false;
 
@@ -74,7 +78,11 @@ public class InteractiveMode {
 	public static final File TRUE_ASSERTIONS_FILE = new File(
 			"evaluatedTrueAssertions.txt");
 
-	private static final boolean PROMPT_USER = false;
+	private static final File MINING_DATA_FILE = new File(
+			"AutomatedEvalTool/minedData.txt");
+
+	private static final Pattern NON_TAXONOMIC = Pattern
+			.compile("('(\\d+)|\"([^\"]+)\")");
 
 	private Collection<String> falseAssertions_;
 	/** Predicates that are ignored for evaluation. */
@@ -84,7 +92,9 @@ public class InteractiveMode {
 	/** Input and output streams. */
 	private BufferedReader in = new BufferedReader(new InputStreamReader(
 			System.in));
+	private Collection<MinedData> localActivity_;
 	private Collection<String> localAdditions_;
+
 	private Collection<String> localRemovals_;
 	/** The evaluated mappings. */
 	private Map<String, Boolean> mappings_;
@@ -118,6 +128,7 @@ public class InteractiveMode {
 			mappings_ = loadMappingEvaluations();
 			localAdditions_ = new HashSet<>();
 			localRemovals_ = new HashSet<>();
+			localActivity_ = new HashSet<>();
 			OntologySocket ontology = ResourceAccess.requestOntologySocket();
 			trueAssertions_ = loadAssertions(new File(MINING_FOLDER,
 					"trueAssertions.txt"), ontology);
@@ -131,27 +142,27 @@ public class InteractiveMode {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * A convenience method called by both evaluate addition and evaluate
 	 * removal.
 	 *
 	 * @param assertion
 	 *            The assertion being added/removed.
-	 * @param relation
-	 *            The relation of the assertion.
-	 * @param ontology
-	 *            The ontology access.
 	 * @param added
 	 *            If the assertion is being added, else removed.
+	 * @param ontology
+	 *            The ontology access.
 	 */
-	private void evaluateMined(String assertion, String relation,
-			OntologySocket ontology, boolean added) {
+	private void evaluateMined(DefiniteAssertion assertion, boolean added,
+			OntologySocket ontology) {
 		if (!interactiveMode_)
 			return;
+		OntologyConcept relation = assertion.getRelation();
+		String assertionStr = assertion.toPrettyString();
 		Set<String> ignored = (added) ? ignoredAdditionPreds_
 				: ignoredRemovalPreds_;
-		if (ignored.contains(relation))
+		if (ignored.contains(relation.toPrettyString()))
 			return;
 		if (added) {
 			skipAssertionAddition_--;
@@ -174,106 +185,121 @@ public class InteractiveMode {
 			local = localRemovals_;
 			typeWord = "REMOVAL";
 		}
-		String knownWord = null;
-		if (correct.contains(assertion))
-			knownWord = "CORRECT";
-		else if (incorrect.contains(assertion))
-			knownWord = "INCORRECT";
-		if (knownWord != null) {
-			out.println(knownWord + " " + typeWord + ": " + assertion);
-			local.add(assertion);
+
+		byte truth = -1;
+		if (correct.contains(assertionStr))
+			truth = 1;
+		else if (incorrect.contains(assertionStr))
+			truth = 0;
+		if (truth != -1) {
+			String knownWord = (truth == 1) ? "CORRECT" : "INCORRECT";
+			out.println(knownWord + " " + typeWord + ": " + assertionStr);
+			local.add(assertionStr);
+			localActivity_.add(new MinedData(assertion, added, truth));
 			if (added)
 				numAdditions_++;
 			else
 				numRemovals_++;
 			return;
 		}
-		
-		if (!PROMPT_USER)
-			return;
 
-		// Ask user
-		String dagtotext = null;
-		if (added)
-			dagtotext = StringUtils.capitalize(ontology.dagToText(assertion,
-					"Q", false));
-		else
-			dagtotext = StringUtils.capitalize(ontology.dagToText("(not "
-					+ assertion + ")", "Q", false));
-		boolean repeat = false;
-		do {
-			repeat = false;
+		boolean saveMinedData = true;
+		if (PROMPT_USER) {
+			// Ask user
+			String dagtotext = null;
+			if (added)
+				dagtotext = StringUtils.capitalize(ontology.dagToText(
+						assertionStr, "Q", false));
+			else
+				dagtotext = StringUtils.capitalize(ontology.dagToText("(not "
+						+ assertionStr + ")", "Q", false));
+			boolean repeat = false;
+			saveMinedData = false;
+			do {
+				repeat = false;
 
-			out.print(typeWord + ": " + dagtotext + " " + assertion + "\n"
-					+ "(t)rue, (f)alse, e(x)plain concepts, "
-					+ "(s)kip, (ss)kip 10, (sss)kip 100, Skip (a)ll, "
-					+ "(i)gnore predicate, sa(v)e progress?\n > ");
-			try {
-				String input = in.readLine();
-				if (input.equalsIgnoreCase("T")) {
-					correct.add(assertion);
-					local.add(assertion);
-					if (added)
-						numAdditions_++;
-					else
-						numRemovals_++;
-				} else if (input.equalsIgnoreCase("F")) {
-					incorrect.add(assertion);
-					local.add(assertion);
-					if (added)
-						numAdditions_++;
-					else
-						numRemovals_++;
-				} else if (input.equalsIgnoreCase("S")) {
-					if (added)
-						skipAssertionAddition_ = 1;
-					else
-						skipAssertionRemoval_ = 1;
-				} else if (input.equalsIgnoreCase("SS")) {
-					if (added)
-						skipAssertionAddition_ = 10;
-					else
-						skipAssertionRemoval_ = 10;
-				} else if (input.equalsIgnoreCase("SSS")) {
-					if (added)
-						skipAssertionAddition_ = 100;
-					else
-						skipAssertionRemoval_ = 100;
-				} else if (input.equalsIgnoreCase("A")) {
-					if (added)
-						skipAssertionAddition_ = Integer.MAX_VALUE;
-					else
-						skipAssertionRemoval_ = Integer.MAX_VALUE;
-				} else if (input.equalsIgnoreCase("I")) {
-					ignored.add(relation);
-				} else if (input.equalsIgnoreCase("V")) {
-					saveEvaluations();
-					repeat = true;
-				} else if (input.equalsIgnoreCase("X")) {
-					// Explain each argument via minisa and mingenls
-					ArrayList<String> split = UtilityMethods.split(
-							UtilityMethods.shrinkString(assertion, 1), ' ');
-					for (int i = 1; i < split.size(); i++) {
-						String concept = split.get(i);
-						StringBuilder explainLine = new StringBuilder(concept
-								+ " - ");
-						Collection<OntologyConcept> minIsa = ontology
-								.quickQuery(CommonQuery.MINISA, concept);
-						explainLine.append("ISA: "
-								+ StringUtils.join(minIsa, ", ") + "; ");
-						Collection<OntologyConcept> minGenls = ontology
-								.quickQuery(CommonQuery.MINGENLS, concept);
-						explainLine.append("GENLS: "
-								+ StringUtils.join(minGenls, ", "));
-						System.out.println(explainLine);
-					}
-					repeat = true;
-				} else
-					repeat = true;
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		} while (repeat);
+				out.print(typeWord + ": " + dagtotext + " " + assertionStr
+						+ "\n" + "(t)rue, (f)alse, e(x)plain concepts, "
+						+ "(s)kip, (ss)kip 10, (sss)kip 100, Skip (a)ll, "
+						+ "(i)gnore predicate, sa(v)e progress?\n > ");
+				try {
+					String input = in.readLine();
+					if (input.equalsIgnoreCase("T")) {
+						correct.add(assertionStr);
+						local.add(assertionStr);
+						if (added) {
+							numAdditions_++;
+							truth = 1;
+						} else {
+							numRemovals_++;
+							truth = 0;
+						}
+						saveMinedData = true;
+					} else if (input.equalsIgnoreCase("F")) {
+						incorrect.add(assertionStr);
+						local.add(assertionStr);
+						if (added) {
+							numAdditions_++;
+							truth = 0;
+						} else {
+							numRemovals_++;
+							truth = 1;
+						}
+						saveMinedData = true;
+					} else if (input.equalsIgnoreCase("S")) {
+						if (added)
+							skipAssertionAddition_ = 1;
+						else
+							skipAssertionRemoval_ = 1;
+					} else if (input.equalsIgnoreCase("SS")) {
+						if (added)
+							skipAssertionAddition_ = 10;
+						else
+							skipAssertionRemoval_ = 10;
+					} else if (input.equalsIgnoreCase("SSS")) {
+						if (added)
+							skipAssertionAddition_ = 100;
+						else
+							skipAssertionRemoval_ = 100;
+					} else if (input.equalsIgnoreCase("A")) {
+						if (added)
+							skipAssertionAddition_ = Integer.MAX_VALUE;
+						else
+							skipAssertionRemoval_ = Integer.MAX_VALUE;
+					} else if (input.equalsIgnoreCase("I")) {
+						ignored.add(relation.toPrettyString());
+					} else if (input.equalsIgnoreCase("V")) {
+						saveEvaluations();
+						repeat = true;
+					} else if (input.equalsIgnoreCase("X")) {
+						// Explain each argument via minisa and mingenls
+						ArrayList<String> split = UtilityMethods.split(
+								UtilityMethods.shrinkString(assertionStr, 1),
+								' ');
+						for (int i = 1; i < split.size(); i++) {
+							String concept = split.get(i);
+							StringBuilder explainLine = new StringBuilder(
+									concept + " - ");
+							Collection<OntologyConcept> minIsa = ontology
+									.quickQuery(CommonQuery.MINISA, concept);
+							explainLine.append("ISA: "
+									+ StringUtils.join(minIsa, ", ") + "; ");
+							Collection<OntologyConcept> minGenls = ontology
+									.quickQuery(CommonQuery.MINGENLS, concept);
+							explainLine.append("GENLS: "
+									+ StringUtils.join(minGenls, ", "));
+							System.out.println(explainLine);
+						}
+						repeat = true;
+					} else
+						repeat = true;
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} while (repeat);
+		}
+		if (saveMinedData)
+			localActivity_.add(new MinedData(assertion, added, truth));
 	}
 
 	private Collection<String> loadAssertions(File file, OntologySocket ontology) {
@@ -282,7 +308,7 @@ public class InteractiveMode {
 			BufferedReader reader = new BufferedReader(new FileReader(file));
 			String strAssertion;
 			line: while ((strAssertion = reader.readLine()) != null) {
-				// TODO Deal with mapArts, etc
+				// Deal with mapArts, etc
 				Matcher m = MAP_ART_PATTERN.matcher(strAssertion);
 				int start = 0;
 				StringBuilder compiledAssertion = new StringBuilder();
@@ -291,8 +317,10 @@ public class InteractiveMode {
 					int id = Integer.parseInt(m.group(1));
 					OntologyConcept concept = KnowledgeMiner.getConceptMapping(
 							id, ontology);
-					if (concept == null)
+					if (concept == null) {
+						System.out.println("No mapping for article: " + id);
 						continue line;
+					}
 
 					// Replace the mappable with the actual
 					compiledAssertion.append(strAssertion.subSequence(start,
@@ -301,10 +329,14 @@ public class InteractiveMode {
 					start = m.end();
 				}
 				// Add the last part
-				if (start != 0)
+				if (start != 0) {
 					strAssertion = compiledAssertion.toString()
 							+ strAssertion.substring(start);
+				}
 
+				// strAssertion = checkSemanticConstraints(strAssertion,
+				// (DAGSocket) ontology);
+				// if (strAssertion != null)
 				assertions.add(strAssertion);
 			}
 			reader.close();
@@ -314,43 +346,89 @@ public class InteractiveMode {
 		return assertions;
 	}
 
-	private String percentToStr(double count, double total) {
-		if (total > 0 && count > 0)
-			return round(100 * count / total, 2) + "%";
-		else
-			return "NaN%";
-	}
+	/**
+	 * Checks the semantic constraints of an input assertion, removing it if it
+	 * cannot possibly be correct.
+	 *
+	 * @param strAssertion
+	 *            The assertion to check.
+	 * @param ontology
+	 *            The ontology socket.
+	 * @return True if the assertion is semantically (but not necessarily
+	 *         ontologically) valid.
+	 */
+	private String checkSemanticConstraints(String strAssertion,
+			DAGSocket ontology) {
+		try {
+			String result = ontology.command("validedge", strAssertion, false);
+			if (result.startsWith("1"))
+				return strAssertion;
 
-	private void processFile(File assertionFile, boolean isAddition)
-			throws IOException {
-		DAGSocket ontology = (DAGSocket) ResourceAccess.requestOntologySocket();
-		BufferedReader in = new BufferedReader(new FileReader(assertionFile));
-		String line = null;
-		while ((line = in.readLine()) != null) {
-			line = line.trim();
-			ArrayList<String> split = UtilityMethods.split(
-					UtilityMethods.shrinkString(line, 1), ' ');
-			String relation = split.get(0);
-			if (isAddition)
-				evaluateAddition(line, relation, ontology);
-			else
-				evaluateRemoval(line, relation, ontology);
+			// Try converting to primitive
+			if (strAssertion.contains("\"")) {
+				strAssertion = strAssertion.replaceAll("\"(\\d+)\"", "'$1");
+				result = ontology.command("validedge", strAssertion, false);
+				if (result.startsWith("1"))
+					return strAssertion;
+			}
+
+			// Try converting to date
+			Matcher m = NON_TAXONOMIC.matcher(strAssertion);
+			if (m.find()) {
+				Collection<OntologyConcept> dates = ontology.findConceptByName(
+						m.group(1), false, true, false);
+
+				// Try converting to date where possible
+				for (OntologyConcept concept : dates) {
+					if (ontology.isa(concept, CommonConcepts.DATE.getID())) {
+						String dateAssertion = m.replaceAll(concept
+								.toPrettyString());
+						result = ontology.command("validedge", dateAssertion,
+								false);
+						if (result.startsWith("1"))
+							return dateAssertion;
+					}
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		in.close();
-
-		saveEvaluations();
-		ontology.close();
+		return null;
 	}
 
-	private void writeAssertions(Collection<String> assertions, File outfile)
-			throws IOException {
+	private void writeDataToFile(Collection<? extends Object> data,
+			String header, File outfile) throws IOException {
+		if (!outfile.exists())
+			outfile.createNewFile();
 		BufferedWriter writer = new BufferedWriter(new FileWriter(outfile));
-		for (String assertion : assertions) {
-			writer.write(assertion + "\n");
-		}
+		if (header != null)
+			writer.write(header + "\n");
+		for (Object datum : data)
+			writer.write(datum + "\n");
 
 		writer.close();
 	}
+
+	// private void processFile(File assertionFile, boolean isAddition)
+	// throws IOException {
+	// DAGSocket ontology = (DAGSocket) ResourceAccess.requestOntologySocket();
+	// BufferedReader in = new BufferedReader(new FileReader(assertionFile));
+	// String line = null;
+	// while ((line = in.readLine()) != null) {
+	// line = line.trim();
+	// ArrayList<String> split = UtilityMethods.split(
+	// UtilityMethods.shrinkString(line, 1), ' ');
+	// String relation = split.get(0);
+	// if (isAddition)
+	// evaluateAddition(line, relation, ontology);
+	// else
+	// evaluateRemoval(line, relation, ontology);
+	// }
+	// in.close();
+	//
+	// saveEvaluations();
+	// ontology.close();
+	// }
 
 	/**
 	 * Loads the list of ignored addition predicates from file
@@ -432,14 +510,7 @@ public class InteractiveMode {
 	 */
 	public void evaluateAddition(DefiniteAssertion assertion,
 			OntologySocket ontology) {
-		String assertionStr = assertion.toPrettyString();
-		String relationStr = assertion.getRelation().toPrettyString();
-		evaluateAddition(assertionStr, relationStr, ontology);
-	}
-
-	public void evaluateAddition(String assertion, String relation,
-			OntologySocket ontology) {
-		evaluateMined(assertion, relation, ontology, true);
+		evaluateMined(assertion, true, ontology);
 	}
 
 	/**
@@ -463,10 +534,10 @@ public class InteractiveMode {
 			out.println(known + ": " + conceptStr);
 			return;
 		}
-		
+
 		if (!PROMPT_USER)
 			return;
-		
+
 		// Ask user
 		out.print("EVALUATE MAPPING: " + conceptStr
 				+ ": (t)rue, (f)alse, (s)kip, (ss)kip 10, (sss)kip 100, "
@@ -491,24 +562,18 @@ public class InteractiveMode {
 
 	public void evaluateRemoval(DefiniteAssertion assertion,
 			OntologySocket ontology) {
-		String relationStr = assertion.getRelation().toPrettyString();
-		String assertionStr = assertion.toPrettyString();
-		evaluateRemoval(assertionStr, relationStr, ontology);
+		evaluateMined(assertion, false, ontology);
 	}
 
-	/**
-	 * Evaluates an assertion removal - it is either true or false (good or
-	 * bad). Users can also opt to skip particular types of assertions, or just
-	 * general skip.
-	 *
-	 * @param assertion
-	 *            The assertion being removed.
-	 * @param ontology
-	 *            The ontology access.
-	 */
-	public void evaluateRemoval(String assertion, String relation,
-			OntologySocket ontology) {
-		evaluateMined(assertion, relation, ontology, false);
+	public void outputStats(int[] counts, String typeStr) {
+		StringBuilder builder = new StringBuilder();
+		builder.append(typeStr + ":");
+		int total = counts[0] + counts[1];
+		builder.append("  Precision: " + counts[0]
+				/ (1f * total) + " (" + counts[0] + "/" + total
+				+ ")");
+		// builder.append("  Recall: " + counts[0] / (1f * counts[0] + FN));
+		System.out.println(builder.toString());
 	}
 
 	/**
@@ -521,9 +586,9 @@ public class InteractiveMode {
 
 				// Start out with trueAdditions/Removals the size of
 				// additions_/removals_
-				writeAssertions(trueAssertions_, new File(MINING_FOLDER,
+				writeDataToFile(trueAssertions_, null, new File(MINING_FOLDER,
 						"trueAssertions.txt"));
-				writeAssertions(falseAssertions_, new File(MINING_FOLDER,
+				writeDataToFile(falseAssertions_, null, new File(MINING_FOLDER,
 						"falseAssertions.txt"));
 
 				// Count local additions
@@ -544,18 +609,26 @@ public class InteractiveMode {
 
 				// Output stats
 				outputStats(additionCounts, "additions");
-				outputStats(additionCounts, "removals");
+				outputStats(removalCounts, "removals");
 
 				// Output the statistics
-				StringBuilder localVals = new StringBuilder();
-				localVals.append(percentToStr(additionCounts[0], numAdditions_)
-						+ " locally correct additions (" + additionCounts[0]
-						+ "/" + numAdditions_ + ")\n");
-				localVals.append(percentToStr(removalCounts[0], numRemovals_)
-						+ " locally correct removals (" + removalCounts[0]
-						+ "/" + numRemovals_ + ")");
-				System.out.println(localVals);
+				// StringBuilder localVals = new StringBuilder();
+				// localVals.append(percentToStr(additionCounts[0],
+				// numAdditions_)
+				// + " locally correct additions (" + additionCounts[0]
+				// + "/" + numAdditions_ + ")\n");
+				// localVals.append(percentToStr(removalCounts[0], numRemovals_)
+				// + " locally correct removals (" + removalCounts[0]
+				// + "/" + numRemovals_ + ")");
+				// System.out.println(localVals);
 			}
+
+			if (!localActivity_.isEmpty()) {
+				writeDataToFile(localActivity_,
+						"Assertion\tHeuristic\tPrediction\tActual",
+						MINING_DATA_FILE);
+			}
+
 			// If we're evaluating mappings
 			if (mappings_.size() > 0) {
 				// TODO Local mappings
@@ -600,72 +673,23 @@ public class InteractiveMode {
 			if (ignoredAdditionPreds_.size() > 0) {
 				File addPreds = new File(
 						"AutomatedEvalTool/IgnoredPredicates/additionPredicates.txt");
-
-				BufferedWriter additionPreds = new BufferedWriter(
-						new OutputStreamWriter(new FileOutputStream(addPreds)));
-
-				for (String s : ignoredAdditionPreds_) {
-					additionPreds.write(s);
-					additionPreds.newLine();
-				}
-				additionPreds.close();
+				writeDataToFile(ignoredAdditionPreds_, null, addPreds);
 			}
 			// If there's any removal predicates to write to file
 			if (ignoredRemovalPreds_.size() > 0) {
 				File remPreds = new File(
 						"AutomatedEvalTool/IgnoredPredicates/removalPredicates.txt");
-
-				BufferedWriter removalPreds = new BufferedWriter(
-						new OutputStreamWriter(new FileOutputStream(remPreds)));
-
-				for (String s : ignoredRemovalPreds_) {
-					removalPreds.write(s);
-					removalPreds.newLine();
-				}
-				removalPreds.close();
+				writeDataToFile(ignoredRemovalPreds_, null, remPreds);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	public void outputStats(int[] counts, String typeStr) {
-		StringBuilder builder = new StringBuilder();
-		builder.append(typeStr + ":");
-		builder.append("  Precision: " + counts[0] / (1f * counts[0] + counts[1]));
-//		builder.append("  Recall: " + counts[0] / (1f * counts[0] + FN));
-		System.out.println(builder.toString());
-	}
-
 	public static InteractiveMode getInstance() {
 		if (instance_ == null)
 			instance_ = new InteractiveMode();
 		return instance_;
-	}
-
-	/**
-	 * Processes a list of assertions from file.
-	 *
-	 * @param args
-	 *            The File to load the assertions from.
-	 */
-	public static void main(String[] args) {
-		if (args.length < 1) {
-			System.err.println("Requires file to process and optional "
-					+ "isAddition arg (defaults true).");
-			System.exit(1);
-		}
-		interactiveMode_ = true;
-		File assertionFile = new File(args[0]);
-		boolean isAddition = (args.length < 2 || args[1].equalsIgnoreCase("T"));
-
-		ResourceAccess.newInstance();
-		InteractiveMode im = new InteractiveMode();
-		try {
-			im.processFile(assertionFile, isAddition);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 	/**
@@ -684,5 +708,52 @@ public class InteractiveMode {
 		BigDecimal bd = new BigDecimal(value);
 		bd = bd.setScale(n, RoundingMode.HALF_UP);
 		return bd.doubleValue();
+	}
+
+	/**
+	 * Processes a list of assertions from file.
+	 *
+	 * @param args
+	 *            The File to load the assertions from.
+	 */
+	// public static void main(String[] args) {
+	// if (args.length < 1) {
+	// System.err.println("Requires file to process and optional "
+	// + "isAddition arg (defaults true).");
+	// System.exit(1);
+	// }
+	// interactiveMode_ = true;
+	// File assertionFile = new File(args[0]);
+	// boolean isAddition = (args.length < 2 || args[1].equalsIgnoreCase("T"));
+	//
+	// ResourceAccess.newInstance();
+	// InteractiveMode im = new InteractiveMode();
+	// try {
+	// im.processFile(assertionFile, isAddition);
+	// } catch (IOException e) {
+	// e.printStackTrace();
+	// }
+	// }
+
+	private class MinedData {
+		private DefiniteAssertion assertion_;
+		private byte correctAnswer_;
+		private boolean prediction_;
+		private String provenance_;
+
+		public MinedData(DefiniteAssertion assertion, boolean added,
+				byte trueAdded) {
+			assertion_ = assertion;
+			prediction_ = added;
+			correctAnswer_ = trueAdded;
+			if (assertion.getProvenance() != null)
+				provenance_ = assertion.getProvenance().getHeuristic();
+		}
+
+		public String toString() {
+			byte predByte = (byte) (prediction_ ? 1 : 0);
+			return assertion_.toPrettyString() + "\t" + provenance_ + "\t"
+					+ predByte + "\t" + correctAnswer_;
+		}
 	}
 }

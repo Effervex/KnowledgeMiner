@@ -59,7 +59,7 @@ public abstract class OntologySocket extends KMSocket {
 			boolean markup);
 
 	public boolean evaluate(String microtheory, Object... queryArgs) {
-		String result = query(microtheory, queryArgs);
+		String result = query(false, queryArgs);
 		return parseProofResult(result);
 	}
 
@@ -221,7 +221,7 @@ public abstract class OntologySocket extends KMSocket {
 
 	public abstract List<String> justify(Object... assertionArgs);
 
-	public abstract String query(String microtheory, Object... queryArgs);
+	public abstract String query(boolean proveFail, Object... queryArgs);
 
 	public abstract Collection<OntologyConcept> quickQuery(CommonQuery cq,
 			Object... args);

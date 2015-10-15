@@ -96,9 +96,8 @@ public class RandomPairs {
 			OntologyConcept a = ptArray[r.nextInt(ptArray.length)];
 			OntologyConcept b = ptArray[r.nextInt(ptArray.length)];
 			if (a != b) {
-				String result = ontology_.query(null,
-						CommonConcepts.DISJOINTWITH.getID(), a.getIdentifier(),
-						b.getIdentifier());
+				String result = ontology_.query(false,
+						CommonConcepts.DISJOINTWITH.getID(), a.getIdentifier(), b.getIdentifier());
 				// Unknown pair found
 				// if (result.startsWith("0|NIL")) {
 				if (result.startsWith("1|T") || result.startsWith("0|F")) {

@@ -410,7 +410,7 @@ public class WEKAAsserter {
 					+ "(disjointWith " + conceptA + " " + conceptB + ")";
 
 			// First check if they're already disjoint
-			String result = ontology_.query(null,
+			String result = ontology_.query(false,
 					CommonConcepts.DISJOINTWITH.getID(), conceptA, conceptB);
 			logger_.trace("Disjoint {}", result);
 			int truthState = 0;

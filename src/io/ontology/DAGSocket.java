@@ -28,7 +28,7 @@ import cyc.OntologyConcept;
 
 public class DAGSocket extends OntologySocket {
 	/** The default port number for the DAG. */
-	public static final int DAG_PORT = 2425;
+	public static final int DAG_PORT = 2426;
 	private static final String DELIMITER = "!Y^e#";
 	private Logger logger_ = LoggerFactory.getLogger(DAGSocket.class);
 
@@ -672,17 +672,19 @@ public class DAGSocket extends OntologySocket {
 	}
 
 	@Override
-	public String query(String microtheory, Object... queryArgs) {
+	public String query(boolean proveFail, Object... queryArgs) {
 		try {
-			// TODO Note that proveFail is always false here.
-			return command("query",
-					"F (" + noNewLine(StringUtils.join(queryArgs, ' ')) + ")",
+			String proveStr = (proveFail) ? "T" : "F";
+			return command(
+					"query",
+					proveStr + " ("
+							+ noNewLine(StringUtils.join(queryArgs, ' ')) + ")",
 					true);
 		} catch (Exception e) {
 			logger_.error("query: {}, {}", Arrays.toString(queryArgs),
 					Arrays.toString(e.getStackTrace()));
 			if (restartConnection()) {
-				String result = query(microtheory, queryArgs);
+				String result = query(proveFail, queryArgs);
 				canRestart_ = true;
 				return result;
 			}

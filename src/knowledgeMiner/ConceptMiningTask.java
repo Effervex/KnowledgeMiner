@@ -742,9 +742,6 @@ public class ConceptMiningTask implements Runnable {
 			}
 		}
 
-		// Flush the interface
-		if (InteractiveMode.interactiveMode_)
-			InteractiveMode.getInstance().saveEvaluations();
 		km_.getInterface().flush();
 	}
 

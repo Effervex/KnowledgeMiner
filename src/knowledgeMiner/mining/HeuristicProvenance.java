@@ -96,6 +96,10 @@ public class HeuristicProvenance implements Serializable {
 	public String getDetails() {
 		return details_;
 	}
+	
+	public String getHeuristic() {
+		return heuristicStr_;
+	}
 
 	public static HeuristicProvenance joinProvenance(
 			Collection<HeuristicProvenance> collection) {

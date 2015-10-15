@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import knowledgeMiner.ConceptModule;
+import knowledgeMiner.InteractiveMode;
 import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.wikipedia.InfoboxRelationMiner;
@@ -151,9 +152,13 @@ public class IOManager {
 			removed_.flush();
 		if (mappingChain_ != null)
 			mappingChain_.flush();
+
+		// Flush the interface
+		if (InteractiveMode.interactiveMode_)
+			InteractiveMode.getInstance().saveEvaluations();
 	}
 
-	public void writeAssertion(OntologyConcept concept,
+	public synchronized void writeAssertion(OntologyConcept concept,
 			DefiniteAssertion assertion) throws IOException {
 		if (assertions_ != null)
 			assertions_.write(concept.getConceptName() + "\t"
@@ -163,13 +168,13 @@ public class IOManager {
 					+ "\n");
 	}
 
-	public void writeBlockedAssertion(MinedAssertion blockedAssertion)
+	public synchronized void writeBlockedAssertion(MinedAssertion blockedAssertion)
 			throws IOException {
 		if (blocked_ != null)
 			blocked_.write(blockedAssertion.toString() + "\n");
 	}
 
-	public void writeFirstSentence(int article, String firstSentence)
+	public synchronized void writeFirstSentence(int article, String firstSentence)
 			throws IOException {
 		if (writtenSentences_ == null || writtenSentences_.contains(article))
 			return;
@@ -185,7 +190,7 @@ public class IOManager {
 	 *            The operation that altered Cyc in some way.
 	 * @throws IOException
 	 */
-	public void writeCycOperation(String operation) throws IOException {
+	public synchronized void writeCycOperation(String operation) throws IOException {
 		if (cycOperations_ != null)
 			cycOperations_.write(operation + "\n");
 	}
@@ -203,7 +208,7 @@ public class IOManager {
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	public void writeMapping(ConceptModule concept, String articleTitle)
+	public synchronized void writeMapping(ConceptModule concept, String articleTitle)
 			throws Exception {
 		OntologyConcept cycTerm = concept.getConcept();
 		System.out.println(concept.toPrettyString(false) + " ("
@@ -225,7 +230,7 @@ public class IOManager {
 			mappingChain_.write(chain + "\n");
 	}
 
-	public void writeRemovedAssertion(DefiniteAssertion removedAssertion) throws IOException {
+	public synchronized void writeRemovedAssertion(DefiniteAssertion removedAssertion) throws IOException {
 		if (removed_ != null)
 			removed_.write(removedAssertion + "\n");
 	}

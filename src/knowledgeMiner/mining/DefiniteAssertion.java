@@ -184,4 +184,9 @@ public class DefiniteAssertion extends MinedAssertion {
 		return replaced;
 	}
 
+	public static DefiniteAssertion parseString(String string) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

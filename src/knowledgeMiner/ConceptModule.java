@@ -13,13 +13,13 @@ import io.resources.WMISocket;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 
 import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.MinedAssertion;
 import knowledgeMiner.mining.MinedInformation;
 import knowledgeMiner.mining.PartialAssertion;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
 import cyc.CycConstants;
@@ -58,7 +58,14 @@ public class ConceptModule extends MinedInformation implements
 
 	private transient DisjointnessDisambiguator dd_;
 
+	/**
+	 * The collection of assertions that need to be removed form the existing
+	 * concept.
+	 */
 	private transient Collection<DefiniteAssertion> deletedAssertions_;
+
+	/** The collection of assertions that were rejected during DD. */
+	private transient Collection<DefiniteAssertion> rejectedAssertions_;
 
 	private transient boolean disambiguated_ = false;
 
@@ -94,6 +101,8 @@ public class ConceptModule extends MinedInformation implements
 		state_ = MiningState.UNMAPPED;
 		cycToWiki_ = false;
 		mappingWeight_ = 1.0f;
+		deletedAssertions_ = new ArrayList<>();
+		rejectedAssertions_ = new HashSet<>();
 	}
 
 	/**
@@ -125,14 +134,12 @@ public class ConceptModule extends MinedInformation implements
 	 *            The term to map and mine.
 	 */
 	public ConceptModule(OntologyConcept term) {
-		super(-1);
+		this(-1);
 		concept_ = term;
 		if (term != null)
 			createdConcept_ = term.getID() == OntologySocket.NON_EXISTENT_ID;
-		state_ = MiningState.UNMAPPED;
 		cycToWiki_ = true;
 		mappingWeight_ = 1.0f;
-		deletedAssertions_ = new ArrayList<>();
 	}
 
 	/**
@@ -149,7 +156,7 @@ public class ConceptModule extends MinedInformation implements
 	 */
 	public ConceptModule(OntologyConcept concept, Integer article,
 			float weight, boolean cycToWiki) {
-		super(article);
+		this(article);
 		concept_ = concept;
 		mappingWeight_ = weight;
 		cycToWiki_ = cycToWiki;
@@ -163,13 +170,6 @@ public class ConceptModule extends MinedInformation implements
 			cycToWiki_ = true;
 			state_ = MiningState.UNMAPPED;
 		}
-		deletedAssertions_ = new ArrayList<>();
-	}
-
-	private void addDeletedAssertion(DefiniteAssertion assertion) {
-		if (deletedAssertions_ == null)
-			deletedAssertions_ = new ArrayList<DefiniteAssertion>();
-		deletedAssertions_.add(assertion);
 	}
 
 	private String articleToString() {
@@ -297,8 +297,7 @@ public class ConceptModule extends MinedInformation implements
 				ontology);
 		unassertOldWikiAssertions(newSynConcept, ontology,
 				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getID(),
-				concept_.getID(),
-				CycConstants.WIKI_VERSION.getID());
+				concept_.getID(), CycConstants.WIKI_VERSION.getID());
 	}
 
 	/**
@@ -357,11 +356,13 @@ public class ConceptModule extends MinedInformation implements
 					continue;
 
 				// Ignore self-referential genls edges
-				if (assertion.getRelation().equals(
-						CycConstants.GENLS.getConcept())
-						&& assertion.getArgs()[0]
-								.equals(assertion.getArgs()[1]))
+				if (ignoredAssertion(assertion, ontology))
 					continue;
+
+				// Interactive
+				InteractiveMode.getInstance().evaluateAddition(assertion,
+						ontology);
+
 				int id = assertion.makeAssertion(runIter, concept_, ontology);
 				if (id != -1)
 					assertionIDs.add(id);
@@ -388,6 +389,14 @@ public class ConceptModule extends MinedInformation implements
 		// }
 	}
 
+	private boolean ignoredAssertion(DefiniteAssertion assertion,
+			OntologySocket ontology) {
+		if (assertion.getRelation().equals(CycConstants.GENLS.getConcept())
+				&& assertion.getArgs()[0].equals(assertion.getArgs()[1]))
+			return true;
+		return false;
+	}
+
 	/**
 	 * Perform assertion removal.
 	 * 
@@ -396,6 +405,9 @@ public class ConceptModule extends MinedInformation implements
 	 */
 	protected void performAssertionRemoval(OntologySocket ontology) {
 		for (DefiniteAssertion assertion : deletedAssertions_) {
+			// Interactive
+			InteractiveMode.getInstance().evaluateRemoval(assertion, ontology);
+
 			significantChange_ = true;
 			int assertionID = ontology.findEdgeIDByArgs((Object[]) assertion
 					.asArgs());
@@ -437,6 +449,10 @@ public class ConceptModule extends MinedInformation implements
 				if (assertion instanceof PartialAssertion)
 					assertion = ((PartialAssertion) assertion).instantiate(
 							getMappableSelfRef(), concept_);
+				// Interactive
+				InteractiveMode.getInstance().evaluateAddition(
+						(DefiniteAssertion) assertion, ontology);
+
 				((DefiniteAssertion) assertion).makeAssertion(runIter,
 						concept_, ontology);
 			}
@@ -539,10 +555,17 @@ public class ConceptModule extends MinedInformation implements
 					"Mining Weight exceeded 1.0 for {}", this.toFlatString());
 			miningWeight_ = 1;
 		}
-		for (DefiniteAssertion assertion : dd_.getConsistentAssertions())
+		// Record the assertions
+		rejectedAssertions_ = dd_.getAllAssertions();
+		for (DefiniteAssertion assertion : dd_.getConsistentAssertions()) {
 			addAssertion(assertion);
-		for (DefiniteAssertion assertion : dd_.getRemovedAssertions())
-			addDeletedAssertion(assertion);
+			rejectedAssertions_.remove(assertion);
+		}
+		for (DefiniteAssertion assertion : dd_.getRemovedAssertions()) {
+			deletedAssertions_.add(assertion);
+			rejectedAssertions_.remove(assertion);
+		}
+
 		try {
 			if (createdConcept_) {
 				if (dd_.isCollection())
@@ -554,16 +577,6 @@ public class ConceptModule extends MinedInformation implements
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
-
-		// Perform evaluation if interactive mode on
-		if (InteractiveMode.interactiveMode_) {
-			for (DefiniteAssertion assertion : getConcreteAssertions())
-				InteractiveMode.getInstance().evaluateAddition(assertion,
-						ontology);
-			for (DefiniteAssertion removed : deletedAssertions_)
-				InteractiveMode.getInstance()
-						.evaluateRemoval(removed, ontology);
 		}
 
 		return miningWeight_;
@@ -727,6 +740,13 @@ public class ConceptModule extends MinedInformation implements
 
 			// Perform auto-assertions
 			performAutoAssertions(runIter, ontology, noSemantic);
+
+			// Record rejected assertions
+			if (InteractiveMode.interactiveMode_) {
+				for (DefiniteAssertion rejected : rejectedAssertions_)
+					InteractiveMode.getInstance().evaluateRemoval(rejected,
+							ontology);
+			}
 		}
 		if (!significantChange_) {
 			int newNumAssertions = ontology.getAllAssertions(concept_, 2,

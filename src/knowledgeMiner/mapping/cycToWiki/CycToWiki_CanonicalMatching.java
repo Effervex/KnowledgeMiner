@@ -34,9 +34,8 @@ public class CycToWiki_CanonicalMatching extends
 	@Override
 	protected WeightedSet<Integer> mapSourceInternal(OntologyConcept source,
 			WMISocket wmi, OntologySocket ontology) throws Exception {
-		String result = ontology.query(null,
-				CommonConcepts.PRETTY_STRING_CANONICAL.getID(), source,
-				VariableNode.DEFAULT);
+		String result = ontology.query(false,
+				CommonConcepts.PRETTY_STRING_CANONICAL.getID(), source, VariableNode.DEFAULT);
 
 		WeightedSet<Integer> results = new WeightedSet<>();
 		Matcher m = VARIABLE_PARSE.matcher(result);

@@ -145,6 +145,8 @@ public class KnowledgeMiner {
 		mapper_.initialise();
 		miner_ = new CycMiner(this, mapper_);
 		preprocessor_ = new CycPreprocessor();
+		
+		InteractiveMode.getInstance();
 
 		// Start the executor
 		executor_ = (ThreadPoolExecutor) Executors.newFixedThreadPool(Math.max(
@@ -323,6 +325,9 @@ public class KnowledgeMiner {
 				// prevent resource leak
 				lnr.close();
 			}
+		} else {
+			System.out.println("File not found! " + filename);
+			System.exit(0);
 		}
 	}
 
@@ -524,6 +529,7 @@ public class KnowledgeMiner {
 				ConceptMiningTask.onlyMining = true;
 			} else if (args[i].equals("-I")) {
 				InteractiveMode.interactiveMode_ = true;
+				km.singleThread_ = true;
 			}
 		}
 

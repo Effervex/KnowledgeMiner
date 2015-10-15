@@ -118,6 +118,7 @@ public class DBMappedConcept extends MappableConcept {
 				String property = lit.getValue().toString();
 				TextMappedConcept tmc = new TextMappedConcept(property, true,
 						true);
+				// TODO Make numbers stay as numbers(?)
 				WeightedSet<OntologyConcept> results = tmc.mapThing(mapper,
 						wmi, ontology);
 				// Add DBpedia's literal definitions

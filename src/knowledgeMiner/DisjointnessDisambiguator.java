@@ -18,6 +18,7 @@ import io.resources.WMISocket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 
 import knowledgeMiner.mining.DefiniteAssertion;
 import knowledgeMiner.mining.PartialAssertion;
@@ -235,6 +236,11 @@ public class DisjointnessDisambiguator {
 		return currentAssertionGrid_.isCollection(0);
 	}
 
+	/**
+	 * Gets all the consistent assertions (according to the DD process).
+	 *
+	 * @return The consistent assertions.
+	 */
 	@SuppressWarnings("unchecked")
 	public Collection<DefiniteAssertion> getConsistentAssertions() {
 		if (consistentAssertions_ == null)
@@ -242,6 +248,13 @@ public class DisjointnessDisambiguator {
 		return consistentAssertions_;
 	}
 
+	/**
+	 * Get all the removed assertions that were necessary to remove for
+	 * consistency. This only includes members from existing asserted
+	 * assertions.
+	 *
+	 * @return The removed assertions.
+	 */
 	@SuppressWarnings("unchecked")
 	public Collection<DefiniteAssertion> getRemovedAssertions() {
 		if (removedAssertions_ == null)
@@ -253,5 +266,17 @@ public class DisjointnessDisambiguator {
 	public String toString() {
 		StringBuilder buffer = new StringBuilder("Disjointness Disambiguation");
 		return buffer.toString();
+	}
+
+	/**
+	 * Gets all Definite Assertions considered during DD.
+	 *
+	 * @return All assertions in the Assertion Grid.
+	 */
+	@SuppressWarnings("unchecked")
+	public Collection<DefiniteAssertion> getAllAssertions() {
+		if (currentAssertionGrid_ == null)
+			return Collections.EMPTY_LIST;
+		return currentAssertionGrid_.getAllAssertions();
 	}
 }
