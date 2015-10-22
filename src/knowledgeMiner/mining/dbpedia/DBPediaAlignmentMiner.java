@@ -41,6 +41,9 @@ public class DBPediaAlignmentMiner extends DBPediaMiningHeuristic {
 
 	public DBPediaAlignmentMiner(CycMapper mapper, CycMiner miner) {
 		super(true, mapper, miner);
+		// TODO Test that DBpedia is active
+		
+		
 		blackList_ = new HashSet<>();
 		try {
 			if (BLACKLIST.exists()) {

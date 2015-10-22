@@ -1,0 +1,777 @@
+Assertion	Heuristic	Prediction	Actual
+(isa VanNuysLosAngeles AssigningAgentToRole)	CateMembMine	0	-1
+(isa BankOfCreditAndCommerceInternational Situation)	CateMembMine	1	-1
+(genls VanNuysLosAngeles CommunitiesRegionsAndLanguageAreasOfBelgium)	CateMembMine	0	-1
+(genls Jackhammer CuttingSomething-CreationEvent)	CateMembMine	0	-1
+(status CodeOfVengeance Canceling-Declaring-Evaluating)	DBPediAligMine	1	-1
+(isa ArthurFBurns UnitedStatesPerson)	CateMembMine	1	-1
+(isa NabilElderkin ChiefInformationOfficer)	FirsSentParsMine	1	-1
+(isa BankOfCreditAndCommerceInternational MajorBugzillaBugReport)	FirsSentParsMine	1	-1
+(genls Asteroid-impactAvoidance Asteroid)	CateMembMine	0	-1
+(genls SalMaccarone Writer)	CateMembMine	0	-1
+(location BankOfCreditAndCommerceInternational LondonPostalDistrict)	InfoRelaMine	1	-1
+(isa ArthurFBurns Cross-FixedStructure)	CateMembMine	0	-1
+(genls Ester ChemicalCompoundTypeByChemicalSpecies)	FirsSentParsMine	0	0
+(isa GordonACraig AcademicProfessional)	CateMembMine	1	1
+(isa Asteroid-impactAvoidance Objecting-CommunicationAct)	FirsSentParsMine	0	-1
+(isa CodeOfVengeance ConvergentSeries)	CateMembMine	0	-1
+(isa BrianFlemming University)	CateMembMine	0	-1
+(genls Jackhammer CuttingSomething)	CateMembMine	0	-1
+(location BankOfCreditAndCommerceInternational CityOfLondonEngland)	InfoRelaMine	1	-1
+(isa BankOfCreditAndCommerceInternational Scandal)	CateMembMine	1	-1
+(isa CodeOfVengeance TVSeriesProduct)	CateMembMine	1	-1
+(isa PeterPek Professional)	FirsSentParsMine	1	-1
+(genls AirMass-Astronomy (HistoryFn Astronomy))	CateMembMine	0	-1
+(lowerAge YsgolBrynAlyn '7)	DBPediAligMine	1	-1
+(utcOffset RockwoodTennessee (YearFn '4))	DBPediAligMine	1	-1
+(established YsgolBrynAlyn '1958)	InfoRelaMine	1	-1
+(birthPlace NabilElderkin Illinois-State)	InfoRelaMine	1	-1
+(genls TrenchRailways Conveyance)	CateMembMine	1	-1
+(isa Tongue-twister NLPhrase)	FirsSentParsMine	0	-1
+(genls VanNuysLosAngeles PopulatedPlace)	CateMembMine	0	-1
+(isa PeterPek RadioPersonality)	CateMembMine	1	1
+(genls Doom-TheGame BigThreeTelevisionNetworks)	CateMembMine	0	-1
+(genls GordonACraig PresidentOfOrganization)	CateMembMine	0	-1
+(isa CodeOfVengeance EntertainmentPerformance)	CateMembMine	0	-1
+(genls GaloisModule GaloisTheory)	CateMembMine	1	1
+(profession ArthurFBurns Economist)	InfoRelaMine	1	-1
+(genls NabilElderkin VideoCassetteRecording)	FirsSentParsMine	0	-1
+(genls MagicWand Insignia)	CateMembMine	0	0
+(genls NabilElderkin KVMSwitch)	FirsSentParsMine	0	-1
+(genls Jackhammer (InstanceNamedFn-Ternary "construction equipment" ExistingObjectType "fd7c667c-17ba-41d9-857f-d3f44941db7d"))	CateMembMine	0	0
+(genls PrincessJohannaOfHesseAndByRhine (SubcollectionOfWithRelationFromTypeFn Animal children Animal))	FirsSentParsMine	0	-1
+(genls NabilElderkin VideoCassette)	FirsSentParsMine	0	-1
+(genls PeterPek CreativeDirector)	FirsSentParsMine	0	-1
+(director Doom-TheGame TomHall)	InfoRelaMine	1	-1
+(genls TrenchRailways Railway)	CateMembMine	1	0
+(isa GaloisModule GaloisTheory)	CateMembMine	0	-1
+(isa YsgolBrynAlyn (CollectionIntersection2Fn Herd (GroupFn Fish)))	CateMembMine	1	-1
+(title Doom-TheGame Doom-TheGame)	InfoRelaMine	1	-1
+(genls Doom-TheGame First-personShooter)	FirsSentParsMine	0	-1
+(isa PrincessJohannaOfHesseAndByRhine Animal)	null	1	-1
+(isa GordonACraig Cross-FixedStructure)	CateMembMine	0	-1
+(genls Asteroid-impactAvoidance Defenceman)	FirsSentParsMine	1	-1
+(genls PeterPek Professional)	FirsSentParsMine	0	-1
+(isa InfantrySupportGun ArtilleryGame)	FirsSentParsMine	0	-1
+(elevation RockwoodTennessee '272.0)	DBPediAligMine	1	-1
+(genls PrincessJohannaOfHesseAndByRhine Daughter)	FirsSentParsMine	0	-1
+(country ArthurFBurns (TerritoryFn Germany))	InfoRelaMine	1	-1
+(genls SalMaccarone Sculpture)	FirsSentParsMine	0	-1
+(isa VanNuysLosAngeles Neighborhood)	CateMembMine	1	1
+(designer Doom-TheGame SandyPetersen)	DBPediAligMine	1	-1
+(genls Asteroid-impactAvoidance Soil-Generic)	CateMembMine	0	-1
+(genls PrincessJohannaOfHesseAndByRhine Duke)	FirsSentParsMine	0	-1
+(isa DifferentialEquation Equation-MathematicalStatement)	FirsSentParsMine	0	-1
+(genls Asteroid-impactAvoidance Objecting-CommunicationAct)	FirsSentParsMine	0	-1
+(genls SocialCriticism CulturalStudies)	CateMembMine	0	0
+(areaCode VanNuysLosAngeles (YearFn '747))	DBPediAligMine	1	-1
+(genls AirMass-Astronomy HorseLength)	FirsSentParsMine	1	-1
+(isa ArthurFBurns Chairman-HeadOfState)	CateMembMine	1	-1
+(isa AirMass-Astronomy ObservationalAstronomy)	CateMembMine	0	-1
+(isa Ester ChemicalCompoundTypeByChemicalSpecies)	FirsSentParsMine	0	-1
+(isa BrianFlemming Person)	CateMembMine	1	-1
+(event Armageddon-2007 Armageddon-2007)	InfoRelaMine	1	-1
+(deathDate ArthurFBurns (MonthFn June (YearFn '6)))	InfoRelaMine	1	-1
+(nextEvent Armageddon-2007 Armageddon-2007)	InfoRelaMine	1	-1
+(isa MagicWand (PortableFn (DeadPhysicalRemainsFn TreeBranch)))	FirsSentParsMine	0	-1
+(series Doom-TheGame Doom-TheGameSeries)	InfoRelaMine	1	-1
+(genls CodeOfVengeance TVSeriesProduct)	CateMembMine	0	-1
+(isa 2-satisfiability NL-complete)	CateMembMine	0	-1
+(location BankOfCreditAndCommerceInternational Luxembourg)	DBPediAligMine	1	-1
+(deathDate ArthurFBurns (DayFn '6 (MonthFn June (YearFn '1987))))	InfoRelaMine	1	-1
+(isa SocialCriticism FieldOfStudy)	CateMembMine	0	-1
+(country CodeOfVengeance NuclearWeaponsAndTheUnitedStates)	InfoRelaMine	1	-1
+(occupation SalMaccarone Author)	DBPediAligMine	1	1
+(numberOfSeasons CodeOfVengeance (MonthFn January TheYear-Indexical))	DBPediAligMine	1	-1
+(title Doom-TheGame Doom-Painting)	InfoRelaMine	1	-1
+(neuroLex:Property-3AIs_part_of RockwoodTennessee Tennessee-State)	DBPediAligMine	1	-1
+(influenced ArthurFBurns AlanGreenspan-Celebrity-Political)	DBPediAligMine	1	-1
+(genls SocialCriticism AccidentallyLeavingSomethingSomewhere)	CateMembMine	0	-1
+(isa Asteroid-impactAvoidance LandStuff)	CateMembMine	0	-1
+(computingPlatform Doom-TheGame MS-DOS)	DBPediAligMine	1	-1
+(channel CodeOfVengeance NationalBusCompany)	InfoRelaMine	1	-1
+(language CodeOfVengeance LagunaDeBay)	InfoRelaMine	1	-1
+(genls CodeOfVengeance MediaSeriesProduct)	CateMembMine	0	-1
+(almaMater SalMaccarone SanJoseStateUniversity)	DBPediAligMine	1	-1
+(designer Doom-TheGame ShawnGreen-BaseballPlayer)	InfoRelaMine	1	-1
+(promotion Armageddon-2007 WWE)	InfoRelaMine	1	-1
+(isa Jackhammer (InstanceNamedFn-Ternary "construction equipment" ExistingObjectType "fd7c667c-17ba-41d9-857f-d3f44941db7d"))	CateMembMine	1	-1
+(nextEvent Armageddon-2007 Armageddon-2006)	InfoRelaMine	1	-1
+(genls Armageddon-2007 Professional)	FirsSentParsMine	0	-1
+(gameEngine Doom-TheGame DoomEngine)	DBPediAligMine	1	-1
+(isa PrincessJohannaOfHesseAndByRhine Nobility)	CateMembMine	1	-1
+(religion YsgolBrynAlyn None-CardiacValveStenosis)	InfoRelaMine	1	-1
+(publisher Doom-TheGame Sega-CommercialOrganization)	DBPediAligMine	1	-1
+(isa Asteroid-impactAvoidance Asteroid)	CateMembMine	0	-1
+(isa Asteroid-impactAvoidance Asteroid-impactAvoidance)	FirsSentParsMine	0	-1
+(isa Tongue-twister WordGame)	CateMembMine	1	-1
+(nationality BrianFlemming UnitedStatesOfAmerica)	DBPediAligMine	1	-1
+(birthPlace PrincessJohannaOfHesseAndByRhine Darmstadt)	DBPediAligMine	1	1
+(genls CodeOfVengeance Debut)	CateMembMine	0	-1
+(computingMedia Doom-TheGame FloppyDisk)	DBPediAligMine	1	-1
+(genls NabilElderkin Photographer)	CateMembMine	0	-1
+(genls BankOfCreditAndCommerceInternational CriminalAct)	CateMembMine	0	-1
+(isa EthanolFermentation Ethanol)	CateMembMine	0	-1
+(isa PeterPek (SubcollectionOfWithRelationFromTypeFn Person boardMembers Organization))	FirsSentParsMine	1	-1
+(isa SocialCriticism AbandoningSomething)	CateMembMine	0	-1
+(isa CodeOfVengeance NCAABasketballSeries)	CateMembMine	0	-1
+(deathPlace PrincessJohannaOfHesseAndByRhine Hessen-StateGermany)	InfoRelaMine	1	-1
+(deathPlace PrincessJohannaOfHesseAndByRhine GermanyInTheEurovisionSongContest)	InfoRelaMine	1	-1
+(genls PeterPek Designer)	CateMembMine	0	-1
+(objectFoundInLocation Armageddon-2007 CityOfPittsburghPA)	DBPediAligMine	0	-1
+(genls PeterPek Management)	CateMembMine	0	-1
+(country CodeOfVengeance AgricultureInTheUnitedStates)	InfoRelaMine	1	-1
+(designer Doom-TheGame TomHall)	DBPediAligMine	1	-1
+(isa SalMaccarone Author)	CateMembMine	1	1
+(genls GaloisModule Theorizing)	CateMembMine	1	-1
+(isa ArthurFBurns Economist)	CateMembMine	1	1
+(postalCode VanNuysLosAngeles '91405)	InfoRelaMine	1	-1
+(deathPlace PrincessJohannaOfHesseAndByRhine Darmstadt)	InfoRelaMine	1	-1
+(series Doom-TheGame Doom-Painting)	InfoRelaMine	1	-1
+(isa BrianFlemming Playwright)	FirsSentParsMine	1	1
+(isa Asteroid-impactAvoidance Defenceman)	FirsSentParsMine	0	-1
+(isa GordonACraig PresidentOfOrganization)	CateMembMine	1	-1
+(isa MagicWand Shaft)	FirsSentParsMine	0	-1
+(genls PrincessJohannaOfHesseAndByRhine GrandDuke-HeadOfState)	FirsSentParsMine	0	-1
+(isa PrincessJohannaOfHesseAndByRhine GermanNobility)	CateMembMine	1	1
+(genls SocialCriticism PoliticsOfGlobalWarming)	CateMembMine	0	-1
+(designer Doom-TheGame JohnRomero)	DBPediAligMine	1	-1
+(office BankOfCreditAndCommerceInternational (TerritoryFn CityOfKarachiPakistan))	InfoRelaMine	1	-1
+(genls Jackhammer PhysicalDevice)	CateMembMine	0	-1
+(language CodeOfVengeance HistoryOfTheEnglishLanguage)	InfoRelaMine	1	-1
+(genls MagicWand Adhering-Adopting)	FirsSentParsMine	0	-1
+(genls ArthurFBurns Cross-FixedStructure)	CateMembMine	0	-1
+(isa EthanolFermentation Fermentation-Biochemistry)	CateMembMine	0	-1
+(isa NabilElderkin EthnicGroupOfAustralians)	CateMembMine	1	-1
+(numberOfStudents YsgolBrynAlyn (YearFn '800))	DBPediAligMine	1	-1
+(isa BrianFlemming Director-Movie)	CateMembMine	1	1
+(birthPlace SalMaccarone (CityNamedFn "Lawrence" Kansas-State))	InfoRelaMine	1	-1
+(upperAge YsgolBrynAlyn (MonthFn November TheYear-Indexical))	DBPediAligMine	1	-1
+(birthPlace PrincessJohannaOfHesseAndByRhine Germany)	InfoRelaMine	1	-1
+(genls SocialCriticism FieldOfStudy)	CateMembMine	0	-1
+(deathPlace ArthurFBurns BaltimoreRavens)	InfoRelaMine	1	-1
+(name YsgolBrynAlyn YsgolBrynAlyn)	InfoRelaMine	1	-1
+(foundedBy BankOfCreditAndCommerceInternational AghaHasanAbedi)	DBPediAligMine	1	-1
+(isa PeterPek Designer)	CateMembMine	1	1
+(areaCode VanNuysLosAngeles '747)	DBPediAligMine	1	-1
+(genls SalMaccarone Person)	CateMembMine	0	-1
+(utcOffset RockwoodTennessee (MonthFn May TheYear-Indexical))	InfoRelaMine	1	-1
+(isa Asteroid-impactAvoidance Weapon)	CateMembMine	0	-1
+(isa ArthurFBurns Council-Organization)	CateMembMine	0	-1
+(genls SocialCriticism Discrimination)	CateMembMine	0	-1
+(genls PeterPek BusinessPerson)	CateMembMine	0	-1
+(genls 2-satisfiability Complaint)	CateMembMine	0	-1
+(location BankOfCreditAndCommerceInternational LondonOhio)	InfoRelaMine	1	-1
+(isa Doom-TheGame ComputerGameProgram)	FirsSentParsMine	1	-1
+(genls CodeOfVengeance UnitedStatesPerson)	CateMembMine	0	-1
+(postalCode RockwoodTennessee '37854)	DBPediAligMine	1	-1
+(religion YsgolBrynAlyn None-EP)	InfoRelaMine	1	-1
+(biologicalOffspring PrincessJohannaOfHesseAndByRhine PrincessCecilieOfGreeceAndDenmark)	DBPediAligMine	1	-1
+(isa SalMaccarone FurniturePiece)	FirsSentParsMine	0	0
+(genls MagicWand Weapon)	CateMembMine	0	-1
+(genls GaloisModule (CBLGroupFn (CBLMethodFn CBLNode-CyclistEmailAddressChecking "cyclistEmailAddressChecking_task") arg1Isa))	FirsSentParsMine	1	-1
+(genls MagicWand HeterosexualHuman)	FirsSentParsMine	0	-1
+(country CodeOfVengeance UnitedStatesOfAmerica)	InfoRelaMine	1	-1
+(language CodeOfVengeance ReceivedPronunciation)	InfoRelaMine	1	-1
+(isa NabilElderkin (CitizenFn Australia))	CateMembMine	1	-1
+(influenced ArthurFBurns MiltonFriedman)	DBPediAligMine	1	-1
+(deathPlace ArthurFBurns (TerritoryFn Maryland-State))	InfoRelaMine	1	-1
+(isa RockwoodTennessee County)	CateMembMine	0	-1
+(genls GordonACraig Graduate)	CateMembMine	0	-1
+(genls Asteroid-impactAvoidance Near-EarthObject)	FirsSentParsMine	1	1
+(isa Ester Group)	CateMembMine	0	-1
+(birthPlace SalMaccarone (CountyNamedFn "Lawrence" Kentucky-State))	InfoRelaMine	1	-1
+(isa Armageddon-2007 WrestlingSportsEvent)	CateMembMine	1	1
+(utcOffset VanNuysLosAngeles (MonthFn July TheYear-Indexical))	DBPediAligMine	1	-1
+(isa Doom-TheGame ComputerGameProgram-Graphical)	FirsSentParsMine	1	1
+(genls SalMaccarone Maker)	FirsSentParsMine	0	-1
+(isa PrincessJohannaOfHesseAndByRhine GoverningSomething)	CateMembMine	0	-1
+(isa SalMaccarone Woodworking)	FirsSentParsMine	0	1
+(country ArthurFBurns Germany)	InfoRelaMine	1	-1
+(country CodeOfVengeance EugenicsInTheUnitedStates)	InfoRelaMine	1	-1
+(genls Doom-TheGame SpoiltVote)	CateMembMine	0	-1
+(isa MagicWand WeightLosingProcess)	FirsSentParsMine	0	-1
+(isa PeterPek ChinesePerson)	CateMembMine	1	-1
+(elevation RockwoodTennessee '271.882)	DBPediAligMine	1	-1
+(isa MagicWand Magic)	CateMembMine	0	-1
+(genls AirMass-Astronomy OpticalPathLength)	FirsSentParsMine	0	0
+(isa MagicWand Adhering-Adopting)	FirsSentParsMine	0	-1
+(genls Asteroid-impactAvoidance LandStuff)	CateMembMine	0	-1
+(deathPlace ArthurFBurns (TerritoryFn CityOfBaltimoreMD))	InfoRelaMine	1	-1
+(deathDate ArthurFBurns '1987)	InfoRelaMine	1	-1
+(genls PeterPek Radio)	FirsSentParsMine	0	-1
+(isa PeterPek CreativeDirector)	FirsSentParsMine	0	0
+(birthPlace SalMaccarone (CountyNamedFn "Lawrence" Alabama-State))	InfoRelaMine	1	-1
+(isa AirMass-Astronomy (SubcollectionOfWithRelationFromTypeFn Distance lengthOfObject SpatialThing))	FirsSentParsMine	0	-1
+(genls PeterPek CorporateBond-Agreement)	FirsSentParsMine	0	-1
+(deathPlace ArthurFBurns BaltimoreCountyCork)	InfoRelaMine	1	-1
+(genls GordonACraig (GroupFn AcademicProfessional))	CateMembMine	0	-1
+(genls MagicWand MagicInFiction)	CateMembMine	0	-1
+(isa PeterPek Speaker-Organization)	FirsSentParsMine	1	-1
+(genls CodeOfVengeance UmbrellaTitle)	FirsSentParsMine	0	-1
+(deathPlace PrincessJohannaOfHesseAndByRhine Darmstadt-Region)	InfoRelaMine	1	-1
+(deathPlace ArthurFBurns BaltimoreOrioles)	InfoRelaMine	1	-1
+(genls PrincessJohannaOfHesseAndByRhine GoverningSomething)	CateMembMine	0	-1
+(president ArthurFBurns JimmyCarter)	InfoRelaMine	0	-1
+(utcOffset VanNuysLosAngeles '-8)	DBPediAligMine	1	-1
+(isa BankOfCreditAndCommerceInternational AccountingScandals)	CateMembMine	1	1
+(genls ArthurFBurns Council-Organization)	CateMembMine	0	-1
+(location Armageddon-2007 CityOfPittsburghPA)	DBPediAligMine	1	-1
+(genls BrianFlemming DirectorOfOrganization)	CateMembMine	0	-1
+(isa GaloisModule GaloisGroup)	FirsSentParsMine	0	-1
+(genls BrianFlemming Atheist)	CateMembMine	0	-1
+(predecessor ArthurFBurns WilliamMcChesneyMartin)	InfoRelaMine	1	-1
+(birthDate ArthurFBurns (DayFn '27 (MonthFn August TheYear-Indexical)))	InfoRelaMine	1	-1
+(isa 2-satisfiability Complaint)	CateMembMine	1	-1
+(deathPlace ArthurFBurns Baltimore)	InfoRelaMine	1	-1
+(isa CodeOfVengeance Series)	CateMembMine	0	-1
+(genls NabilElderkin CroatianAustralian)	FirsSentParsMine	0	-1
+(genls Asteroid-impactAvoidance MethodType)	FirsSentParsMine	0	-1
+(isa PeterPek PublicRelationsActivity)	FirsSentParsMine	0	0
+(isa GordonACraig Scholar)	CateMembMine	1	-1
+(deathPlace ArthurFBurns Maryland-CountyLiberia)	InfoRelaMine	1	-1
+(deathPlace PrincessJohannaOfHesseAndByRhine Germany)	DBPediAligMine	1	-1
+(isa MagicWand Magician-Performer)	CateMembMine	0	-1
+(areaCode RockwoodTennessee (YearFn '865))	InfoRelaMine	1	-1
+(genls Doom-TheGame OnlineGameProgram)	CateMembMine	0	-1
+(genls RockwoodTennessee County)	CateMembMine	0	-1
+(deathDate PrincessJohannaOfHesseAndByRhine (DayFn '14 (MonthFn June (YearFn '1939))))	InfoRelaMine	1	-1
+(genls BrianFlemming Director-Movie)	CateMembMine	0	-1
+(country VanNuysLosAngeles UnitedStatesOfAmerica)	DBPediAligMine	1	-1
+(publisher Doom-TheGame ActivisionValue)	InfoRelaMine	1	-1
+(utcOffset VanNuysLosAngeles (MonthFn August TheYear-Indexical))	DBPediAligMine	1	-1
+(genls PeterPek RadioPersonality)	CateMembMine	0	-1
+(birthPlace ArthurFBurns Ivano-Frankivsk)	InfoRelaMine	1	1
+(isa BrianFlemming ChiefInformationOfficer)	FirsSentParsMine	1	-1
+(religion YsgolBrynAlyn None-AxisDeviation)	InfoRelaMine	1	-1
+(isa PeterPek Editor)	CateMembMine	1	1
+(genls PeterPek Author)	FirsSentParsMine	0	-1
+(genls SalMaccarone Lecturer)	FirsSentParsMine	0	-1
+(occupation SalMaccarone Sculptor)	InfoRelaMine	1	-1
+(isa Asteroid-impactAvoidance Near-EarthObject)	FirsSentParsMine	0	-1
+(genls Doom-TheGame ControversialAction)	CateMembMine	0	-1
+(birthPlace SalMaccarone (CountyNamedFn "Lawrence" Tennessee-State))	InfoRelaMine	1	-1
+(genls MagicWand Magician-Performer)	CateMembMine	0	-1
+(isa MagicWand Weapon)	CateMembMine	0	-1
+(genls BrianFlemming Person)	CateMembMine	0	-1
+(language CodeOfVengeance BritishEnglishDialect)	InfoRelaMine	1	-1
+(staff YsgolBrynAlyn (YearFn '50))	InfoRelaMine	1	-1
+(genls SocialCriticism ResearchStudy)	CateMembMine	1	-1
+(country CodeOfVengeance UnitedStatesAtThe2008SummerOlympics)	InfoRelaMine	1	-1
+(isa SocialCriticism ResearchStudy)	CateMembMine	0	-1
+(isa SocialCriticism Politics)	CateMembMine	0	-1
+(series Doom-TheGame Doom2099)	InfoRelaMine	1	-1
+(genls RockwoodTennessee City)	DBPediAligMine	0	-1
+(industry BankOfCreditAndCommerceInternational BankingTurn)	InfoRelaMine	1	-1
+(location BankOfCreditAndCommerceInternational London-ElectoralDistrict)	InfoRelaMine	1	-1
+(areaTotal RockwoodTennessee '2.06E7)	DBPediAligMine	1	-1
+(isa SalMaccarone Writer)	CateMembMine	1	-1
+(birthPlace NabilElderkin CityOfChicagoIL)	InfoRelaMine	1	1
+(genls BankOfCreditAndCommerceInternational PrivatelyHeldCorporation)	DBPediAligMine	0	-1
+(birthPlace SalMaccarone Massachusetts-State)	InfoRelaMine	1	-1
+(isa Jackhammer PhysicalDevice)	CateMembMine	1	-1
+(event Armageddon-2007 Armageddon-TheMovie)	InfoRelaMine	1	-1
+(isa InfantrySupportGun Weapon)	FirsSentParsMine	0	-1
+(isa BankOfCreditAndCommerceInternational CriminalAct)	CateMembMine	1	-1
+(birthPlace SalMaccarone (CountyNamedFn "Lawrence" Missouri-State))	InfoRelaMine	1	-1
+(deathPlace ArthurFBurns (CountyNamedFn "Baltimore" Maryland-State))	InfoRelaMine	1	-1
+(isa BrianFlemming Atheist)	CateMembMine	1	-1
+(genls CodeOfVengeance Series)	CateMembMine	0	-1
+(name NabilElderkin NabilElderkin)	InfoRelaMine	1	-1
+(city YsgolBrynAlyn WrexhamCountyBorough)	InfoRelaMine	1	-1
+(utcOffset VanNuysLosAngeles '-7)	DBPediAligMine	1	-1
+(areaCode RockwoodTennessee '865)	InfoRelaMine	1	-1
+(genls ArthurFBurns Person)	CateMembMine	0	-1
+(genls ArthurFBurns JewishPerson)	CateMembMine	0	-1
+(religion YsgolBrynAlyn None-PreopAtrialFibrillationType)	InfoRelaMine	1	-1
+(mother PrincessJohannaOfHesseAndByRhine PrincessCecilieOfGreeceAndDenmark)	InfoRelaMine	1	1
+(country YsgolBrynAlyn UnitedKingdomOfGreatBritainAndNorthernIreland)	DBPediAligMine	1	-1
+(birthPlace SalMaccarone UnitedStatesOfAmerica)	InfoRelaMine	1	-1
+(influenced ArthurFBurns GeorgeStigler)	DBPediAligMine	1	-1
+(genls CodeOfVengeance Title)	FirsSentParsMine	0	-1
+(isa PeterPek Journalist)	FirsSentParsMine	1	-1
+(genls PeterPek FamousHuman)	CateMembMine	0	-1
+(isa ArthurFBurns Animal)	null	1	-1
+(isa MagicWand LinearObject-Straight)	FirsSentParsMine	0	-1
+(deathPlace PrincessJohannaOfHesseAndByRhine EconomyOfGermany)	InfoRelaMine	1	-1
+(publisher Doom-TheGame AtariComputerInc)	DBPediAligMine	1	-1
+(genls PeterPek BrandManagement)	CateMembMine	0	-1
+(isa YsgolBrynAlyn HighSchool)	CateMembMine	1	-1
+(genls BankOfCreditAndCommerceInternational AcademicMajor)	FirsSentParsMine	0	-1
+(president ArthurFBurns RichardNixon)	InfoRelaMine	0	1
+(genls Asteroid-impactAvoidance PartiallyTangible)	FirsSentParsMine	1	-1
+(isa Jackhammer CuttingSomething-CreationEvent)	CateMembMine	0	-1
+(utcOffset RockwoodTennessee (MonthFn April TheYear-Indexical))	DBPediAligMine	1	-1
+(isa CodeOfVengeance TitleAgreement)	FirsSentParsMine	0	-1
+(genls Doom-TheGame ComputerGameProgram-Graphical)	FirsSentParsMine	0	-1
+(isa GordonACraig Person)	CateMembMine	1	-1
+(restingPlace PrincessJohannaOfHesseAndByRhine Darmstadt)	DBPediAligMine	1	-1
+(isa Asteroid-impactAvoidance Soil-Generic)	CateMembMine	0	-1
+(genls NabilElderkin MusicVideoCopy)	FirsSentParsMine	0	-1
+(stateOfOrigin BrianFlemming UnitedStatesOfAmerica)	DBPediAligMine	1	-1
+(predecessor ArthurFBurns LeonKeyserling)	InfoRelaMine	1	-1
+(genls Tongue-twister ComputerGameProgram)	CateMembMine	0	-1
+(isa Doom-TheGame Franchise)	CateMembMine	0	-1
+(country YsgolBrynAlyn Wales)	DBPediAligMine	1	-1
+(isa PeterPek Strategist)	FirsSentParsMine	1	1
+(title Doom-TheGame Doom2099)	InfoRelaMine	1	-1
+(genls GordonACraig Scholar)	CateMembMine	0	-1
+(isa PrincessJohannaOfHesseAndByRhine Duke)	FirsSentParsMine	1	-1
+(genls EthanolFermentation GO-BiologicalProcess)	FirsSentParsMine	1	-1
+(genls JamesHolborneOfMenstrie Soldier)	FirsSentParsMine	0	-1
+(genls PeterPek DirectorOfOrganization)	CateMembMine	0	-1
+(areaCode VanNuysLosAngeles '818)	DBPediAligMine	1	-1
+(genls NabilElderkin Person)	CateMembMine	0	-1
+(numberOfSeasons CodeOfVengeance (YearFn '1))	DBPediAligMine	1	-1
+(isa Doom-TheGame Commercial-CW)	CateMembMine	1	-1
+(location BankOfCreditAndCommerceInternational London-EuropeanParliamentConstituency)	InfoRelaMine	1	-1
+(occupation NabilElderkin Photographer)	InfoRelaMine	1	-1
+(genls Asteroid-impactAvoidance Weapon)	CateMembMine	0	-1
+(genls PeterPek PublicSpeaking)	FirsSentParsMine	0	-1
+(isa NabilElderkin TakingAPhotograph)	FirsSentParsMine	0	0
+(location BankOfCreditAndCommerceInternational (CityNamedFn "London" Ontario-CanadianProvince))	InfoRelaMine	1	-1
+(elevation VanNuysLosAngeles '217.0)	DBPediAligMine	1	-1
+(isa CodeOfVengeance MediaSeriesProduct)	CateMembMine	1	-1
+(isa SalMaccarone ManufacturingCompany)	FirsSentParsMine	0	-1
+(language CodeOfVengeance EnglishLanguage)	InfoRelaMine	1	-1
+(religion YsgolBrynAlyn None-VentricularHypertrophySite)	InfoRelaMine	1	-1
+(isa SocialCriticism Discrimination-ObtainingAndStoringKnowledge)	CateMembMine	0	-1
+(isa PeterPek ComputerPrintingHardcopy)	CateMembMine	0	-1
+(isa PrincessJohannaOfHesseAndByRhine GrandDuke-HeadOfState)	FirsSentParsMine	1	-1
+(genls 2-satisfiability NL-complete)	CateMembMine	0	0
+(genls MagicWand LinearObject-Straight)	FirsSentParsMine	0	-1
+(deathPlace ArthurFBurns BaltimoreBayRunners)	InfoRelaMine	1	-1
+(isa Doom-TheGame (CollectionDifferenceFn TemporalThing BiologicalLivingObject))	null	1	-1
+(isa Doom-TheGame PublishedMaterial)	null	1	-1
+(genls Asteroid-impactAvoidance DefenseAttorney)	FirsSentParsMine	1	-1
+(genls MagicWand WeightLosingProcess)	FirsSentParsMine	0	-1
+(isa NabilElderkin (SubcollectionOfWithRelationFromTypeFn Person boardMembers Organization))	FirsSentParsMine	1	-1
+(isa NabilElderkin Person)	CateMembMine	1	-1
+(deathDate ArthurFBurns (YearFn '1987))	InfoRelaMine	1	-1
+(deathPlace ArthurFBurns AddressRegion_MARYLAND)	InfoRelaMine	1	-1
+(name ArthurFBurns ArthurFBurns)	InfoRelaMine	1	-1
+(lowerAge YsgolBrynAlyn (YearFn '7))	DBPediAligMine	1	-1
+(genls SalMaccarone AudioSpeaker)	FirsSentParsMine	0	-1
+(isa PeterPek ChiefInformationOfficer)	FirsSentParsMine	1	-1
+(genls MagicWand SkinnyPhysicalBuild)	FirsSentParsMine	0	-1
+(computingMedia Doom-TheGame CD-ROM)	DBPediAligMine	1	-1
+(birthPlace SalMaccarone (CountyNamedFn "Lawrence" Ohio-State))	InfoRelaMine	1	-1
+(country CodeOfVengeance EnvironmentalIssuesInTheUnitedStates)	InfoRelaMine	1	-1
+(predecessor ArthurFBurns WalterJohnStoesselJr)	InfoRelaMine	1	-1
+(location BankOfCreditAndCommerceInternational ChinatownLondon)	InfoRelaMine	1	-1
+(genls Ester FunctionalGroup-Molecular)	CateMembMine	0	0
+(isa CodeOfVengeance TitleClassType)	FirsSentParsMine	1	-1
+(birthPlace NabilElderkin UnitedStatesOfAmerica)	InfoRelaMine	1	-1
+(related CodeOfVengeance KnightRider-2008TVSeries)	InfoRelaMine	1	-1
+(genls NabilElderkin ChiefInformationOfficer)	FirsSentParsMine	0	-1
+(genls GordonACraig (InstanceNamedFn-Ternary "military" SkilledActivityType "de0aca10-b4de-41d9-924b-a9501bdb5562"))	CateMembMine	0	-1
+(genls ArthurFBurns (GroupFn AcademicProfessional))	CateMembMine	0	-1
+(genls CodeOfVengeance TitleAgreement)	FirsSentParsMine	0	-1
+(isa MagicWand Diluting)	FirsSentParsMine	0	-1
+(promotion Armageddon-2007 WorldWrestlingEntertainment)	InfoRelaMine	1	-1
+(genls TrenchRailways MilitaryRailways)	CateMembMine	0	0
+(religion YsgolBrynAlyn None-BundleBranchBlock)	InfoRelaMine	1	-1
+(lowerAge YsgolBrynAlyn (MonthFn July TheYear-Indexical))	DBPediAligMine	1	-1
+(profession ArthurFBurns (InstanceNamedFn-Ternary "U.S. ambassador" PersonTypeByOccupation "42d5e1e8-17ad-41d9-894b-b66c5ddcfc8b"))	InfoRelaMine	1	-1
+(isa BrianFlemming UnitedStatesPerson)	FirsSentParsMine	1	-1
+(isa AirMass-Astronomy (HistoryFn Astronomy))	CateMembMine	0	-1
+(deathPlace PrincessJohannaOfHesseAndByRhine (TerritoryFn Germany))	InfoRelaMine	1	-1
+(genls RockwoodTennessee Town)	CateMembMine	0	-1
+(isa Ester FunctionalGroup-Molecular)	CateMembMine	0	-1
+(genls PeterPek GraphicArtist)	CateMembMine	0	-1
+(country CodeOfVengeance UnitedStatesAndWeaponsOfMassDestruction)	InfoRelaMine	1	-1
+(genls SalMaccarone ManufacturingCompany)	FirsSentParsMine	0	-1
+(birthPlace NabilElderkin UnitedStatesAtThe2004SummerOlympics)	InfoRelaMine	1	-1
+(isa MagicWand HeterosexualHuman)	FirsSentParsMine	0	-1
+(genls VanNuysLosAngeles Neighborhood)	CateMembMine	0	-1
+(populationTotal VanNuysLosAngeles (YearFn '443))	InfoRelaMine	1	-1
+(country ArthurFBurns GermanyInTheEurovisionSongContest)	InfoRelaMine	1	-1
+(name PeterPek PeterPek)	InfoRelaMine	1	-1
+(isa BankOfCreditAndCommerceInternational CorporateCrime)	CateMembMine	0	1
+(language CodeOfVengeance PoetLaureateOfTheUnitedKingdom)	InfoRelaMine	1	-1
+(series Doom-TheGame Doom-TheGame)	InfoRelaMine	1	-1
+(genls PrincessJohannaOfHesseAndByRhine GermanNobility)	CateMembMine	0	-1
+(populationTotal RockwoodTennessee '5562)	DBPediAligMine	1	-1
+(isa PeterPek Branding-MarkingOnASurface)	FirsSentParsMine	0	-1
+(isa PeterPek Celebrity)	FirsSentParsMine	1	1
+(birthPlace SalMaccarone (CountyNamedFn "Lawrence" Pennsylvania-State))	InfoRelaMine	1	-1
+(computingMedia Doom-TheGame OnlineDistribution)	DBPediAligMine	1	-1
+(isa VanNuysLosAngeles CommunitiesRegionsAndLanguageAreasOfBelgium)	CateMembMine	1	-1
+(postalCode VanNuysLosAngeles (YearFn '91406))	InfoRelaMine	1	-1
+(genls AirMass-Astronomy ObservationalAstronomy)	CateMembMine	1	1
+(deathPlace ArthurFBurns Maryland-State)	InfoRelaMine	1	-1
+(areaLand RockwoodTennessee '2.04609E7)	DBPediAligMine	1	-1
+(isa CodeOfVengeance UmbrellaTitle)	FirsSentParsMine	0	0
+(location BankOfCreditAndCommerceInternational RomanLondon)	InfoRelaMine	1	-1
+(genls PeterPek AudioSpeaker)	FirsSentParsMine	0	-1
+(country ArthurFBurns EconomyOfGermany)	InfoRelaMine	1	-1
+(birthDate ArthurFBurns (DayFn '27 (MonthFn August (YearFn '1904))))	InfoRelaMine	1	-1
+(objectFoundInLocation BankOfCreditAndCommerceInternational Luxembourg)	DBPediAligMine	0	-1
+(country RockwoodTennessee UnitedStatesOfAmerica)	DBPediAligMine	1	-1
+(isa PeterPek Writer)	FirsSentParsMine	1	1
+(staff YsgolBrynAlyn '50)	InfoRelaMine	1	-1
+(location BankOfCreditAndCommerceInternational LondonKentucky)	InfoRelaMine	1	-1
+(genls VanNuysLosAngeles AssigningAgentToRole)	CateMembMine	0	-1
+(genls Doom-TheGame ComputerGameProgram)	FirsSentParsMine	0	-1
+(genls SalMaccarone Artist)	CateMembMine	0	-1
+(isa GordonACraig Graduate)	CateMembMine	1	1
+(isa SocialCriticism AccidentallyLeavingSomethingSomewhere)	CateMembMine	0	-1
+(isa NabilElderkin Director-Movie)	FirsSentParsMine	1	1
+(religion YsgolBrynAlyn None-SiteOfCoronaryArteryObstruction)	InfoRelaMine	1	-1
+(country CodeOfVengeance UniformedServicesOfTheUnitedStates)	InfoRelaMine	1	-1
+(postalCode VanNuysLosAngeles (YearFn '91411))	InfoRelaMine	1	-1
+(isa SalMaccarone SeminarSeries)	FirsSentParsMine	0	0
+(genls Armageddon-2007 WrestlingSportsEvent)	CateMembMine	0	-1
+(designer Doom-TheGame AmericanMcGee-Person)	DBPediAligMine	1	-1
+(name Armageddon-2007 Armageddon-2007)	InfoRelaMine	1	-1
+(isa NabilElderkin Professional)	FirsSentParsMine	1	-1
+(isa SalMaccarone Lecturer)	FirsSentParsMine	1	-1
+(birthPlace PrincessJohannaOfHesseAndByRhine GermanyInTheEurovisionSongContest)	InfoRelaMine	1	-1
+(country YsgolBrynAlyn RugbyUnionInWales)	InfoRelaMine	1	-1
+(genls Asteroid-impactAvoidance ProtectingSomething)	FirsSentParsMine	0	-1
+(isa JamesHolborneOfMenstrie Soldier)	FirsSentParsMine	1	-1
+(language CodeOfVengeance EthnicGroupOfEnglish)	InfoRelaMine	1	-1
+(isa BrianFlemming DirectorOfOrganization)	CateMembMine	1	-1
+(isa Asteroid-impactAvoidance DefenseAttorney)	FirsSentParsMine	0	-1
+(starring CodeOfVengeance CharlesTaylor)	InfoRelaMine	1	-1
+(postalCode VanNuysLosAngeles (YearFn '91409))	InfoRelaMine	1	-1
+(isa SocialCriticism CulturalStudies)	CateMembMine	0	-1
+(industry BankOfCreditAndCommerceInternational BankOrganization)	InfoRelaMine	1	-1
+(nextEvent Armageddon-2007 WWEArmageddon)	InfoRelaMine	1	-1
+(genls PeterPek Branding-MarkingOnASurface)	FirsSentParsMine	0	-1
+(utcOffset RockwoodTennessee (YearFn '5))	InfoRelaMine	1	-1
+(country CodeOfVengeance LawSchoolInTheUnitedStates)	InfoRelaMine	1	-1
+(genls Doom-TheGame Landmark)	FirsSentParsMine	0	-1
+(isa SalMaccarone Animal)	null	1	-1
+(genls EthanolFermentation Sugar)	FirsSentParsMine	0	1
+(isa Doom-TheGame ControversialAction)	CateMembMine	0	-1
+(isa Doom-TheGame First-personShooter)	FirsSentParsMine	0	0
+(genls SalMaccarone Sculptor)	FirsSentParsMine	0	-1
+(isa PeterPek CorporateBond-Agreement)	FirsSentParsMine	0	-1
+(isa BankOfCreditAndCommerceInternational PrivatelyHeldCorporation)	DBPediAligMine	0	-1
+(timeZone VanNuysLosAngeles TimeInThePhilippines)	InfoRelaMine	1	-1
+(genls Tongue-twister WordGame)	CateMembMine	0	0
+(isa RockwoodTennessee Town)	CateMembMine	1	-1
+(genls SocialCriticism SocialScienceType)	CateMembMine	0	-1
+(isa MagicWand SkinnyPhysicalBuild)	FirsSentParsMine	0	-1
+(country CodeOfVengeance PoliticsOfTheUnitedStates)	InfoRelaMine	1	-1
+(isa PeterPek Author)	FirsSentParsMine	1	-1
+(genls MagicWand Shaft)	FirsSentParsMine	0	-1
+(deathDate ArthurFBurns (DayFn '6 (MonthFn June TheYear-Indexical)))	InfoRelaMine	1	-1
+(title Doom-TheGame Doom-Film)	InfoRelaMine	1	-1
+(genls GaloisModule (CBLGroupFn (CBLMethodFn CBLNode-CycorpRefrigeratorMassEMailSending "cycorpRefrigeratorMassEmailSending_task") False))	FirsSentParsMine	1	-1
+(occupation NabilElderkin Director-Movie)	InfoRelaMine	1	-1
+(postalCode VanNuysLosAngeles '91409)	InfoRelaMine	1	-1
+(areaTotal RockwoodTennessee '2.04609E7)	DBPediAligMine	1	-1
+(isa SocialCriticism SocialScienceType)	CateMembMine	0	-1
+(genls SalMaccarone UnitedStatesPerson)	FirsSentParsMine	0	-1
+(genls NabilElderkin (SubcollectionOfWithRelationFromTypeFn Person boardMembers Organization))	FirsSentParsMine	0	-1
+(isa GaloisModule KurganHypothesis)	CateMembMine	0	-1
+(genre Doom-TheGame First-personShooter)	DBPediAligMine	1	-1
+(isa MagicWand Insignia)	CateMembMine	0	-1
+(isa Doom-TheGame FranchiseContract)	CateMembMine	1	-1
+(isa Asteroid-impactAvoidance MethodType)	FirsSentParsMine	0	-1
+(birthPlace SalMaccarone (CountyNamedFn "Lawrence" Mississippi-State))	InfoRelaMine	1	-1
+(isa TrenchRailways Railway)	CateMembMine	0	-1
+(isa GordonACraig Historian)	CateMembMine	1	1
+(father PrincessJohannaOfHesseAndByRhine GeorgDonatusHereditaryGrandDukeOfHesse)	InfoRelaMine	1	1
+(isa EthanolFermentation BiologicalProcess)	FirsSentParsMine	0	-1
+(developer Doom-TheGame IDSoftwareInc)	InfoRelaMine	1	-1
+(genls PrincessJohannaOfHesseAndByRhine Nobility)	CateMembMine	0	-1
+(genls NabilElderkin MusicVideo)	FirsSentParsMine	0	-1
+(neuroLex:Property-3AIs_part_of VanNuysLosAngeles CityOfLosAngelesCA)	DBPediAligMine	1	-1
+(genls Jackhammer PneumaticTool)	FirsSentParsMine	0	0
+(industry BankOfCreditAndCommerceInternational BankingIndustry)	InfoRelaMine	1	-1
+(event Armageddon-2007 WWEArmageddon)	InfoRelaMine	1	-1
+(country CodeOfVengeance UnitedStatesAtThe2004SummerOlympics)	InfoRelaMine	1	-1
+(language CodeOfVengeance EnglishPerson)	InfoRelaMine	1	-1
+(title Doom-TheGame Doom-TheGameSeries)	InfoRelaMine	1	-1
+(genls NabilElderkin Professional)	FirsSentParsMine	0	-1
+(country CodeOfVengeance UnitedStatesAtThe2010WinterOlympics)	InfoRelaMine	1	-1
+(utcOffset RockwoodTennessee '-4)	DBPediAligMine	1	-1
+(postalCode VanNuysLosAngeles (YearFn '91401))	InfoRelaMine	1	-1
+(genls CodeOfVengeance BroadcastSeriesProduct)	CateMembMine	0	-1
+(genls MagicWand Baton-Musical)	FirsSentParsMine	0	-1
+(channel CodeOfVengeance NeoGeoBattleColiseum)	InfoRelaMine	1	-1
+(isa PeterPek Publisher-Occupation)	CateMembMine	1	-1
+(genls Doom-TheGame Franchise)	CateMembMine	0	-1
+(localAuthority YsgolBrynAlyn WrexhamCountyBorough)	DBPediAligMine	1	-1
+(isa Jackhammer (MakingAvailableFn Tool))	FirsSentParsMine	0	-1
+(numberOfSeasons CodeOfVengeance '1)	DBPediAligMine	1	-1
+(genls SalMaccarone FurniturePiece)	FirsSentParsMine	0	-1
+(isa Tongue-twister ComputerGameProgram)	CateMembMine	0	-1
+(publisher Doom-TheGame OceanSoftware)	DBPediAligMine	1	-1
+(isa Armageddon-2007 Professional)	FirsSentParsMine	0	1
+(genls SalMaccarone SeminarSeries)	FirsSentParsMine	0	-1
+(genls SocialCriticism Discrimination-ObtainingAndStoringKnowledge)	CateMembMine	1	-1
+(genls GaloisModule KurganHypothesis)	CateMembMine	0	-1
+(genls GaloisModule (CBLGroupFn (CBLMethodFn CBLNode-SystemAdministration "ping_task") not))	FirsSentParsMine	1	-1
+(genls NabilElderkin VideoRecordedObject)	FirsSentParsMine	0	-1
+(isa SalMaccarone Sculpture)	FirsSentParsMine	0	0
+(genls EthanolFermentation Fermenting-Cellular)	CateMembMine	1	1
+(populationTotal VanNuysLosAngeles '136)	InfoRelaMine	1	-1
+(genls MagicWand Diluting)	FirsSentParsMine	0	-1
+(postalCode VanNuysLosAngeles '91411)	InfoRelaMine	1	-1
+(isa NabilElderkin VideoRecordedObject)	FirsSentParsMine	0	-1
+(event Armageddon-2007 Armageddon-2006)	InfoRelaMine	1	-1
+(religion YsgolBrynAlyn NoVentricularImpairment-Normal)	InfoRelaMine	1	-1
+(isa NabilElderkin VideoCassette)	FirsSentParsMine	0	-1
+(populationTotal VanNuysLosAngeles '136443)	InfoRelaMine	1	-1
+(genls MagicWand Magic)	CateMembMine	1	-1
+(isa Doom-TheGame BigThreeTelevisionNetworks)	CateMembMine	0	-1
+(genls PeterPek PublicRelationsActivity)	FirsSentParsMine	0	-1
+(genls CodeOfVengeance Series-Botany)	CateMembMine	0	-1
+(genls GordonACraig Cross-FixedStructure)	CateMembMine	0	-1
+(religion YsgolBrynAlyn CardiacValveRegurgitation_none)	InfoRelaMine	1	-1
+(president ArthurFBurns GeraldFord)	InfoRelaMine	0	-1
+(isa MagicWand RunicMagic)	CateMembMine	0	-1
+(genls SalMaccarone Woodworking)	FirsSentParsMine	0	-1
+(country CodeOfVengeance UnitedStatesFederalJudicialDistrict)	InfoRelaMine	1	-1
+(timeZone RockwoodTennessee EasternUSATimeZone)	DBPediAligMine	1	-1
+(areaCode VanNuysLosAngeles (YearFn '818))	DBPediAligMine	1	-1
+(deathPlace ArthurFBurns BaltimoreBlast)	InfoRelaMine	1	-1
+(populationTotal VanNuysLosAngeles (YearFn '136443))	DBPediAligMine	1	-1
+(almaMater ArthurFBurns ColumbiaUniversity)	InfoRelaMine	1	-1
+(industry BankOfCreditAndCommerceInternational MakingABankDeposit)	InfoRelaMine	1	-1
+(isa CodeOfVengeance Series-Botany)	CateMembMine	0	-1
+(utcOffset VanNuysLosAngeles (YearFn '8))	DBPediAligMine	1	-1
+(isa RockwoodTennessee City)	DBPediAligMine	1	1
+(isa SalMaccarone Person)	CateMembMine	1	-1
+(populationTotal VanNuysLosAngeles (YearFn '136))	InfoRelaMine	1	-1
+(isa Jackhammer PneumaticTool)	FirsSentParsMine	0	-1
+(country PeterPek Malaysia)	DBPediAligMine	1	-1
+(genls InfantrySupportGun ArtilleryGame)	FirsSentParsMine	0	-1
+(genls CodeOfVengeance NCAABasketballSeries)	CateMembMine	0	-1
+(utcOffset RockwoodTennessee '-5)	InfoRelaMine	1	-1
+(genls NabilElderkin EthnicGroupOfAustralians)	CateMembMine	0	-1
+(isa PrincessJohannaOfHesseAndByRhine (SubcollectionOfWithRelationFromTypeFn Animal children Animal))	FirsSentParsMine	1	-1
+(isa BrianFlemming (FrequentPerformerFn Activism))	CateMembMine	1	-1
+(birthDate SalMaccarone (DayFn '11 (MonthFn August (YearFn '1949))))	InfoRelaMine	1	-1
+(isa Doom-TheGame OnlineGameProgram)	CateMembMine	1	1
+(genls GordonACraig UnitedStatesPerson)	CateMembMine	0	-1
+(genls EthanolFermentation Ethanol)	CateMembMine	0	0
+(isa TrenchRailways Conveyance)	CateMembMine	0	-1
+(isa NabilElderkin VideoCassetteRecording)	FirsSentParsMine	0	-1
+(isa GaloisModule (CBLGroupFn (CBLMethodFn CBLNode-CyclistEmailAddressChecking "cyclistEmailAddressChecking_task") arg1Isa))	FirsSentParsMine	0	-1
+(isa Ester BuildingCluster)	FirsSentParsMine	0	-1
+(isa NabilElderkin MusicVideo)	FirsSentParsMine	0	-1
+(date Armageddon-2007 (DayFn '16 (MonthFn December (YearFn '2007))))	InfoRelaMine	1	-1
+(staff YsgolBrynAlyn (YearFn '75))	DBPediAligMine	1	-1
+(genls PeterPek Journalist)	FirsSentParsMine	0	-1
+(utcOffset VanNuysLosAngeles (YearFn '7))	DBPediAligMine	1	-1
+(isa NabilElderkin AustralianCitizenOrSubject)	CateMembMine	1	0
+(isa BrianFlemming Disapproving-CommunicationAct)	CateMembMine	0	-1
+(genls BrianFlemming University)	CateMembMine	0	-1
+(genls BankOfCreditAndCommerceInternational CourtCase)	CateMembMine	0	-1
+(genls CodeOfVengeance ConvergentSeries)	CateMembMine	0	-1
+(genls JamesHolborneOfMenstrie CalendarYear)	CateMembMine	0	-1
+(isa InfantrySupportGun Gun)	CateMembMine	0	-1
+(postalCode VanNuysLosAngeles '91406)	InfoRelaMine	1	-1
+(deathPlace ArthurFBurns CityOfBaltimoreMD)	InfoRelaMine	1	-1
+(genls NabilElderkin TakingAPhotograph)	FirsSentParsMine	0	-1
+(genls AirMass-Astronomy (SubcollectionOfWithRelationFromTypeFn Distance lengthOfObject SpatialThing))	FirsSentParsMine	0	-1
+(populationTotal RockwoodTennessee (YearFn '5562))	DBPediAligMine	1	-1
+(publisher Doom-TheGame WMSIndustries)	DBPediAligMine	1	-1
+(genre CodeOfVengeance Adventure)	DBPediAligMine	1	-1
+(genls BankOfCreditAndCommerceInternational CorporateBond-Agreement)	CateMembMine	0	-1
+(createdBy Doom-TheGame IDSoftwareInc)	DBPediAligMine	1	1
+(genls MagicWand (PortableFn (DeadPhysicalRemainsFn TreeBranch)))	FirsSentParsMine	0	-1
+(genls NabilElderkin (CitizenFn Australia))	CateMembMine	0	-1
+(genls BankOfCreditAndCommerceInternational AccountingScandals)	CateMembMine	0	-1
+(isa CodeOfVengeance BroadcastSeriesProduct)	CateMembMine	1	-1
+(isa BankOfCreditAndCommerceInternational AcademicMajor)	FirsSentParsMine	0	-1
+(genls BrianFlemming UnitedStatesPerson)	FirsSentParsMine	0	-1
+(genls CodeOfVengeance Testifying)	CateMembMine	0	-1
+(upperAge YsgolBrynAlyn (YearFn '11))	DBPediAligMine	1	-1
+(genls BrianFlemming Disapproving-CommunicationAct)	CateMembMine	0	-1
+(staff YsgolBrynAlyn '75)	DBPediAligMine	1	-1
+(genls BankOfCreditAndCommerceInternational CorporateCrime)	CateMembMine	0	-1
+(country YsgolBrynAlyn (CityNamedFn "Wales" Alaska-State))	InfoRelaMine	1	-1
+(engine Doom-TheGame DoomEngine)	InfoRelaMine	1	-1
+(genls CodeOfVengeance LongTitle)	FirsSentParsMine	0	-1
+(isa EthanolFermentation Sugar)	FirsSentParsMine	0	-1
+(postalCode VanNuysLosAngeles '91401)	InfoRelaMine	1	-1
+(isa PeterPek DirectorOfOrganization)	FirsSentParsMine	1	-1
+(isa JamesHolborneOfMenstrie CalendarYear)	CateMembMine	0	-1
+(birthPlace SalMaccarone LawrenceNassauCountyNewYork)	InfoRelaMine	1	-1
+(birthDate ArthurFBurns (YearFn '1904))	InfoRelaMine	1	-1
+(genls MagicWand Straight)	FirsSentParsMine	0	-1
+(birthPlace NabilElderkin PoliticsOfTheUnitedStates)	InfoRelaMine	1	-1
+(isa SalMaccarone Maker)	FirsSentParsMine	1	-1
+(genls Jackhammer Tool)	FirsSentParsMine	0	-1
+(starring CodeOfVengeance CharlesTaylor-Philosopher)	InfoRelaMine	1	-1
+(isa ArthurFBurns Graduate)	CateMembMine	1	1
+(publisher Doom-TheGame GTInteractiveSoftwareCorp)	DBPediAligMine	1	1
+(isa ArthurFBurns Person)	null	1	-1
+(populationTotal VanNuysLosAngeles '443)	InfoRelaMine	1	-1
+(genls EthanolFermentation Fermentation-Biochemistry)	CateMembMine	1	-1
+(areaLand RockwoodTennessee '2.04E7)	DBPediAligMine	1	-1
+(publisher Doom-TheGame ActivisionInc)	DBPediAligMine	1	-1
+(isa CodeOfVengeance Testifying)	CateMembMine	0	-1
+(isa PeterPek Lecturer)	FirsSentParsMine	1	-1
+(office BankOfCreditAndCommerceInternational CityOfKarachiPakistan)	InfoRelaMine	1	-1
+(genls GaloisModule GeneralRating)	FirsSentParsMine	1	-1
+(isa BankOfCreditAndCommerceInternational Bank-Topographical)	FirsSentParsMine	0	-1
+(isa Asteroid-impactAvoidance PartiallyTangible)	FirsSentParsMine	0	-1
+(isa PeterPek Radio)	FirsSentParsMine	0	0
+(isa CodeOfVengeance UnitedStatesPerson)	CateMembMine	0	-1
+(publisher Doom-TheGame IDSoftwareInc)	InfoRelaMine	1	-1
+(isa TrenchRailways MilitaryRailways)	CateMembMine	0	-1
+(genls YsgolBrynAlyn (CollectionIntersection2Fn Herd (GroupFn Fish)))	CateMembMine	0	-1
+(populationTotal RockwoodTennessee (YearFn '5774))	InfoRelaMine	1	-1
+(isa BankOfCreditAndCommerceInternational CourtCase)	CateMembMine	0	-1
+(isa NabilElderkin VideoConceptualWork)	FirsSentParsMine	0	-1
+(isa EthanolFermentation ComputerProcessRunning)	FirsSentParsMine	0	-1
+(location BankOfCreditAndCommerceInternational GreaterLondon-EnglandRegion)	InfoRelaMine	1	-1
+(isa SocialCriticism PoliticsOfGlobalWarming)	CateMembMine	0	-1
+(postalCode VanNuysLosAngeles (YearFn '91405))	InfoRelaMine	1	-1
+(genls GordonACraig AcademicProfessional)	CateMembMine	0	-1
+(isa GordonACraig (InstanceNamedFn-Ternary "military" SkilledActivityType "de0aca10-b4de-41d9-924b-a9501bdb5562"))	CateMembMine	0	-1
+(isa NabilElderkin KVMSwitch)	FirsSentParsMine	0	-1
+(genls PeterPek MalaysianPerson)	CateMembMine	0	-1
+(isa CodeOfVengeance LongTitle)	FirsSentParsMine	0	-1
+(genls PeterPek Strategist)	FirsSentParsMine	0	-1
+(isa VanNuysLosAngeles PopulatedPlace)	CateMembMine	1	-1
+(religion YsgolBrynAlyn None-AtrialHypertrophySite)	InfoRelaMine	1	-1
+(genls BrianFlemming (FrequentPerformerFn Activism))	CateMembMine	0	-1
+(birthPlace ArthurFBurns Austria)	InfoRelaMine	1	-1
+(genls BrianFlemming (SubcollectionOfWithRelationFromTypeFn Person boardMembers Organization))	FirsSentParsMine	0	-1
+(objectFoundInLocation BankOfCreditAndCommerceInternational CityOfLondonEngland)	DBPediAligMine	0	0
+(series Doom-TheGame Doom-Film)	InfoRelaMine	1	-1
+(president ArthurFBurns DwightDEisenhower)	InfoRelaMine	0	0
+(isa PeterPek GraphicArtist)	CateMembMine	1	-1
+(isa Jackhammer Tool-PowerTool)	CateMembMine	1	-1
+(isa NabilElderkin DirectorOfOrganization)	FirsSentParsMine	1	-1
+(genls GaloisModule (CBLGroupFn (CBLMethodFn CBLNode-CycorpRefrigeratorMassEMailSending "cycorpRefrigeratorMassEmailSending_task") SymmetricBinaryPredicate))	FirsSentParsMine	1	-1
+(isa Doom-TheGame Landmark)	FirsSentParsMine	0	0
+(genls CodeOfVengeance EntertainmentPerformance)	CateMembMine	0	-1
+(genls GordonACraig Historian)	CateMembMine	0	-1
+(genls PeterPek Celebrity)	FirsSentParsMine	0	-1
+(genls GaloisModule GaloisGroup)	FirsSentParsMine	0	1
+(deathDate ArthurFBurns (DayOfYearFn June SymmetricBinaryPredicate))	InfoRelaMine	1	-1
+(starring CodeOfVengeance CharlesTaylor-Liberia)	InfoRelaMine	1	-1
+(genls NabilElderkin DirectorOfOrganization)	FirsSentParsMine	0	-1
+(genls Jackhammer (MakingAvailableFn Tool))	FirsSentParsMine	0	-1
+(birthPlace ArthurFBurns AustriaInTheEurovisionSongContest)	InfoRelaMine	1	-1
+(isa NabilElderkin CroatianAustralian)	FirsSentParsMine	0	-1
+(isa SalMaccarone Artist)	CateMembMine	1	0
+(city YsgolBrynAlyn Wrexham-RegionWales)	InfoRelaMine	1	-1
+(isa SalMaccarone UnitedStatesPerson)	FirsSentParsMine	1	-1
+(isa MagicWand MagicInFiction)	CateMembMine	0	-1
+(genre CodeOfVengeance ActionMovie)	DBPediAligMine	1	-1
+(isa PeterPek Person)	CateMembMine	1	-1
+(neuroLex:Property-3AIs_part_of VanNuysLosAngeles (CityNamedFn "California" Pennsylvania-State))	DBPediAligMine	1	-1
+(birthPlace SalMaccarone LawrenceMassachusetts)	InfoRelaMine	1	1
+(genls GaloisModule (CBLGroupFn (CBLMethodFn CBLNode-SystemAdministration "initiate_task") and))	FirsSentParsMine	1	-1
+(genls PeterPek Person)	CateMembMine	0	-1
+(genls GaloisModule TheoreticalConstruct)	CateMembMine	1	-1
+(birthPlace PrincessJohannaOfHesseAndByRhine Hessen-StateGermany)	DBPediAligMine	1	-1
+(religion YsgolBrynAlyn None-VeinHarvestTechnique)	InfoRelaMine	1	-1
+(publisher Doom-TheGame BethesdaSoftworks)	DBPediAligMine	1	-1
+(timeZone VanNuysLosAngeles PacificUSATimeZone)	DBPediAligMine	1	-1
+(genls Tongue-twister NLPhrase)	FirsSentParsMine	0	0
+(organizationalSuccessor ArthurFBurns RichardBurt)	InfoRelaMine	1	1
+(upperAge YsgolBrynAlyn '11)	DBPediAligMine	1	-1
+(genls GordonACraig Person)	CateMembMine	0	-1
+(genls CodeOfVengeance TitleClassType)	FirsSentParsMine	0	-1
+(deathPlace ArthurFBurns UnivOfMaryland)	InfoRelaMine	1	-1
+(isa PeterPek BusinessPerson)	CateMembMine	1	1
+(organizationalSuccessor ArthurFBurns RaymondJSaulnier)	InfoRelaMine	1	1
+(genls SocialCriticism AbandoningSomething)	CateMembMine	1	-1
+(isa MagicWand Baton-Musical)	FirsSentParsMine	0	-1
+(genls PeterPek Publisher-Occupation)	CateMembMine	0	-1
+(genls BrianFlemming Playwright)	FirsSentParsMine	0	-1
+(isa SalMaccarone Sculptor)	FirsSentParsMine	1	-1
+(industry BankOfCreditAndCommerceInternational Banking)	InfoRelaMine	1	-1
+(areaWater RockwoodTennessee '258999.0)	DBPediAligMine	1	-1
+(genls SocialCriticism Politics)	CateMembMine	1	-1
+(birthDate PrincessJohannaOfHesseAndByRhine (DayFn '20 (MonthFn September (YearFn '1936))))	InfoRelaMine	1	-1
+(isa GordonACraig UnitedStatesPerson)	CateMembMine	1	-1
+(genls Jackhammer Tool-PowerTool)	CateMembMine	0	0
+(genls SalMaccarone Author)	CateMembMine	0	-1
+(isa PeterPek Management)	CateMembMine	0	-1
+(genls NabilElderkin AustralianCitizenOrSubject)	CateMembMine	0	-1
+(genls EthanolFermentation WorkingSomething-ProcessingEvent)	FirsSentParsMine	1	-1
+(genls Ester (CitizenFn Germany))	CateMembMine	0	-1
+(channel CodeOfVengeance NBC-TVNetwork)	InfoRelaMine	1	-1
+(genls YsgolBrynAlyn HighSchool)	CateMembMine	0	-1
+(isa ArthurFBurns (GroupFn AcademicProfessional))	CateMembMine	0	-1
+(isa AirMass-Astronomy OpticalPathLength)	FirsSentParsMine	0	-1
+(isa MagicWand Straight)	FirsSentParsMine	0	-1
+(genls EthanolFermentation BiologicalProcess)	FirsSentParsMine	1	1
+(birthPlace SalMaccarone (CountyNamedFn "Lawrence" Illinois-State))	InfoRelaMine	1	-1
+(isa Jackhammer Tool)	FirsSentParsMine	1	-1
+(isa CodeOfVengeance Series-Stratigraphy)	CateMembMine	0	-1
+(genls ArthurFBurns Graduate)	CateMembMine	0	-1
+(genls ArthurFBurns Chairman)	CateMembMine	0	-1
+(genls EthanolFermentation ComputerProcessRunning)	FirsSentParsMine	0	-1
+(country YsgolBrynAlyn (TerritoryFn Wales))	InfoRelaMine	1	-1
+(genls MagicWand RunicMagic)	CateMembMine	0	-1
+(organizationalSuccessor ArthurFBurns GWilliamMiller)	InfoRelaMine	1	1
+(isa BankOfCreditAndCommerceInternational CorporateBond-Agreement)	CateMembMine	0	-1
+(isa SalMaccarone AudioSpeaker)	FirsSentParsMine	0	-1
+(numberOfStudents YsgolBrynAlyn '800)	DBPediAligMine	1	-1
+(genls SocialCriticism ReverseDiscrimination)	CateMembMine	1	-1
+(genls BankOfCreditAndCommerceInternational Scandal)	CateMembMine	0	-1
+(birthPlace SalMaccarone (CountyNamedFn "Lawrence" Indiana-State))	InfoRelaMine	1	-1
+(isa VanNuysLosAngeles Place)	CateMembMine	1	-1
+(nextEvent Armageddon-2007 Armageddon-TheMovie)	InfoRelaMine	1	-1
+(nextEvent Armageddon-2007 Armageddon)	InfoRelaMine	1	-1
+(birthPlace SalMaccarone (CountyNamedFn "Lawrence" Arkansas-State))	InfoRelaMine	1	-1
+(isa YsgolBrynAlyn School-AcademicOrganization)	CateMembMine	1	-1
+(isa NabilElderkin Photographer)	CateMembMine	1	-1
+(genls NabilElderkin VideoConceptualWork)	FirsSentParsMine	0	-1
+(isa GordonACraig (GroupFn AcademicProfessional))	CateMembMine	0	1
+(isa Asteroid-impactAvoidance ProtectingSomething)	FirsSentParsMine	0	-1
+(isa Jackhammer CuttingSomething)	CateMembMine	0	-1
+(genls GaloisModule G-MusicalNote)	FirsSentParsMine	1	-1
+(writer Doom-TheGame TomHall)	DBPediAligMine	1	-1
+(genls ArthurFBurns Economist)	CateMembMine	0	-1
+(elevation VanNuysLosAngeles '217.018)	DBPediAligMine	1	-1
+(nextEvent Armageddon-2007 RoyalRumble-2008)	InfoRelaMine	1	-1
+(country YsgolBrynAlyn (TerritoryFn (CityNamedFn "Wales" Alaska-State)))	InfoRelaMine	1	-1
+(genls NabilElderkin Director-Movie)	FirsSentParsMine	0	-1
+(genls EthanolFermentation ProcessingEvent)	FirsSentParsMine	1	-1
+(genls CodeOfVengeance Series-Stratigraphy)	CateMembMine	0	-1
+(religion YsgolBrynAlyn NoAilment)	InfoRelaMine	1	-1
+(isa Doom-TheGame SpoiltVote)	CateMembMine	0	-1
+(city Armageddon-2007 CityOfPittsburghPA)	InfoRelaMine	1	-1
+(isa GordonACraig MilitaryPerson)	CateMembMine	1	-1
+(isa SocialCriticism Discrimination)	CateMembMine	0	-1
+(city YsgolBrynAlyn Wrexham-UKParliamentConstituency)	InfoRelaMine	1	-1
+(isa PrincessJohannaOfHesseAndByRhine Person)	null	1	-1
+(event Armageddon-2007 Armageddon)	InfoRelaMine	1	-1
+(isa CodeOfVengeance Title)	FirsSentParsMine	0	-1
+(isa CodeOfVengeance Debut)	CateMembMine	0	-1
+(isa ArthurFBurns Chairman-HeadOfGovernment)	CateMembMine	1	-1
+(established YsgolBrynAlyn (YearFn '1958))	InfoRelaMine	1	-1
+(publisher Doom-TheGame ValveSoftware)	InfoRelaMine	1	-1
+(isa Ester (CitizenFn Germany))	CateMembMine	0	-1
+(isa PeterPek PublicSpeaking)	FirsSentParsMine	0	0
+(birthDate ArthurFBurns (MonthFn August (YearFn '27)))	InfoRelaMine	1	-1
+(isa PeterPek MalaysianPerson)	CateMembMine	1	-1
+(isa PeterPek FamousHuman)	CateMembMine	1	-1
+(isa PrincessJohannaOfHesseAndByRhine Daughter)	FirsSentParsMine	0	-1
+(isa NabilElderkin MusicVideoCopy)	FirsSentParsMine	0	-1
+(genls PeterPek ComputerPrintingHardcopy)	CateMembMine	0	-1
+(computingMedia Doom-TheGame VideoGameCartridge)	DBPediAligMine	1	-1
+(isa PeterPek BrandManagement)	CateMembMine	0	0
+(isa BankOfCreditAndCommerceInternational MakingABankDeposit)	FirsSentParsMine	1	-1
+(profession ArthurFBurns (InstanceNamedFn-Ternary "U.S. Ambassador" PersonTypeByOccupation "cca749c8-17af-41d9-96ac-c3dc7f69b07f"))	InfoRelaMine	1	-1
+(isa ArthurFBurns Chairman)	CateMembMine	1	0
+(isa ArthurFBurns JewishPerson)	CateMembMine	1	1
+(populationTotal RockwoodTennessee '5774)	InfoRelaMine	1	-1
+(country CodeOfVengeance UnitedStatesAtTheOlympics)	InfoRelaMine	1	-1
+(related CodeOfVengeance KnightRider-TheTVShow)	InfoRelaMine	1	-1
+(postalCode RockwoodTennessee (YearFn '37854))	DBPediAligMine	1	-1
+(birthPlace SalMaccarone (CountyNamedFn "Lawrence" SouthDakota-State))	InfoRelaMine	1	-1
+(isa Tongue-twister Game)	CateMembMine	1	-1
+(isa GaloisModule G-MusicalNote)	FirsSentParsMine	0	-1
+(genls BankOfCreditAndCommerceInternational Bank-Topographical)	FirsSentParsMine	0	-1
+(genls PeterPek Editor)	CateMembMine	0	-1
+(genls ArthurFBurns UnitedStatesPerson)	CateMembMine	0	-1
+(isa PeterPek AudioSpeaker)	FirsSentParsMine	0	-1
+(genls PeterPek (SubcollectionOfWithRelationFromTypeFn Person boardMembers Organization))	FirsSentParsMine	0	-1
+(isa BrianFlemming (SubcollectionOfWithRelationFromTypeFn Person boardMembers Organization))	FirsSentParsMine	1	-1
+(areaWater RockwoodTennessee '100000.0)	DBPediAligMine	1	-1
+(genls PeterPek ChinesePerson)	CateMembMine	0	-1

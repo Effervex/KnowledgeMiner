@@ -17,10 +17,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -62,6 +64,7 @@ public class WEKAAsserter {
 	private int fp_ = 0; // Predicted disjoint for conjoint
 	private int tn_ = 0; // Predicted conjoint for conjoint
 	private int fn_ = 0; // Predicted conjoint for disjoint
+	private BufferedReader in_;
 	private int count_;
 
 	public WEKAAsserter(File classifierFile, DAGSocket ontology) {
@@ -90,6 +93,8 @@ public class WEKAAsserter {
 				return null;
 			}
 		};
+
+		in_ = new BufferedReader(new InputStreamReader(System.in));
 	}
 
 	/**
@@ -283,7 +288,7 @@ public class WEKAAsserter {
 		ExecutorService executor = Executors.newFixedThreadPool(Runtime
 				.getRuntime().availableProcessors());
 		while ((input = in.readLine()) != null) {
-			if (input.startsWith("@") || input.isEmpty())
+			if (input.startsWith("@") || input.trim().isEmpty())
 				continue;
 			executor.execute(new GeneraliseTask(input, predictionThreshold));
 		}
@@ -562,6 +567,12 @@ public class WEKAAsserter {
 		WEKAAsserter wekaAsserter = new WEKAAsserter(new File(args[0]),
 				ontology);
 
+		// If there is another (numerical) arg
+		if (args.length == 2) {
+			wekaAsserter.randomTest(Integer.parseInt(args[1]), ontology);
+			System.exit(0);
+		}
+
 		String input = null;
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		do {
@@ -578,5 +589,100 @@ public class WEKAAsserter {
 						relation, ontology));
 			}
 		} while (!input.isEmpty());
+	}
+
+	/**
+	 * Test N random pairs of concepts against the ontology's ground truth. A
+	 * pair only counts if it is already known to be disjoint/conjoint.
+	 *
+	 * @param numPairs
+	 *            The number of pairs to test
+	 * @param ontology
+	 *            The ontology access.
+	 * @throws Exception
+	 *             Should something go awry...
+	 */
+	public void randomTest(int numPairs, DAGSocket ontology) throws Exception {
+		int[][] stats = new int[2][2];
+		boolean promptUser = true;
+
+		int count = 0;
+		Set<String> complete = new HashSet<>();
+		while (count < numPairs) {
+			// Get two random collections
+			String aID = getCollection(ontology);
+			String bID = getCollection(ontology);
+			while (bID.equals(aID))
+				bID = getCollection(ontology);
+
+			// Check if completed
+			String ordered = (aID.compareTo(bID) < 0) ? aID + bID : bID + aID;
+			if (complete.contains(ordered))
+				continue;
+			else
+				complete.add(ordered);
+
+			// Check disjoint
+			String result = ontology.command("query", "T ("
+					+ CommonConcepts.DISJOINTWITH.getID() + " " + aID + " "
+					+ bID + ")", false);
+			// if (result.startsWith("0|F")) {
+			boolean actual = false;
+			if (result.startsWith("1|T"))
+				actual = true;
+			else if (result.startsWith("0|F"))
+				actual = false;
+			else if (promptUser) {
+				System.out.println(ontology.dagToText("(disjointWith " + aID
+						+ " " + bID + ")", "Q", true)
+						+ " (T/F)");
+				String input = in_.readLine();
+				if (input.equalsIgnoreCase("T"))
+					actual = true;
+				else if (input.equalsIgnoreCase("F"))
+					actual = false;
+				else
+					continue;
+			} else
+				continue;
+
+			// Disjoint
+			String classification = classify(aID, bID, "IsA", ontology);
+			if (classification.equals("No results found"))
+				continue;
+			boolean classifyB = classification.startsWith("disjoint");
+			String aStr = ontology.findConceptByID(Integer.parseInt(aID));
+			String bStr = ontology.findConceptByID(Integer.parseInt(bID));
+			System.out.println((actual == classifyB) + ": " + classification
+					+ " " + aStr + " " + bStr);
+
+			// Note the stat
+			int x = classification.startsWith("disjoint") ? 0 : 1;
+			int y = actual ? 0 : 1;
+			stats[x][y]++;
+			count++;
+		}
+
+		// Print the stats
+		System.out.println("d\tc <- Classified as:");
+		System.out.println(stats[0][0] + "\t" + stats[1][0] + " d");
+		System.out.println(stats[0][1] + "\t" + stats[1][1] + " c");
+	}
+
+	/**
+	 * Returns a random collection from the ontology.
+	 *
+	 * @param ontology
+	 *            The ontology access.
+	 * @return A random collection
+	 * @throws Exception
+	 */
+	private String getCollection(DAGSocket ontology) throws Exception {
+		while (true) {
+			String randID = ontology.command("randomnode", "", false);
+			if (ontology.evaluate(null, CommonConcepts.ISA.getID(), randID,
+					CommonConcepts.COLLECTION.getID()))
+				return randID;
+		}
 	}
 }
