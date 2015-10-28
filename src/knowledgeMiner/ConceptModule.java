@@ -726,27 +726,25 @@ public class ConceptModule extends MinedInformation implements
 					CommonConcepts.REMOVED).size();
 		}
 
-		if (!KnowledgeMiner.mappingRun_) {
-			boolean noSemantic = KnowledgeMiner.onlyMineLeaf_
-					&& !isCreatedConcept()
-					&& ontology.conceptHasChildren(concept_.getIdentifier());
+		boolean noSemantic = KnowledgeMiner.mappingRun_
+				|| KnowledgeMiner.onlyMineLeaf_ && !isCreatedConcept()
+				&& ontology.conceptHasChildren(concept_.getIdentifier());
 
-			// Perform the removals
-			if (!noSemantic)
-				performAssertionRemoval(ontology);
+		// Perform the removals
+		if (!noSemantic)
+			performAssertionRemoval(ontology);
 
-			// Perform the assertions
-			performAssertionAdding(runIter, ontology, noSemantic);
+		// Perform the assertions
+		performAssertionAdding(runIter, ontology, noSemantic);
 
-			// Perform auto-assertions
-			performAutoAssertions(runIter, ontology, noSemantic);
+		// Perform auto-assertions
+		performAutoAssertions(runIter, ontology, noSemantic);
 
-			// Record rejected assertions
-			if (InteractiveMode.interactiveMode_) {
-				for (DefiniteAssertion rejected : rejectedAssertions_)
-					InteractiveMode.getInstance().evaluateRemoval(rejected,
-							ontology);
-			}
+		// Record rejected assertions
+		if (InteractiveMode.interactiveMode_) {
+			for (DefiniteAssertion rejected : rejectedAssertions_)
+				InteractiveMode.getInstance().evaluateRemoval(rejected,
+						ontology);
 		}
 		if (!significantChange_) {
 			int newNumAssertions = ontology.getAllAssertions(concept_, 2,

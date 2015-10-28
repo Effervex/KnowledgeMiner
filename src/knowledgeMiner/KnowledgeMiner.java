@@ -289,7 +289,8 @@ public class KnowledgeMiner {
 
 	public void mapAllResource(String resourceName, int startIndex, int end,
 			String filename) throws Exception {
-		readInputFile(filename);
+		if (filename != null)
+			readInputFile(filename);
 		seedIndex_ = startIndex;
 		endCount_ = end;
 		startTime_ = System.currentTimeMillis();
