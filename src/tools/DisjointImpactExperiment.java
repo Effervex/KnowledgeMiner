@@ -3,7 +3,7 @@ package tools;
 import graph.core.CommonConcepts;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -33,7 +33,7 @@ public class DisjointImpactExperiment {
 	private DAGSocket ontology_;
 	private File unknownsFile_;
 	private File classifierFile_;
-	private WMISocket wmi_;
+	private WikipediaSocket wmi_;
 	private float threshold_;
 	private static final Pattern IMPACT_GENLS = Pattern
 			.compile("(\\d+\\.\\d+)(?::[^:]+){2}\\|$");
@@ -49,7 +49,7 @@ public class DisjointImpactExperiment {
 			float threshold) {
 		KnowledgeMiner.newInstance("Enwiki_20110722");
 		ontology_ = (DAGSocket) ResourceAccess.requestOntologySocket();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		classifierFile_ = classifier;
 		unknownsFile_ = unknowns;
 		threshold_ = threshold;
@@ -104,7 +104,7 @@ public class DisjointImpactExperiment {
 				int article = KnowledgeMiner.getArtMapping(new OntologyConcept(
 						concepts[i]), ontology_);
 				if (article > 0) {
-					String url = WMISocket.getArticleURLDBpedia(article);
+					String url = WikipediaSocket.getArticleURLDBpedia(article);
 					if (url != null)
 						concepts[i] = url;
 					else

@@ -9,12 +9,12 @@ import java.util.Map;
 
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.DBPediaAccess;
+import io.resources.DBPediaNamespace;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mining.dbpedia.DBMappedConcept;
-import knowledgeMiner.mining.dbpedia.DBPediaAlignmentMiner;
-import knowledgeMiner.mining.dbpedia.DBPediaNamespace;
 
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -29,14 +29,14 @@ import cyc.PrimitiveConcept;
 
 public class DBMappedConceptTest {
 
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 	private static OntologySocket ontology_;
 	private static CycMapper mapper_;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		ontology_ = ResourceAccess.requestOntologySocket();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		KnowledgeMiner km = KnowledgeMiner.newInstance("Enwiki_20110722");
 		mapper_ = km.getMapper();
 	}
@@ -51,13 +51,10 @@ public class DBMappedConceptTest {
 	public void testMapThingPrimitives() {
 		// Primitive mapping
 		OntologyConcept.parsingArgs_ = true;
-		RDFNode queryResult = DBPediaAlignmentMiner.askSingularQuery(
-				"?yearsActive",
-				DBPediaNamespace
-						.format(DBPediaNamespace.DBPEDIA, "Uma_Thurman")
-						+ " "
-						+ DBPediaNamespace.format(DBPediaNamespace.DBPEDIAPROP,
-								"yearsActive") + " ?yearsActive");
+		RDFNode queryResult = DBPediaAccess.selectSingularQuery("?yearsActive",
+				DBPediaNamespace.DBPEDIA.format("Uma_Thurman") + " "
+						+ DBPediaNamespace.DBPEDIAPROP.format("yearsActive")
+						+ " ?yearsActive");
 		DBMappedConcept mappable = new DBMappedConcept(queryResult, false);
 		WeightedSet<OntologyConcept> results = mappable.mapThing(mapper_, wmi_,
 				ontology_);
@@ -70,12 +67,10 @@ public class DBMappedConceptTest {
 				results.contains(new OntologyConcept("YearFn", "'1985")));
 
 		// Primitive mapping (Double)
-		queryResult = DBPediaAlignmentMiner.askSingularQuery(
-				"?gravity",
-				DBPediaNamespace.format(DBPediaNamespace.DBPEDIA, "Quartz")
-						+ " "
-						+ DBPediaNamespace.format(DBPediaNamespace.DBPEDIAPROP,
-								"gravity") + " ?gravity");
+		queryResult = DBPediaAccess.selectSingularQuery("?gravity",
+				DBPediaNamespace.DBPEDIA.format("Quartz") + " "
+						+ DBPediaNamespace.DBPEDIAPROP.format("gravity")
+						+ " ?gravity");
 		mappable = new DBMappedConcept(queryResult, false);
 		results = mappable.mapThing(mapper_, wmi_, ontology_);
 		assertNotNull(results);
@@ -84,13 +79,10 @@ public class DBMappedConceptTest {
 				results.contains(new PrimitiveConcept(2.65)));
 
 		// Date
-		queryResult = DBPediaAlignmentMiner.askSingularQuery(
-				"?birthDate",
-				DBPediaNamespace
-						.format(DBPediaNamespace.DBPEDIA, "Uma_Thurman")
-						+ " "
-						+ DBPediaNamespace.format(DBPediaNamespace.DBPEDIAPROP,
-								"birthDate") + " ?birthDate");
+		queryResult = DBPediaAccess.selectSingularQuery("?birthDate",
+				DBPediaNamespace.DBPEDIA.format("Uma_Thurman") + " "
+						+ DBPediaNamespace.DBPEDIAPROP.format("birthDate")
+						+ " ?birthDate");
 		mappable = new DBMappedConcept(queryResult, false);
 		results = mappable.mapThing(mapper_, wmi_, ontology_);
 		assertNotNull(results);
@@ -99,13 +91,10 @@ public class DBMappedConceptTest {
 				.parseArgument("(DayFn '29 (MonthFn April (YearFn '1970)))")));
 
 		// Ambiguous Date
-		queryResult = DBPediaAlignmentMiner.askSingularQuery(
-				"?birthDate",
-				DBPediaNamespace
-						.format(DBPediaNamespace.DBPEDIA, "Ethan_Hawke")
-						+ " "
-						+ DBPediaNamespace.format(DBPediaNamespace.DBPEDIAPROP,
-								"birthDate") + " ?birthDate");
+		queryResult = DBPediaAccess.selectSingularQuery("?birthDate",
+				DBPediaNamespace.DBPEDIA.format("Ethan_Hawke") + " "
+						+ DBPediaNamespace.DBPEDIAPROP.format("birthDate")
+						+ " ?birthDate");
 		mappable = new DBMappedConcept(queryResult, false);
 		results = mappable.mapThing(mapper_, wmi_, ontology_);
 		assertNotNull(results);
@@ -120,16 +109,13 @@ public class DBMappedConceptTest {
 		OntologyConcept.parsingArgs_ = true;
 		if (ontology_.inOntology("city"))
 			ontology_.removeConcept("city");
-				
-		RDFNode queryResult = DBPediaAlignmentMiner.askSingularQuery(
-				"?predicate",
-				DBPediaNamespace.format(DBPediaNamespace.DBPEDIA, "WWCA")
-						+ " ?predicate "
-						+ DBPediaNamespace.format(DBPediaNamespace.DBPEDIA,
-								"Gary,_Indiana"));
+
+		RDFNode queryResult = DBPediaAccess.selectSingularQuery("?predicate",
+				DBPediaNamespace.DBPEDIA.format("WWCA") + " ?predicate "
+						+ DBPediaNamespace.DBPEDIA.format("Gary,_Indiana"));
 		DBMappedConcept mappable = new DBMappedConcept(queryResult, true);
 		mappable.mapThing(mapper_, wmi_, ontology_);
-		
+
 		assertTrue(ontology_.inOntology("city"));
 	}
 
@@ -137,15 +123,10 @@ public class DBMappedConceptTest {
 	public void testMapThingArticle() {
 		// Primitive mapping
 		OntologyConcept.parsingArgs_ = true;
-		Collection<Map<String, RDFNode>> queryResult = DBPediaAlignmentMiner
-				.askQuery(
-						"?spouse",
-						DBPediaNamespace.format(DBPediaNamespace.DBPEDIA,
-								"Uma_Thurman")
-								+ " "
-								+ DBPediaNamespace.format(
-										DBPediaNamespace.DBPEDIAOWL, "spouse")
-								+ " ?spouse");
+		Collection<Map<String, RDFNode>> queryResult = DBPediaAccess.selectQuery(
+				"?spouse", DBPediaNamespace.DBPEDIA.format("Uma_Thurman") + " "
+						+ DBPediaNamespace.DBPEDIAOWL.format("spouse")
+						+ " ?spouse");
 		assertEquals(queryResult.toString(), queryResult.size(), 2);
 		WeightedSet<OntologyConcept> results = new WeightedSet<>();
 		for (Map<String, RDFNode> varMap : queryResult) {

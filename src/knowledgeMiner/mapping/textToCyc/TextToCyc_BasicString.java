@@ -4,7 +4,7 @@
 package knowledgeMiner.mapping.textToCyc;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.regex.Matcher;
 
@@ -35,7 +35,7 @@ public class TextToCyc_BasicString extends MappingHeuristic<String, OntologyConc
 
 	@Override
 	public WeightedSet<OntologyConcept> mapSourceInternal(String source,
-			WMISocket wmi, OntologySocket cyc) {
+			WikipediaSocket wmi, OntologySocket cyc) {
 		LoggerFactory.getLogger(getClass()).trace(source);
 		WeightedSet<OntologyConcept> result = new WeightedSet<>();
 		if (source == null || source.isEmpty())

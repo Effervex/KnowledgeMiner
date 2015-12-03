@@ -6,7 +6,7 @@ package knowledgeMiner.mapping.cycToWiki;
 import graph.core.CommonConcepts;
 import graph.inference.CommonQuery;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,7 +48,7 @@ public class CycToWiki_ContextRelatedSynonyms extends
 
 	@Override
 	protected WeightedSet<Integer> mapSourceInternal(OntologyConcept cycTerm,
-			WMISocket wmi, OntologySocket cyc) throws IOException {
+			WikipediaSocket wmi, OntologySocket cyc) throws IOException {
 		// Progressively gather context information, starting with upper level
 		// stuff, then working down.
 		WeightedSet<Integer> mappings = synonymMapper_.mapSourceToTarget(

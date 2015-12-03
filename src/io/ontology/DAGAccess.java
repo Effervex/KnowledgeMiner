@@ -21,6 +21,17 @@ public class DAGAccess extends OntologyAccess {
 		}
 	}
 
+	public DAGAccess() throws UnknownHostException, IOException {
+		super();
+		cacheMapActive_ = false;
+		DAGSocket dag = (DAGSocket) requestSocket();
+		if (dag != null) {
+			for (CommonConcepts cc : CommonConcepts.values()) {
+				cc.setID(dag.getConceptID(cc.getNodeName()));
+			}
+		}
+	}
+
 	@Override
 	protected DAGSocket createSocket(KMAccess<OntologySocket> kmAccess)
 			throws Exception {

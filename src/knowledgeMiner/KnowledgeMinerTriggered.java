@@ -3,7 +3,7 @@ package knowledgeMiner;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -123,7 +123,7 @@ public class KnowledgeMinerTriggered {
 		@Override
 		public void run() {
 			OntologySocket ontology = ResourceAccess.requestOntologySocket();
-			WMISocket wmi = ResourceAccess.requestWMISocket();
+			WikipediaSocket wmi = ResourceAccess.requestWikipediaSocket();
 
 			// If the concept is mined, skip it
 			int iteration = 0;
@@ -182,7 +182,7 @@ public class KnowledgeMinerTriggered {
 		 * @return The linked modules prepped for processing.
 		 */
 		private Collection<ConceptModule> notifyLinkedConcepts(
-				ConceptModule cm, OntologySocket ontology, WMISocket wmi) {
+				ConceptModule cm, OntologySocket ontology, WikipediaSocket wmi) {
 			Collection<ConceptModule> linked = new HashSet<>();
 			// Get linked concepts
 			for (DefiniteAssertion da : cm.getConcreteAssertions()) {

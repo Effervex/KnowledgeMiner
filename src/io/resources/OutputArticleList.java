@@ -13,15 +13,15 @@ public class OutputArticleList {
 		if (args.length >= 2 && args[0].equals("-i"))
 			minInLink = Integer.parseInt(args[1]);
 		ResourceAccess.newInstance();
-		WMISocket wmi = ResourceAccess.requestWMISocket();
+		WikipediaSocket wmi = ResourceAccess.requestWikipediaSocket();
 		BufferedWriter out = new BufferedWriter(new FileWriter(new File(
 				"articleList.txt")));
 		int index = -1;
 		do {
 			index = wmi.getNextArticle(index);
 			String type = wmi.getPageType(index);
-			if (type != null && type.equals(WMISocket.TYPE_ARTICLE)
-					|| type.equals(WMISocket.TYPE_DISAMBIGUATION)) {
+			if (type != null && type.equals(WikipediaSocket.TYPE_ARTICLE)
+					|| type.equals(WikipediaSocket.TYPE_DISAMBIGUATION)) {
 				int numInLinks = wmi.getInLinks(index).size();
 				if (numInLinks >= minInLink)
 					out.write(index + "\t" + numInLinks + "\n");

@@ -5,7 +5,7 @@ package knowledgeMiner.mapping.textToCyc;
 
 import graph.module.NLPToStringModule;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.mapping.MappingPreProcessor;
 
 /**
@@ -15,7 +15,7 @@ import knowledgeMiner.mapping.MappingPreProcessor;
 public class SplitCamelCasePreProcessor extends MappingPreProcessor<String> {
 
 	@Override
-	public String processSingle(String input, WMISocket wmi, OntologySocket cyc) {
+	public String processSingle(String input, WikipediaSocket wmi, OntologySocket cyc) {
 		return NLPToStringModule.camelCaseToNormal(input);
 	}
 }

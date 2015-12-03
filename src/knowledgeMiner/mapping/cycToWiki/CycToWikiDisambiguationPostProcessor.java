@@ -4,7 +4,7 @@
 package knowledgeMiner.mapping.cycToWiki;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.regex.Matcher;
 
@@ -24,7 +24,7 @@ public class CycToWikiDisambiguationPostProcessor extends
 		MappingPostProcessor<Integer> {
 	@Override
 	public WeightedSet<Integer> process(WeightedSet<Integer> collection,
-			WMISocket wmi, OntologySocket cyc) {
+			WikipediaSocket wmi, OntologySocket cyc) {
 		if (collection.isEmpty())
 			return collection;
 
@@ -41,7 +41,7 @@ public class CycToWikiDisambiguationPostProcessor extends
 				int artID = pages[index];
 				double weight = collection.getWeight(artID);
 				// If a disambiguation article
-				if (pageType.equals(WMISocket.TYPE_DISAMBIGUATION)) {
+				if (pageType.equals(WikipediaSocket.TYPE_DISAMBIGUATION)) {
 					// Use first links in bullet points.
 					MultiMap<String, String> bullets = BulletListParser
 							.parseBulletList(wmi.getMarkup(artID));

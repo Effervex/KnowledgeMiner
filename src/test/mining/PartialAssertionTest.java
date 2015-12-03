@@ -5,7 +5,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.DBPediaAccess;
+import io.resources.DBPediaNamespace;
+import io.resources.WikipediaSocket;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,8 +18,6 @@ import knowledgeMiner.mining.AssertionQueue;
 import knowledgeMiner.mining.PartialAssertion;
 import knowledgeMiner.mining.TextMappedConcept;
 import knowledgeMiner.mining.dbpedia.DBMappedConcept;
-import knowledgeMiner.mining.dbpedia.DBPediaAlignmentMiner;
-import knowledgeMiner.mining.dbpedia.DBPediaNamespace;
 
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -32,12 +32,12 @@ import cyc.OntologyConcept;
 public class PartialAssertionTest {
 
 	private static CycMapper mapper_;
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 	private static OntologySocket ontology_;
 
 	@BeforeClass
 	public static void setUp() throws Exception {
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		ontology_ = ResourceAccess.requestOntologySocket();
 		mapper_ = new CycMapper();
 		mapper_.initialise();
@@ -97,10 +97,10 @@ public class PartialAssertionTest {
 
 		// Test birthPlaces
 		DBMappedConcept placeBirthPred = new DBMappedConcept(
-				DBPediaAlignmentMiner.askSingularQuery(
-						"?pob",
-						DBPediaNamespace.format(DBPediaNamespace.DBPEDIA,
-								"Uma_Thurman") + " ?pob \"Boston, Massachusetts, U.S.\"@en"), true);
+				DBPediaAccess.selectSingularQuery("?pob",
+						DBPediaNamespace.DBPEDIA.format("Uma_Thurman")
+								+ " ?pob \"Boston, Massachusetts, U.S.\"@en"),
+				true);
 		pa = new PartialAssertion(placeBirthPred, null, coreConcept,
 				new TextMappedConcept("Boston, Massachusetts", true, true));
 		aq = pa.expand(excluded, mapper_, ontology_, wmi_);

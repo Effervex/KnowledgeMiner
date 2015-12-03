@@ -4,7 +4,7 @@
 package knowledgeMiner.mining.wikipedia;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,7 +56,7 @@ public class CategoryChildMiner extends WikipediaArticleMiningHeuristic {
 	 *             Should something go awry...
 	 */
 	private void findChildArticles(String articleTitle,
-			int articleID, WMISocket wmi, MinedInformation info)
+			int articleID, WikipediaSocket wmi, MinedInformation info)
 			throws IOException {
 		// Already a category, use this
 		String type = wmi.getPageType(articleID);
@@ -85,8 +85,8 @@ public class CategoryChildMiner extends WikipediaArticleMiningHeuristic {
 	 *             Should something go awry...
 	 */
 	protected void addChildrenFromCategory(int categoryID,
-			MinedInformation info, WMISocket wmi) throws IOException {
-		Collection<Integer> childArts = WMISocket.union(wmi
+			MinedInformation info, WikipediaSocket wmi) throws IOException {
+		Collection<Integer> childArts = WikipediaSocket.union(wmi
 				.getChildArticles(categoryID));
 		HeuristicProvenance provenance = new HeuristicProvenance(this,
 				categoryID + "");
@@ -110,12 +110,12 @@ public class CategoryChildMiner extends WikipediaArticleMiningHeuristic {
 	 * @throws IOException
 	 */
 	protected Collection<Integer> getTextRelevantCategories(
-			Collection<Integer> categories, String articleTitle, WMISocket wmi)
+			Collection<Integer> categories, String articleTitle, WikipediaSocket wmi)
 			throws IOException {
 		Collection<Integer> relevant = new ArrayList<>();
 		Integer[] categoryArray = categories.toArray(new Integer[categories
 				.size()]);
-		List<String> categoryNames = wmi.getPageTitle(true, categoryArray);
+		List<String> categoryNames = wmi.getArtTitle(true, categoryArray);
 		int i = 0;
 		for (String categoryName : categoryNames) {
 			boolean foundString = UtilityMethods.findSubString(articleTitle,
@@ -131,11 +131,11 @@ public class CategoryChildMiner extends WikipediaArticleMiningHeuristic {
 
 	@Override
 	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket cyc)
+			int informationRequested, WikipediaSocket wmi, OntologySocket cyc)
 			throws Exception {
 		int article = info.getArticle();
 		// Change everything to a single case
-		String articleTitle = wmi.getPageTitle(article, false).toLowerCase();
+		String articleTitle = wmi.getArtTitle(article, false).toLowerCase();
 		if (informationRequested(informationRequested,
 				InformationType.TAXONOMIC)) {
 			findChildArticles(articleTitle, article, wmi, info);
@@ -162,7 +162,7 @@ public class CategoryChildMiner extends WikipediaArticleMiningHeuristic {
 	 * @throws IOException
 	 */
 	public Collection<Integer> findRelevantCategories(String articleTitle,
-			int articleID, WMISocket wmi) throws IOException {
+			int articleID, WikipediaSocket wmi) throws IOException {
 		// Get categories for article.
 		Collection<Integer> categories = new ArrayList<>();
 

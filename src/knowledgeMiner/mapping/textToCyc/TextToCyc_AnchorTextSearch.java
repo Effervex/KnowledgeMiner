@@ -5,7 +5,7 @@ package knowledgeMiner.mapping.textToCyc;
 
 import graph.module.NLPToSyntaxModule;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.Collection;
 import java.util.regex.Matcher;
@@ -38,7 +38,7 @@ public class TextToCyc_AnchorTextSearch extends
 
 	@Override
 	protected WeightedSet<OntologyConcept> mapSourceInternal(String source,
-			WMISocket wmi, OntologySocket cyc) throws Exception {
+			WikipediaSocket wmi, OntologySocket cyc) throws Exception {
 		LoggerFactory.getLogger(getClass()).trace(source);
 		WeightedSet<OntologyConcept> results = new WeightedSet<>();
 		if (source == null || source.isEmpty())

@@ -11,7 +11,7 @@
 package knowledgeMiner.mining.wikipedia;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.Collection;
 import java.util.regex.Matcher;
@@ -51,13 +51,13 @@ public class CategoryMembershipMiner extends WikipediaArticleMiningHeuristic {
 
 	@Override
 	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket ontology)
+			int informationRequested, WikipediaSocket wmi, OntologySocket ontology)
 			throws Exception {
 		int artID = info.getArticle();
-		String artTitle = wmi.getPageTitle(artID, true);
+		String artTitle = wmi.getArtTitle(artID, true);
 		Collection<Integer> categories = wmi.getArticleCategories(artID);
 		for (Integer category : categories) {
-			String categoryTitle = wmi.getPageTitle(category, true);
+			String categoryTitle = wmi.getArtTitle(category, true);
 			// Remove the word 'stub(s)'
 			categoryTitle = categoryTitle.replaceAll(" stubs?", "");
 			if (categoryTitle.equals(artTitle))
@@ -97,7 +97,7 @@ public class CategoryMembershipMiner extends WikipediaArticleMiningHeuristic {
 	 *             Should something go awry.
 	 */
 	private boolean parseSpecial(String categoryTitle, MinedInformation info,
-			OntologySocket ontology, WMISocket wmi)
+			OntologySocket ontology, WikipediaSocket wmi)
 			throws IllegalAccessException {
 		// Births
 		PartialAssertion assertion = createDatedAssertion(categoryTitle, info,
@@ -120,7 +120,7 @@ public class CategoryMembershipMiner extends WikipediaArticleMiningHeuristic {
 	@SuppressWarnings("unchecked")
 	private PartialAssertion createDatedAssertion(String categoryTitle,
 			MinedInformation info, Pattern titlePattern,
-			OntologyConcept predicate, OntologySocket ontology, WMISocket wmi)
+			OntologyConcept predicate, OntologySocket ontology, WikipediaSocket wmi)
 			throws IllegalAccessException {
 		Matcher m = titlePattern.matcher(categoryTitle);
 		if (m.matches()) {

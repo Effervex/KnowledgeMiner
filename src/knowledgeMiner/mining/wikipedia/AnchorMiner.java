@@ -4,7 +4,7 @@
 package knowledgeMiner.mining.wikipedia;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mining.CycMiner;
@@ -39,7 +39,7 @@ public class AnchorMiner extends WikipediaArticleMiningHeuristic {
 
 	@Override
 	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket cyc)
+			int informationRequested, WikipediaSocket wmi, OntologySocket cyc)
 			throws Exception {
 		WeightedSet<String> labels = wmi.getLabels(info.getArticle());
 		labels.normaliseWeightTo1(KnowledgeMiner.CUTOFF_THRESHOLD);

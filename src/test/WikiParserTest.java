@@ -8,7 +8,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import graph.module.NLPToSyntaxModule;
 import io.ResourceAccess;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.ArrayList;
 
@@ -53,7 +53,7 @@ public class WikiParserTest {
 
 	@Test
 	public void testConvertToASCII() throws Exception {
-		WMISocket wmi = ResourceAccess.requestWMISocket();
+		WikipediaSocket wmi = ResourceAccess.requestWikipediaSocket();
 
 		// Special characters
 		String first = wmi.getFirstSentence(wmi

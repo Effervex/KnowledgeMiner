@@ -8,7 +8,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.Collection;
 
@@ -26,7 +26,7 @@ import cyc.OntologyConcept;
 public class CycMapperTest {
 	/** The mapper under test. */
 	private static CycMapper mapper_;
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 	private static OntologySocket cyc_;
 
 	@After
@@ -318,7 +318,7 @@ public class CycMapperTest {
 	@BeforeClass
 	public static void setUp() throws Exception {
 		cyc_ = ResourceAccess.requestOntologySocket();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		mapper_ = new CycMapper();
 		mapper_.initialise();
 		KnowledgeMiner.getInstance();

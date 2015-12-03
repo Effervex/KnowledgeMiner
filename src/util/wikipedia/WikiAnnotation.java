@@ -3,7 +3,7 @@
  ******************************************************************************/
 package util.wikipedia;
 
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import util.text.Annotation;
 
 /**
@@ -14,7 +14,7 @@ import util.text.Annotation;
  */
 public class WikiAnnotation extends Annotation {
 	private String articleName_;
-	private WMISocket wmi_;
+	private WikipediaSocket wmi_;
 
 	/**
 	 * Constructor for a new WikiAnnotation
@@ -29,7 +29,7 @@ public class WikiAnnotation extends Annotation {
 	 *            The WMI Access.
 	 */
 	public WikiAnnotation(String text, String articleName, double weight,
-			WMISocket wmi) {
+			WikipediaSocket wmi) {
 		super(text, weight);
 		articleName_ = articleName;
 		wmi_ = wmi;
@@ -45,7 +45,7 @@ public class WikiAnnotation extends Annotation {
 	 * @param wmi
 	 *            The WMI Access.
 	 */
-	public WikiAnnotation(WikiAnnotation annotation, int start, WMISocket wmi) {
+	public WikiAnnotation(WikiAnnotation annotation, int start, WikipediaSocket wmi) {
 		super(annotation, start);
 		articleName_ = annotation.articleName_;
 		wmi_ = wmi;
@@ -72,7 +72,7 @@ public class WikiAnnotation extends Annotation {
 	 *            The WMI Access.
 	 */
 	public WikiAnnotation(String text, String label, int start, int end,
-			double weight, WMISocket wmi) {
+			double weight, WikipediaSocket wmi) {
 		super(text, start, end, weight);
 		articleName_ = label;
 		wmi_ = wmi;

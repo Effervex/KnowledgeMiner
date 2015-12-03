@@ -4,7 +4,7 @@
 package knowledgeMiner.mapping;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,7 +30,7 @@ public abstract class MappingPreProcessor<Source> {
 	 *            The Cyc access.
 	 * @return A weighted set of output value(s).
 	 */
-	public Collection<Source> process(Source input, WMISocket wmi,
+	public Collection<Source> process(Source input, WikipediaSocket wmi,
 			OntologySocket ontology) {
 		LoggerFactory.getLogger(getClass()).trace("Preprocessing {}", input);
 		return wrapSet(processSingle(input, wmi, ontology));
@@ -47,7 +47,7 @@ public abstract class MappingPreProcessor<Source> {
 	 *            The ontology access.
 	 * @return The single output.
 	 */
-	public abstract Source processSingle(Source input, WMISocket wmi,
+	public abstract Source processSingle(Source input, WikipediaSocket wmi,
 			OntologySocket ontology);
 
 	/**

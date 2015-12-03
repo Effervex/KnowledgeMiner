@@ -8,7 +8,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 
@@ -28,7 +28,7 @@ import cyc.CycConstants;
  * @author Sam Sarjant
  */
 public class BulletListParserTest {
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 
 	/**
 	 * 
@@ -36,7 +36,7 @@ public class BulletListParserTest {
 	 */
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		CycMapper mapper = new CycMapper();
 		mapper.initialise();
 	}
@@ -48,7 +48,7 @@ public class BulletListParserTest {
 
 	/**
 	 * Test method for
-	 * {@link knowledgeMiner.mining.wikipedia.WikipediaArticleMiningHeuristic#mineArticle(ConceptModule, int, WMISocket, CycSocket)}
+	 * {@link knowledgeMiner.mining.wikipedia.WikipediaArticleMiningHeuristic#mineArticle(ConceptModule, int, WikipediaSocket, CycSocket)}
 	 * .
 	 * 
 	 * @throws IOException

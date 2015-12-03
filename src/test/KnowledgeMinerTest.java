@@ -6,7 +6,7 @@ package test;
 import static org.junit.Assert.*;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 
@@ -26,7 +26,7 @@ import cyc.OntologyConcept;
  */
 public class KnowledgeMinerTest {
 	private static KnowledgeMiner km_;
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 	private static OntologySocket ontology_;
 
 	/**
@@ -36,7 +36,7 @@ public class KnowledgeMinerTest {
 	@BeforeClass
 	public static void setUp() throws Exception {
 		km_ = KnowledgeMiner.getInstance();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		ontology_ = ResourceAccess.requestOntologySocket();
 		FirstSentenceMiner.wikifyText_ = true;
 	}

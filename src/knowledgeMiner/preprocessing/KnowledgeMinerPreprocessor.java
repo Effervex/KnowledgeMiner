@@ -14,7 +14,7 @@ import graph.core.CommonConcepts;
 import graph.core.DirectedAcyclicGraph;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -127,8 +127,8 @@ public class KnowledgeMinerPreprocessor {
 		// Set up the iterator
 		OntologySocket ontology = (loopOntology) ? ResourceAccess
 				.requestOntologySocket() : null;
-		WMISocket wmi = (loopOntology) ? null : ResourceAccess
-				.requestWMISocket();
+		WikipediaSocket wmi = (loopOntology) ? null : ResourceAccess
+				.requestWikipediaSocket();
 
 		// Set up an executor and add all concepts to the execution queue.
 		ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors
@@ -173,8 +173,8 @@ public class KnowledgeMinerPreprocessor {
 					String type = wmi.getPageType(nextID);
 					// If it's an article or disambiguation, process it.
 					if (type != null
-							&& (type.equals(WMISocket.TYPE_ARTICLE) || type
-									.equals(WMISocket.TYPE_DISAMBIGUATION))) {
+							&& (type.equals(WikipediaSocket.TYPE_ARTICLE) || type
+									.equals(WikipediaSocket.TYPE_DISAMBIGUATION))) {
 						PrecomputationTask preTask = new PrecomputationTask(
 								new ConceptModule(id), heuristics, taskType,
 								this);

@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -415,7 +414,7 @@ public class WEKAAsserter {
 					+ "(disjointWith " + conceptA + " " + conceptB + ")";
 
 			// First check if they're already disjoint
-			String result = ontology_.query(false,
+			String result = ontology_.query(true,
 					CommonConcepts.DISJOINTWITH.getID(), conceptA, conceptB);
 			logger_.trace("Disjoint {}", result);
 			int truthState = 0;
@@ -486,6 +485,10 @@ public class WEKAAsserter {
 
 		private void assertDisjoint(String conceptA, String conceptB,
 				int depth, String provenance) {
+			// Remove delimiting characters
+			conceptA = conceptA.replaceAll("\\\\'", "'");
+			conceptB = conceptB.replaceAll("\\\\'", "'");
+			
 			int id = ontology_.assertToOntology(
 					PairwiseDisjointExperimenter.EXPERIMENT_MICROTHEORY,
 					CommonConcepts.DISJOINTWITH.getID(), conceptA, conceptB);

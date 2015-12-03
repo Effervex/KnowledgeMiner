@@ -13,7 +13,7 @@ package knowledgeMiner.mining;
 import io.IOManager;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -95,7 +95,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	private String disambiguateTree(Object parse, String[] predicateStrs,
 			MappableConcept focusConcept, SortedMap<String, String> anchors,
 			MiningHeuristic heuristic, Collection<PartialAssertion> results,
-			WMISocket wmi, OntologySocket ontology) throws Exception {
+			WikipediaSocket wmi, OntologySocket ontology) throws Exception {
 		if (predicateStrs == null) {
 			predicateStrs = new String[1];
 			predicateStrs[0] = "";
@@ -346,7 +346,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 
 	@Override
 	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket ontology)
+			int informationRequested, WikipediaSocket wmi, OntologySocket ontology)
 			throws Exception {
 	}
 
@@ -404,12 +404,12 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 	 *             Should something go awry...
 	 */
 	public Collection<PartialAssertion> extractAssertions(String sentence,
-			MappableConcept focusConcept, boolean wikifyText, WMISocket wmi,
+			MappableConcept focusConcept, boolean wikifyText, WikipediaSocket wmi,
 			OntologySocket cyc, MiningHeuristic heuristic) throws Exception {
 		logger_.trace("mineSentence: " + sentence);
 
 		if (wikifyText)
-			sentence = wmi.annotate(sentence, 0, false);
+			sentence = wmi.annotate(sentence, 0, false, null);
 
 		Map<String, Double> anchorWeights = new HashMap<>();
 		SortedMap<String, String> anchors = locateAnchors(sentence,
@@ -480,7 +480,7 @@ public class SentenceParserHeuristic extends MiningHeuristic {
 		CycMapper mapper = new CycMapper();
 		CycMiner miner = new CycMiner(null, mapper);
 		SentenceParserHeuristic sph = new SentenceParserHeuristic(mapper, miner);
-		WMISocket wmi = ResourceAccess.requestWMISocket();
+		WikipediaSocket wmi = ResourceAccess.requestWikipediaSocket();
 		OntologySocket cyc = ResourceAccess.requestOntologySocket();
 
 		String input = "";

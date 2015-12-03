@@ -13,7 +13,7 @@ package knowledgeMiner;
 import graph.core.CommonConcepts;
 import io.ontology.DAGSocket;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -62,7 +62,7 @@ public class DisjointnessDisambiguator {
 	private float disambiguatedWeight_ = 0;
 
 	public DisjointnessDisambiguator(Collection<PartialAssertion> assertions,
-			MappableConcept coreConcept, OntologySocket ontology, WMISocket wmi) {
+			MappableConcept coreConcept, OntologySocket ontology, WikipediaSocket wmi) {
 		coreAssertionGrid_ = new AssertionGrid(assertions, coreConcept,
 				ontology, wmi);
 		// System.out.println(coreAssertionGrid_);

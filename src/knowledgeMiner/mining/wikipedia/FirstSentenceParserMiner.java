@@ -5,7 +5,7 @@ package knowledgeMiner.mining.wikipedia;
 
 import graph.module.NLPToSyntaxModule;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.InformationType;
@@ -34,12 +34,12 @@ public class FirstSentenceParserMiner extends WikipediaArticleMiningHeuristic {
 
 	@Override
 	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket ontology)
+			int informationRequested, WikipediaSocket wmi, OntologySocket ontology)
 			throws Exception {
 		LoggerFactory.getLogger(CycMiner.class).trace(
 				"firstSentenceParserMiner: {}", info.getArticle());
 		int article = info.getArticle();
-		String title = wmi.getPageTitle(article, false);
+		String title = wmi.getArtTitle(article, false);
 		// Do not mine lists
 		if (WikiParser.isAListOf(title))
 			return;

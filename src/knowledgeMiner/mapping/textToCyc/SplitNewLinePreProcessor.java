@@ -4,7 +4,7 @@
 package knowledgeMiner.mapping.textToCyc;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,7 +20,7 @@ import util.wikipedia.WikiParser;
 public class SplitNewLinePreProcessor extends MappingPreProcessor<String> {
 
 	@Override
-	public Collection<String> process(String input, WMISocket wmi,
+	public Collection<String> process(String input, WikipediaSocket wmi,
 			OntologySocket cyc) {
 		// Split on commas and trim
 		ArrayList<String> split = UtilityMethods.split(input, '\n');
@@ -31,7 +31,7 @@ public class SplitNewLinePreProcessor extends MappingPreProcessor<String> {
 	}
 
 	@Override
-	public String processSingle(String input, WMISocket wmi,
+	public String processSingle(String input, WikipediaSocket wmi,
 			OntologySocket ontology) {
 		return input;
 	}

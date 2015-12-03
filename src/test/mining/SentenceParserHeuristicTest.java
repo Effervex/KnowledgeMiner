@@ -3,7 +3,7 @@ package test.mining;
 import static org.junit.Assert.*;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.Collection;
 import java.util.SortedMap;
@@ -24,13 +24,13 @@ import cyc.MappableConcept;
 
 public class SentenceParserHeuristicTest {
 	private static OntologySocket ontology_;
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 	private static SentenceParserHeuristic sut_;
 
 	@BeforeClass
 	public static void setUp() throws Exception {
 		ontology_ = ResourceAccess.requestOntologySocket();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		KnowledgeMiner km = KnowledgeMiner.newInstance("Enwiki_20110722");
 		sut_ = new SentenceParserHeuristic(km.getMapper(), km.getMiner());
 	}

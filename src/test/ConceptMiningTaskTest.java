@@ -6,7 +6,7 @@ package test;
 import static org.junit.Assert.assertEquals;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 
@@ -25,7 +25,7 @@ import cyc.OntologyConcept;
  * @author Sam Sarjant
  */
 public class ConceptMiningTaskTest {
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 
 	/**
 	 * 
@@ -34,7 +34,7 @@ public class ConceptMiningTaskTest {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		KnowledgeMiner.getInstance();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 	}
 
 	/**

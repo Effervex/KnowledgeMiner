@@ -4,7 +4,7 @@
 package knowledgeMiner.mapping;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -113,7 +113,7 @@ public class MappingSuite<Source, Target> {
 	 */
 	public WeightedSet<Target> mapSourceToTarget(
 			Source source,
-			WMISocket wmi,
+			WikipediaSocket wmi,
 			OntologySocket ontology,
 			Collection<Class<? extends MappingHeuristic<Source, Target>>> disabledHeuristics) {
 		HierarchicalWeightedSet<Target> mappings = new HierarchicalWeightedSet<>();
@@ -124,7 +124,7 @@ public class MappingSuite<Source, Target> {
 
 	public HierarchicalWeightedSet<Target> mapSourcesToTargets(
 			HierarchicalWeightedSet<Source> sources,
-			WMISocket wmi,
+			WikipediaSocket wmi,
 			OntologySocket ontology,
 			Collection<Class<? extends MappingHeuristic<Source, Target>>> disabledHeuristics) {
 		HierarchicalWeightedSet<Target> mapping = new HierarchicalWeightedSet<>();
@@ -144,7 +144,7 @@ public class MappingSuite<Source, Target> {
 	}
 
 	public HierarchicalWeightedSet<Source> preProcessSource(Source source,
-			WMISocket wmi, OntologySocket ontology) {
+			WikipediaSocket wmi, OntologySocket ontology) {
 		HierarchicalWeightedSet<Source> result = new HierarchicalWeightedSet<>();
 		if (preProcessFilter_ != null && !preProcessFilter_.apply(source))
 			return result;
@@ -191,7 +191,7 @@ public class MappingSuite<Source, Target> {
 	 */
 	private HierarchicalWeightedSet<Target> mapSourceToTargetInternal(
 			Source source,
-			WMISocket wmi,
+			WikipediaSocket wmi,
 			OntologySocket ontology,
 			Collection<Class<? extends MappingHeuristic<Source, Target>>> disabledHeuristics) {
 		HierarchicalWeightedSet<Target> mappings = new HierarchicalWeightedSet<>();
@@ -228,7 +228,7 @@ public class MappingSuite<Source, Target> {
 	}
 
 	public HierarchicalWeightedSet<Target> postProcess(
-			HierarchicalWeightedSet<Target> mappings, WMISocket wmi,
+			HierarchicalWeightedSet<Target> mappings, WikipediaSocket wmi,
 			OntologySocket ontology) {
 		for (MappingPostProcessor<Target> pp : postProcessors_) {
 			mappings = new HierarchicalWeightedSet<Target>(pp.process(mappings,

@@ -3,7 +3,7 @@
  ******************************************************************************/
 package knowledgeMiner.mining.wikipedia;
 
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -33,7 +33,7 @@ public class SubCategoryMiner extends CategoryChildMiner {
 
 	@Override
 	public Collection<Integer> findRelevantCategories(String articleTitle,
-			int articleID, WMISocket wmi)
+			int articleID, WikipediaSocket wmi)
 			throws IOException {
 		Collection<Integer> rootCategories = super.findRelevantCategories(
 				articleTitle, articleID, wmi);
@@ -42,7 +42,7 @@ public class SubCategoryMiner extends CategoryChildMiner {
 		Collection<Integer> foundCategories = new HashSet<>();
 		Collection<Integer> prevCategories = rootCategories;
 		while (!prevCategories.isEmpty()) {
-			prevCategories = WMISocket.union(wmi
+			prevCategories = WikipediaSocket.union(wmi
 					.getChildCategories(prevCategories
 							.toArray(new Integer[prevCategories.size()])));
 			prevCategories = getTextRelevantCategories(prevCategories,

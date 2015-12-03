@@ -2,7 +2,7 @@ package knowledgeMiner.mining.wikipedia;
 
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 
@@ -33,7 +33,7 @@ public class WikipediaMappedConcept extends MappableConcept {
 
 	@Override
 	protected WeightedSet<OntologyConcept> mapThingInternal(CycMapper mapper,
-			WMISocket wmi, OntologySocket ontology) {
+			WikipediaSocket wmi, OntologySocket ontology) {
 		// Get the mapped article (if one exists).
 		WeightedSet<OntologyConcept> mapping = new WeightedSet<>(1);
 		OntologyConcept concept = KnowledgeMiner.getConceptMapping(
@@ -52,7 +52,7 @@ public class WikipediaMappedConcept extends MappableConcept {
 		try {
 			return PREFIX
 					+ "('"
-					+ ResourceAccess.requestWMISocket().getPageTitle(
+					+ ResourceAccess.requestWikipediaSocket().getArtTitle(
 							(int) mappableThing_, true) + "')";
 		} catch (IOException e) {
 			e.printStackTrace();

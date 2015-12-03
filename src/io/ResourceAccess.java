@@ -7,7 +7,8 @@ import io.ontology.DAGAccess;
 import io.ontology.OntologyAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMIAccess;
-import io.resources.WMISocket;
+import io.resources.WikipediaAccess;
+import io.resources.WikipediaSocket;
 
 /**
  * A singleton class for accessing the external resources.
@@ -19,19 +20,25 @@ public final class ResourceAccess {
 	private static ResourceAccess instance_;
 
 	/** The WMI access point. */
-	private WMIAccess wmiAccess_;
+	private WikipediaAccess wikiAccess_;
 
 	/** The Cyc access point. */
 	private OntologyAccess cycAccess_;
 
 	private ResourceAccess(int dagPort) {
+		this(dagPort, DAGAccess.class, WMIAccess.class);
+	}
+
+	private ResourceAccess(int dagPort,
+			Class<? extends OntologyAccess> ontologyAccess,
+			Class<? extends WikipediaAccess> wikipediaAccess) {
 		try {
-			wmiAccess_ = new WMIAccess(-1);
+			wikiAccess_ = wikipediaAccess.newInstance();
 		} catch (Exception e) {
 			System.err.println("Could not establish connection to WMI!");
 		}
 		try {
-			cycAccess_ = new DAGAccess(dagPort);
+			cycAccess_ = ontologyAccess.newInstance();
 		} catch (Exception e) {
 			System.err.println("Could not establish connection to ontology!");
 		}
@@ -43,10 +50,10 @@ public final class ResourceAccess {
 		return instance_.cycAccess_.requestSocket();
 	}
 
-	public static WMISocket requestWMISocket() {
+	public static WikipediaSocket requestWikipediaSocket() {
 		if (instance_ == null)
 			newInstance();
-		return instance_.wmiAccess_.requestSocket();
+		return instance_.wikiAccess_.requestSocket();
 	}
 
 	public static void recreateOntologySocket(OntologySocket socket) {
@@ -54,9 +61,9 @@ public final class ResourceAccess {
 			instance_.cycAccess_.recreateSocket(socket);
 	}
 
-	public static void recreateWMISocket(WMISocket socket) {
+	public static void recreateWikipediaSocket(WikipediaSocket socket) {
 		if (instance_ != null)
-			instance_.wmiAccess_.recreateSocket(socket);
+			instance_.wikiAccess_.recreateSocket(socket);
 	}
 
 	public static void newInstance() {
@@ -68,5 +75,12 @@ public final class ResourceAccess {
 			return;
 		}
 		instance_ = new ResourceAccess(port);
+	}
+
+	public static void newInstance(Class<? extends OntologyAccess> ontologyAccess,
+			Class<? extends WikipediaAccess> wikipediaAccess) {
+		if (instance_ != null)
+			return;
+		instance_ = new ResourceAccess(-1, ontologyAccess, wikipediaAccess);
 	}
 }

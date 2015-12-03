@@ -5,7 +5,7 @@ package knowledgeMiner.mapping.textToCyc;
 
 import graph.core.PrimitiveNode;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.MappingHeuristic;
 
@@ -33,7 +33,7 @@ public class TextToCyc_NumericParse extends
 
 	@Override
 	public WeightedSet<OntologyConcept> mapSourceInternal(String source,
-			WMISocket wmi, OntologySocket cyc) {
+			WikipediaSocket wmi, OntologySocket cyc) {
 		LoggerFactory.getLogger(getClass()).trace(source);
 		WeightedSet<OntologyConcept> result = new WeightedSet<>();
 		if (source == null || source.isEmpty())

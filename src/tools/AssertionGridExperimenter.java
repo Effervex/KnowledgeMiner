@@ -3,7 +3,7 @@ package tools;
 import graph.core.CommonConcepts;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -56,12 +56,12 @@ public class AssertionGridExperimenter {
 	/** The ontology access. */
 	private DAGSocket ontology_;
 	/** The WMI access. */
-	private WMISocket wmi_;
+	private WikipediaSocket wmi_;
 
 	public AssertionGridExperimenter() {
 		KnowledgeMiner.newInstance("Enwiki_20110722");
 		ontology_ = (DAGSocket) ResourceAccess.requestOntologySocket();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		assertions_ = new ArrayList<>();
 	}
 

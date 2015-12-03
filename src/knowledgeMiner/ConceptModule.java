@@ -8,7 +8,7 @@ import io.IOManager;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -177,7 +177,7 @@ public class ConceptModule extends MinedInformation implements
 		if (articleID_ != -1) {
 			try {
 				article = "'"
-						+ ResourceAccess.requestWMISocket().getPageTitle(
+						+ ResourceAccess.requestWikipediaSocket().getArtTitle(
 								articleID_, true) + "'";
 
 				// Appending mining/disambiguation prefixes
@@ -276,8 +276,8 @@ public class ConceptModule extends MinedInformation implements
 	 */
 	private void makeWikiMappingAssertions(String articleTitle, int runIter,
 			DAGSocket ontology) throws Exception {
-		String strURL = WMISocket.getArticleURL(articleTitle,
-				WMISocket.WIKIPEDIA_URL);
+		String strURL = WikipediaSocket.getArticleURL(articleTitle,
+				WikipediaSocket.WIKIPEDIA_URL);
 
 		// Wiki URL
 		int newWiki = new DefiniteAssertion(
@@ -467,7 +467,7 @@ public class ConceptModule extends MinedInformation implements
 			autoAssertions_ = autoAssertions;
 	}
 
-	public void buildDisambiguationGrid(OntologySocket ontology, WMISocket wmi) {
+	public void buildDisambiguationGrid(OntologySocket ontology, WikipediaSocket wmi) {
 		Collection<PartialAssertion> assertions = getAssertions();
 		dd_ = new DisjointnessDisambiguator(assertions, getMappableSelfRef(),
 				ontology, wmi);

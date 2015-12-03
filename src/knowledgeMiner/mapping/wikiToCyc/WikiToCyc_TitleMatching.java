@@ -5,7 +5,7 @@ package knowledgeMiner.mapping.wikiToCyc;
 
 import graph.module.NLPToSyntaxModule;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -31,14 +31,14 @@ public class WikiToCyc_TitleMatching extends
 
 	@Override
 	protected WeightedSet<OntologyConcept> mapSourceInternal(Integer articleID,
-			WMISocket wmi, OntologySocket ontology) throws Exception {
+			WikipediaSocket wmi, OntologySocket ontology) throws Exception {
 		WeightedSet<OntologyConcept> weightedResults = new WeightedSet<>();
 
 		// Attempt a 1-1 mapping
-		String pageTitle = wmi.getPageTitle(articleID, true);
-		String pageTitleNoContext = WMISocket.singular(wmi.getPageTitle(false,
+		String pageTitle = wmi.getArtTitle(articleID, true);
+		String pageTitleNoContext = WikipediaSocket.singular(wmi.getArtTitle(false,
 				articleID));
-		String pageTitleContext = wmi.getPageTitleContext(articleID);
+		String pageTitleContext = wmi.getArtTitleContext(articleID);
 		Collection<OntologyConcept> results = permutateTitle(pageTitle,
 				pageTitleNoContext, pageTitleContext, ontology);
 

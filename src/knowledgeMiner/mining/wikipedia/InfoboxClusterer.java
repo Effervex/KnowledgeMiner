@@ -4,7 +4,7 @@
 package knowledgeMiner.mining.wikipedia;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -177,7 +177,7 @@ public class InfoboxClusterer extends MiningHeuristic {
 
 	@Override
 	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket ontology)
+			int informationRequested, WikipediaSocket wmi, OntologySocket ontology)
 			throws Exception {
 		
 	}

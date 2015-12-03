@@ -6,7 +6,7 @@ package knowledgeMiner;
 import io.IOManager;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -101,7 +101,7 @@ public class ConceptMiningTask implements Runnable {
 	private boolean trackAsserted_ = false;
 
 	/** The WMI access for this threaded task. */
-	private WMISocket wmi_;
+	private WikipediaSocket wmi_;
 
 	/**
 	 * Constructor for a new ConceptMiningTask with a single Cyc Term to begin
@@ -222,7 +222,7 @@ public class ConceptMiningTask implements Runnable {
 			// Use the possible parentage, perhaps? Might have to be after
 			// disambiguation though.
 			OntologyConcept newConcept = createNewCycTermName(
-					wmi_.getPageTitle(article, true), null, ontology_);
+					wmi_.getArtTitle(article, true), null, ontology_);
 			if (newConcept != null) {
 				ConceptModule newCM = new ConceptModule(newConcept, article,
 						CHILD_CREATION_THRESHOLD, false);
@@ -352,9 +352,9 @@ public class ConceptMiningTask implements Runnable {
 			e.printStackTrace();
 			System.err.println("Source: " + cm);
 			logger_.error(e.getMessage() + " Source: " + cm);
-			ResourceAccess.recreateWMISocket(wmi_);
+			ResourceAccess.recreateWikipediaSocket(wmi_);
 			ResourceAccess.recreateOntologySocket(ontology_);
-			wmi_ = ResourceAccess.requestWMISocket();
+			wmi_ = ResourceAccess.requestWikipediaSocket();
 			ontology_ = ResourceAccess.requestOntologySocket();
 		}
 
@@ -409,7 +409,7 @@ public class ConceptMiningTask implements Runnable {
 		// Remove list articles
 		try {
 			if (concept.getArticle() != -1
-					&& WikiParser.isAListOf(wmi_.getPageTitle(
+					&& WikiParser.isAListOf(wmi_.getArtTitle(
 							concept.getArticle(), true)))
 				return true;
 		} catch (IOException e) {
@@ -463,7 +463,7 @@ public class ConceptMiningTask implements Runnable {
 							KnowledgeMiner.RUN_ID, "" + iteration_);
 			}
 			// Firstly, record the mapping
-			String articleTitle = wmi_.getPageTitle(concept.getArticle(), true);
+			String articleTitle = wmi_.getArtTitle(concept.getArticle(), true);
 			IOManager.getInstance().writeMapping(concept, articleTitle);
 
 			// Interactive - manual evaluation if correct mapping
@@ -678,7 +678,7 @@ public class ConceptMiningTask implements Runnable {
 		ConceptModule cm = processables_.first();
 		allResults = new TreeSet<ConceptModule>();
 
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		ontology_ = ResourceAccess.requestOntologySocket();
 
 		// Get iteration for concept
@@ -762,7 +762,7 @@ public class ConceptMiningTask implements Runnable {
 			throws Exception {
 		ConceptMiningTask cmt = new ConceptMiningTask(null, runID);
 		// KnowledgeMinerPreprocessor.ENABLE_PREPROCESSING = false;
-		cmt.wmi_ = ResourceAccess.requestWMISocket();
+		cmt.wmi_ = ResourceAccess.requestWikipediaSocket();
 		cmt.ontology_ = ResourceAccess.requestOntologySocket();
 		if (input.startsWith("wmi")) {
 			String command = input.substring(3).trim();
@@ -1120,7 +1120,7 @@ public class ConceptMiningTask implements Runnable {
 		do {
 			try {
 				if (article != null) {
-					int artID = ResourceAccess.requestWMISocket()
+					int artID = ResourceAccess.requestWikipediaSocket()
 							.getArticleByTitle(article.toString());
 					ConceptModule cm = new ConceptModule(artID);
 					ConceptMiningTask cmt = new ConceptMiningTask(cm, runID);
@@ -1158,7 +1158,7 @@ public class ConceptMiningTask implements Runnable {
 	 * @throws Exception
 	 *             Should something go awry...
 	 */
-	public static ConceptModule parseConceptModule(String term, WMISocket wmi,
+	public static ConceptModule parseConceptModule(String term, WikipediaSocket wmi,
 			OntologySocket ontology) throws Exception {
 		ConceptModule cm = null;
 		if (term.startsWith("#$")) {

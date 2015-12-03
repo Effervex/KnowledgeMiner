@@ -5,7 +5,7 @@ package knowledgeMiner.mapping.cycToWiki;
 
 import graph.module.NLPToStringModule;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -51,7 +51,7 @@ public class CycToWiki_VoteSynonyms extends
 	 */
 	@Override
 	protected WeightedSet<Integer> mapSourceInternal(OntologyConcept cycTerm,
-			WMISocket wmi, OntologySocket cyc) throws IOException {
+			WikipediaSocket wmi, OntologySocket cyc) throws IOException {
 		WeightedSet<Integer> mappings = new WeightedSet<>();
 		// Compile the synonyms
 		Collection<String> synonyms = new HashSet<>(cyc.getSynonyms(cycTerm

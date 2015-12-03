@@ -3,7 +3,7 @@ package test.mining;
 import static org.junit.Assert.assertTrue;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -41,7 +41,7 @@ import util.collection.MultiMap;
 public class CycMinerParameterisedTest {
 	private static final File MINING_FILE = new File("miningTests.txt");
 	private static OntologySocket ontology_;
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 
 	private int art_;
 	private static String artTitle_;
@@ -215,7 +215,7 @@ public class CycMinerParameterisedTest {
 	@BeforeClass
 	public static void setUp() throws Exception {
 		ontology_ = ResourceAccess.requestOntologySocket();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		km_ = KnowledgeMiner.newInstance("Enwiki_20110722");
 	}
 }

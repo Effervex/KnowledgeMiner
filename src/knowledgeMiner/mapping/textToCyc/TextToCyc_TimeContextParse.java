@@ -5,7 +5,7 @@ package knowledgeMiner.mapping.textToCyc;
 
 import graph.module.NLPToSyntaxModule;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,7 +47,7 @@ public class TextToCyc_TimeContextParse extends
 	@SuppressWarnings("unchecked")
 	@Override
 	public WeightedSet<OntologyConcept> mapSourceInternal(String value,
-			WMISocket wmi, OntologySocket ontology) throws Exception {
+			WikipediaSocket wmi, OntologySocket ontology) throws Exception {
 		LoggerFactory.getLogger(getClass()).trace(value);
 //		value = NLPToSyntaxModule.convertToAscii(value);
 		Matcher m = CONTEXT_PATTERN.matcher(value);

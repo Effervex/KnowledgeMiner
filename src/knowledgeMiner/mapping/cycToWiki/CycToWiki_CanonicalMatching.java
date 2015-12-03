@@ -3,7 +3,7 @@ package knowledgeMiner.mapping.cycToWiki;
 import graph.core.CommonConcepts;
 import graph.inference.VariableNode;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.List;
 import java.util.Set;
@@ -33,7 +33,7 @@ public class CycToWiki_CanonicalMatching extends
 
 	@Override
 	protected WeightedSet<Integer> mapSourceInternal(OntologyConcept source,
-			WMISocket wmi, OntologySocket ontology) throws Exception {
+			WikipediaSocket wmi, OntologySocket ontology) throws Exception {
 		String result = ontology.query(false,
 				CommonConcepts.PRETTY_STRING_CANONICAL.getID(), source, VariableNode.DEFAULT);
 

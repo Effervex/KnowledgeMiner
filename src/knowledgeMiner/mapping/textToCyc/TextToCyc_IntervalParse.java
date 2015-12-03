@@ -6,7 +6,7 @@ package knowledgeMiner.mapping.textToCyc;
 import graph.core.CommonConcepts;
 import graph.module.NLPToSyntaxModule;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.Iterator;
 
@@ -36,7 +36,7 @@ public class TextToCyc_IntervalParse extends
 	@SuppressWarnings("unchecked")
 	@Override
 	public WeightedSet<OntologyConcept> mapSourceInternal(String source,
-			WMISocket wmi, OntologySocket cyc) throws Exception {
+			WikipediaSocket wmi, OntologySocket cyc) throws Exception {
 		LoggerFactory.getLogger(getClass()).trace(source);
 		// source = NLPToSyntaxModule.convertToAscii(source);
 		WeightedSet<OntologyConcept> results = new WeightedSet<>();

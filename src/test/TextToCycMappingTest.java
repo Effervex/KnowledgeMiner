@@ -7,7 +7,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -38,7 +38,7 @@ import cyc.OntologyConcept;
  */
 public class TextToCycMappingTest {
 	private static CycMapper mappingRoot_;
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 	private static OntologySocket cyc_;
 
 	/**
@@ -51,7 +51,7 @@ public class TextToCycMappingTest {
 	public static void setUp() throws Exception {
 		KnowledgeMiner.newInstance("Enwiki_20110722");
 		cyc_ = ResourceAccess.requestOntologySocket();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		mappingRoot_ = new CycMapper();
 		mappingRoot_.initialise();
 	}

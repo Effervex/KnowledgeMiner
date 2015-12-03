@@ -5,7 +5,7 @@ package knowledgeMiner.mining.wikipedia;
 
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -65,7 +65,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 
 	private void assignDataToAssertions(String focusString, String context,
 			String listTitle, Collection<PartialAssertion> listAssertions,
-			MinedInformation info, WMISocket wmi) throws IOException {
+			MinedInformation info, WikipediaSocket wmi) throws IOException {
 		if (focusString.isEmpty())
 			return;
 		Matcher m = WikiParser.ANCHOR_PARSER_ROUGH.matcher(focusString);
@@ -124,7 +124,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 	 *         mappable concept.
 	 */
 	private Collection<PartialAssertion> searchFocusArticle(int article,
-			String title, HeuristicProvenance provenance, WMISocket wmi,
+			String title, HeuristicProvenance provenance, WikipediaSocket wmi,
 			OntologySocket ontology) {
 		String plural = title.replaceAll(LIST_OF_REGEX, "");
 		Collection<PartialAssertion> results = new ArrayList<>();
@@ -132,7 +132,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 			int art = wmi.getArticleByTitle(plural);
 			String type = wmi.getPageType(art);
 			if (art != -1 && art != article && type != null
-					&& type.equals(WMISocket.TYPE_ARTICLE)) {
+					&& type.equals(WikipediaSocket.TYPE_ARTICLE)) {
 				results.add(createTaxonomicArticleAssertion(art, provenance));
 				return results;
 			}
@@ -142,7 +142,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 			art = wmi.getArticleByTitle(stemmed);
 			type = wmi.getPageType(art);
 			if (art != -1 && art != article && type != null
-					&& type != null && type.equals(WMISocket.TYPE_ARTICLE)) {
+					&& type != null && type.equals(WikipediaSocket.TYPE_ARTICLE)) {
 				results.add(createTaxonomicArticleAssertion(art, provenance));
 				return results;
 			}
@@ -177,7 +177,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 	 *            The WMI access.
 	 * @return A list article for the input article or -1.
 	 */
-	private int searchListArticle(int article, String title, WMISocket wmi) {
+	private int searchListArticle(int article, String title, WikipediaSocket wmi) {
 		Set<String> potentialTitles = new HashSet<>();
 		for (String permutation : UtilityMethods
 				.manipulateStringCapitalisation(title))
@@ -215,7 +215,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 	 */
 	protected void extractBulletInformation(int listArticle, String listTitle,
 			String markup, Collection<PartialAssertion> listAssertions,
-			MinedInformation info, WMISocket wmi) throws Exception {
+			MinedInformation info, WikipediaSocket wmi) throws Exception {
 		MultiMap<String, String> listItems = BulletListParser
 				.parseBulletList(markup);
 		// Iterate through the points
@@ -247,7 +247,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 	 */
 	protected void extractTableInformation(int listArticle, String title,
 			String markup, Collection<PartialAssertion> listAssertions,
-			MinedInformation info, WMISocket wmi) throws IOException {
+			MinedInformation info, WikipediaSocket wmi) throws IOException {
 		Collection<WikiTable> tables = TableMiner.parseTable(markup);
 		for (WikiTable table : tables) {
 			MultiMap<String, String> colData = table.getTableData();
@@ -264,10 +264,10 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 
 	@Override
 	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket cyc)
+			int informationRequested, WikipediaSocket wmi, OntologySocket cyc)
 			throws Exception {
 		int article = info.getArticle();
-		String title = wmi.getPageTitle(article, false);
+		String title = wmi.getArtTitle(article, false);
 		HeuristicProvenance provenance = new HeuristicProvenance(this, title);
 
 		Collection<PartialAssertion> listAssertions = null;
@@ -391,7 +391,7 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 
 	public static void main(String[] args) throws IOException {
 		ResourceAccess.newInstance();
-		WMISocket wmi = ResourceAccess.requestWMISocket();
+		WikipediaSocket wmi = ResourceAccess.requestWikipediaSocket();
 
 		BufferedWriter out = new BufferedWriter(new FileWriter(new File(
 				"listfile.txt")));
@@ -407,10 +407,10 @@ public class ListMiner extends WikipediaArticleMiningHeuristic {
 					System.exit(0);
 				}
 
-				String title = wmi.getPageTitle(artId, true);
+				String title = wmi.getArtTitle(artId, true);
 				String type = wmi.getPageType(artId);
 				if (WikiParser.isAListOf(title) && type != null
-						&& type.equals(WMISocket.TYPE_ARTICLE)) {
+						&& type.equals(WikipediaSocket.TYPE_ARTICLE)) {
 					out.write(artId + "\t" + title + "\n");
 					System.out.println(title);
 					listCount++;

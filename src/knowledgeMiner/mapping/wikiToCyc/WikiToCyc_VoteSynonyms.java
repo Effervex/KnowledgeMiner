@@ -4,7 +4,7 @@
 package knowledgeMiner.mapping.wikiToCyc;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.Collection;
 
@@ -31,7 +31,7 @@ public class WikiToCyc_VoteSynonyms extends
 
 	@Override
 	protected WeightedSet<OntologyConcept> mapSourceInternal(Integer articleID,
-			WMISocket wmi, OntologySocket cyc) throws Exception {
+			WikipediaSocket wmi, OntologySocket cyc) throws Exception {
 		WeightedSet<OntologyConcept> possibleTerms = new WeightedSet<>();
 
 		// Find the anchor synonyms

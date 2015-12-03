@@ -8,7 +8,7 @@ import io.ontology.DAGAccess;
 import io.ontology.OntologyAccess;
 import io.ontology.OntologySocket;
 import io.resources.WMIAccess;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.awt.Component;
 import java.awt.Dimension;
@@ -252,7 +252,7 @@ public class QuickfireMappingReviewer extends JFrame implements WindowListener {
 				conceptDetails_.setText(parentage.toString());
 
 				// Article
-				WMISocket wmi = wmi_.requestSocket();
+				WikipediaSocket wmi = wmi_.requestSocket();
 				String sentence = wmi.getFirstSentence(wmi
 						.getArticleByTitle(data_[currentIndex_][2]));
 				sentence = WikiParser.cleanAllMarkup(sentence);

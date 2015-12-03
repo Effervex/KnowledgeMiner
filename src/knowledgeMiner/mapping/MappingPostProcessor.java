@@ -4,7 +4,7 @@
 package knowledgeMiner.mapping;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import util.collection.WeightedSet;
 
 /**
@@ -27,5 +27,5 @@ public abstract class MappingPostProcessor<Target> {
 	 * @return The processed set (defaults to the input).
 	 */
 	public abstract WeightedSet<Target> process(WeightedSet<Target> collection,
-			WMISocket wmi, OntologySocket ontology);
+			WikipediaSocket wmi, OntologySocket ontology);
 }

@@ -13,6 +13,10 @@ public abstract class OntologyAccess extends KMAccess<OntologySocket> {
 			IOException {
 		super(port);
 	}
+	
+	public OntologyAccess() throws UnknownHostException, IOException {
+		super();
+	}
 
 	@Override
 	protected abstract OntologySocket createSocket(

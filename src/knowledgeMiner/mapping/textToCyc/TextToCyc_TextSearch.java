@@ -4,7 +4,7 @@
 package knowledgeMiner.mapping.textToCyc;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.Collection;
 
@@ -35,7 +35,7 @@ public class TextToCyc_TextSearch extends MappingHeuristic<String, OntologyConce
 
 	@Override
 	protected WeightedSet<OntologyConcept> mapSourceInternal(String source,
-			WMISocket wmi, OntologySocket cyc) throws Exception {
+			WikipediaSocket wmi, OntologySocket cyc) throws Exception {
 		LoggerFactory.getLogger(getClass()).trace(source);
 		// Strip off any anchors
 //		Matcher m = null;

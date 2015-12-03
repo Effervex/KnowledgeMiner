@@ -1,7 +1,7 @@
 package knowledgeMiner.mapping.cycToWiki;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.mapping.MappingPostProcessor;
 import util.collection.WeightedSet;
 
@@ -10,7 +10,7 @@ public class CycToWikiRemoveDisambiguationPostProcessor extends
 
 	@Override
 	public WeightedSet<Integer> process(WeightedSet<Integer> collection,
-			WMISocket wmi, OntologySocket ontology) {
+			WikipediaSocket wmi, OntologySocket ontology) {
 		if (collection.isEmpty())
 			return collection;
 
@@ -27,7 +27,7 @@ public class CycToWikiRemoveDisambiguationPostProcessor extends
 				int artID = pages[index];
 				double weight = collection.getWeight(artID);
 				// If not a disambiguation article
-				if (!pageType.equals(WMISocket.TYPE_DISAMBIGUATION)) {
+				if (!pageType.equals(WikipediaSocket.TYPE_DISAMBIGUATION)) {
 					// Keep the article
 					newSet.set(artID, weight);
 				}

@@ -12,7 +12,7 @@ package knowledgeMiner.preprocessing;
 
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.Collection;
 
@@ -33,7 +33,7 @@ import knowledgeMiner.mining.wikipedia.WikipediaArticleMiningHeuristic;
  */
 public class PrecomputationTask implements Runnable {
 	/** The WMI access. */
-	private WMISocket wmi_;
+	private WikipediaSocket wmi_;
 
 	/** The ontology worker. */
 	private OntologySocket ontology_;
@@ -69,7 +69,7 @@ public class PrecomputationTask implements Runnable {
 
 	@Override
 	public void run() {
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		ontology_ = ResourceAccess.requestOntologySocket();
 
 		switch (taskType_) {

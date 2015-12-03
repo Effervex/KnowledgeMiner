@@ -8,7 +8,6 @@ import io.KMAccess;
 import java.io.IOException;
 import java.net.UnknownHostException;
 
-
 /**
  * The access point for gaining access to WMI commands. This class contains a
  * pool of WMI sockets that are handed out to different Threads to allow
@@ -16,7 +15,7 @@ import java.net.UnknownHostException;
  * 
  * @author Sam Sarjant
  */
-public class WMIAccess extends KMAccess<WMISocket> {
+public class WMIAccess extends WikipediaAccess {
 	/**
 	 * Constructor for a new WMI access point.
 	 */
@@ -25,8 +24,13 @@ public class WMIAccess extends KMAccess<WMISocket> {
 		cacheMapActive_ = false;
 	}
 
+	public WMIAccess() throws UnknownHostException, IOException {
+		super();
+		cacheMapActive_ = false;
+	}
+
 	@Override
-	protected WMISocket createSocket(KMAccess<WMISocket> kmAccess) {
+	protected WikipediaSocket createSocket(KMAccess<WikipediaSocket> kmAccess) {
 		return new WMISocket((WMIAccess) kmAccess);
 	}
 }

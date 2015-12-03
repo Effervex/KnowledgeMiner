@@ -13,7 +13,7 @@ package knowledgeMiner;
 import graph.core.CommonConcepts;
 import graph.inference.CommonQuery;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -167,7 +167,7 @@ public class AssertionGrid {
 	 *            The WMI access.
 	 */
 	public AssertionGrid(Collection<? extends MinedAssertion> assertions,
-			MappableConcept coreConcept, OntologySocket ontology, WMISocket wmi) {
+			MappableConcept coreConcept, OntologySocket ontology, WikipediaSocket wmi) {
 		coreConcept_ = coreConcept;
 		concept_ = null;
 		buildAssertionGrid(assertions, ontology, wmi);
@@ -193,7 +193,7 @@ public class AssertionGrid {
 	public AssertionGrid(Collection<DefiniteAssertion> assertions,
 			OntologyConcept concept, WeightedStanding standing,
 			Collection<DefiniteAssertion> existingAssertions,
-			boolean assertionRemoval, OntologySocket ontology, WMISocket wmi) {
+			boolean assertionRemoval, OntologySocket ontology, WikipediaSocket wmi) {
 		this(new AssertionGrid(assertions, null, ontology, wmi), concept,
 				standing, existingAssertions, assertionRemoval);
 	}
@@ -211,7 +211,7 @@ public class AssertionGrid {
 	 */
 	private void buildAssertionGrid(
 			Collection<? extends MinedAssertion> assertions,
-			OntologySocket ontology, WMISocket wmi) {
+			OntologySocket ontology, WikipediaSocket wmi) {
 		ArrayList<MinedAssertion[]> assertionGrid = new ArrayList<>();
 		ArrayList<float[]> weightGrid = new ArrayList<>();
 		seedStack_ = new ArrayList<>();
@@ -265,7 +265,7 @@ public class AssertionGrid {
 	 *            The WMI access.
 	 */
 	private AssertionQueue expandPartial(PartialAssertion pa,
-			OntologySocket ontology, WMISocket wmi) {
+			OntologySocket ontology, WikipediaSocket wmi) {
 		// Expand the partial assertion
 		Collection<MappableConcept> excluded = new HashSet<>();
 		if (coreConcept_ != null)

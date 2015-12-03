@@ -3,7 +3,7 @@ package test.mining;
 import static org.junit.Assert.assertFalse;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mining.MinedInformation;
@@ -17,12 +17,12 @@ import cyc.OntologyConcept;
 public class DBPediaAlignmentMinerTest {
 	private static DBPediaAlignmentMiner sut_;
 	private static OntologySocket ontology_;
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		ontology_ = ResourceAccess.requestOntologySocket();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		KnowledgeMiner km = KnowledgeMiner.newInstance("Enwiki_20110722");
 		sut_ = new DBPediaAlignmentMiner(km.getMapper(), km.getMiner());
 	}

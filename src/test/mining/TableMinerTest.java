@@ -6,7 +6,7 @@ package test.mining;
 import static org.junit.Assert.*;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -30,7 +30,7 @@ import cyc.CycConstants;
  * @author Sam Sarjant
  */
 public class TableMinerTest {
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 
 	/**
 	 * 
@@ -39,7 +39,7 @@ public class TableMinerTest {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		OntologySocket cyc = ResourceAccess.requestOntologySocket();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		CycMapper mapper = new CycMapper();
 		mapper.initialise();
 		CycConstants.initialiseAssertions(cyc);

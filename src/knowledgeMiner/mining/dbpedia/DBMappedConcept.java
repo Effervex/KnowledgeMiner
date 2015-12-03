@@ -3,7 +3,9 @@ package knowledgeMiner.mining.dbpedia;
 import graph.core.CommonConcepts;
 import graph.core.PrimitiveNode;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.DBPediaAccess;
+import io.resources.DBPediaNamespace;
+import io.resources.WikipediaSocket;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -72,7 +74,7 @@ public class DBMappedConcept extends MappableConcept {
 
 	@Override
 	protected WeightedSet<OntologyConcept> mapThingInternal(CycMapper mapper,
-			WMISocket wmi, OntologySocket ontology) {
+			WikipediaSocket wmi, OntologySocket ontology) {
 		RDFNode rdfMappable = (RDFNode) mappableThing_;
 		// Resource
 		if (rdfMappable.isResource()) {
@@ -87,14 +89,13 @@ public class DBMappedConcept extends MappableConcept {
 			} else if (namespace.equals(DBPediaNamespace.DBPEDIA.getURI())) {
 				// Look up the wikiPageID (if any)
 				if (resID_ == 0) {
-					RDFNode artID = DBPediaAlignmentMiner.askSingularQuery(
+					RDFNode artID = DBPediaAccess.selectSingularQuery(
 							"?id",
 							"<"
 									+ res.getURI()
 									+ "> "
-									+ DBPediaNamespace.format(
-											DBPediaNamespace.DBPEDIAOWL,
-											"wikiPageID") + " ?id");
+									+ DBPediaNamespace.DBPEDIAOWL
+											.format("wikiPageID") + " ?id");
 					if (artID != null)
 						resID_ = artID.asLiteral().getInt();
 				}
@@ -153,7 +154,7 @@ public class DBMappedConcept extends MappableConcept {
 	 */
 	private void parsePrimitive(Literal lit,
 			WeightedSet<OntologyConcept> results, CycMapper mapper,
-			WMISocket wmi, OntologySocket ontology) {
+			WikipediaSocket wmi, OntologySocket ontology) {
 		Object value = lit.getValue();
 		PrimitiveNode primitiveNode = PrimitiveNode.parseNode(value.toString());
 		if (primitiveNode != null) {
@@ -188,7 +189,7 @@ public class DBMappedConcept extends MappableConcept {
 	 * @return A weighted set of predicates that are mappings.
 	 */
 	private synchronized WeightedSet<OntologyConcept> mapToPredicate(
-			Resource res, CycMapper mapper, WMISocket wmi,
+			Resource res, CycMapper mapper, WikipediaSocket wmi,
 			OntologySocket ontology) {
 		WeightedSet<OntologyConcept> results;
 		// First check if mappings are already known
@@ -264,8 +265,8 @@ public class DBMappedConcept extends MappableConcept {
 		// DBpedia links
 		ontology.assertToOntology(
 				CycConstants.IMPLEMENTATION_MICROTHEORY.getConceptName(),
-				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getID(), id,
-				CycConstants.DBPEDIA_ONTOLOGY.getID(),
+				CycConstants.SYNONYMOUS_EXTERNAL_CONCEPT.getConceptName(), id,
+				CycConstants.DBPEDIA_ONTOLOGY.getConceptName(),
 				new StringConcept(res.getURI()));
 		return new OntologyConcept(res.getLocalName(), id);
 	}

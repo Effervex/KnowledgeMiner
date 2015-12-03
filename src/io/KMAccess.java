@@ -48,7 +48,17 @@ public abstract class KMAccess<S extends KMSocket> {
 			}
 		};
 	}
-
+	
+	/**
+	 * Default constructor for a new KMAccess
+	 *
+	 * @throws UnknownHostException
+	 * @throws IOException
+	 */
+	public KMAccess() throws UnknownHostException, IOException {
+		this(-1);
+	}
+	
 	public void recreateSocket(S socket) {
 		threadSocket_.remove();
 	}

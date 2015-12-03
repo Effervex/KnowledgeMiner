@@ -1,7 +1,7 @@
 package knowledgeMiner.mining;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.mapping.CycMapper;
 import util.collection.WeightedSet;
 import cyc.MappableConcept;
@@ -27,7 +27,7 @@ public class TextMappedConcept extends MappableConcept {
 
 	@Override
 	protected WeightedSet<OntologyConcept> mapThingInternal(CycMapper mapper,
-			WMISocket wmi, OntologySocket ontology) {
+			WikipediaSocket wmi, OntologySocket ontology) {
 		return mapper.mapTextToCyc((String) mappableThing_, false, false,
 				preProcessText_, true, wmi, ontology);
 	}

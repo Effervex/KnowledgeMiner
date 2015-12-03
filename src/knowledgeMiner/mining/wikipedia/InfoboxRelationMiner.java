@@ -4,7 +4,7 @@
 package knowledgeMiner.mining.wikipedia;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.File;
 import java.util.HashMap;
@@ -100,7 +100,7 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 	 *             Should something go awry...
 	 */
 	private PartialAssertion mapSpecial(String relation, String value,
-			MinedInformation info, String infoboxType, WMISocket wmi,
+			MinedInformation info, String infoboxType, WikipediaSocket wmi,
 			OntologySocket ontology) throws Exception {
 		relation = relation.toLowerCase();
 		// Linking image URLs
@@ -114,7 +114,7 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 					CycConstants.CONCEPT_IMAGE.getConcept(),
 					new HeuristicProvenance(this, "image"),
 					info.getMappableSelfRef(), new OntologyConcept(
-							CycConstants.URLFN.getID() + "", "\""
+							CycConstants.URLFN.getConceptName() + "", "\""
 									+ WIKIPEDIA_IMAGE_URL + value + "\""));
 		}
 		// Names (This was too general and caught many false values).
@@ -141,7 +141,7 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 
 	@Override
 	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket ontology)
+			int informationRequested, WikipediaSocket wmi, OntologySocket ontology)
 			throws Exception {
 		LoggerFactory.getLogger(CycMiner.class).trace(
 				"infoboxRelationMiner: {}", info.getArticle());
@@ -245,7 +245,7 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 	 *             Should something go awry...
 	 */
 	public PartialAssertion parseRelation(String relation, String value,
-			MinedInformation info, String infoboxType, WMISocket wmi,
+			MinedInformation info, String infoboxType, WikipediaSocket wmi,
 			OntologySocket ontology) throws Exception {
 		PartialAssertion pa = mapSpecial(relation, value, info, infoboxType,
 				wmi, ontology);
@@ -267,7 +267,7 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 	}
 
 	@Override
-	public void updateGlobal(MinedInformation info, WMISocket wmi) {
+	public void updateGlobal(MinedInformation info, WikipediaSocket wmi) {
 		super.updateGlobal(info, wmi);
 
 		// For every asserted made, record it against the standing
@@ -298,7 +298,7 @@ public class InfoboxRelationMiner extends InfoboxMiner {
 	@Override
 	public void updateViaAssertion(WeightedInformation assertion,
 			String details, double weight, InformationType infoType,
-			WMISocket wmi) {
+			WikipediaSocket wmi) {
 		super.updateViaAssertion(assertion, details, weight, infoType, wmi);
 
 		// Use the assertion's provenance to record the relation.

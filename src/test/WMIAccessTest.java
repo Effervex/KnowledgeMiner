@@ -8,12 +8,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import io.ResourceAccess;
-import io.resources.WMISocket;
+import io.ontology.DAGAccess;
+import io.resources.WMIAccess;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -25,15 +26,15 @@ import org.junit.Test;
 
 import util.collection.WeightedSet;
 import util.wikipedia.InfoboxData;
-import util.wikipedia.WikiAnnotation;
 
 public class WMIAccessTest {
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 
 	@BeforeClass
 	public static void setUp() {
+		ResourceAccess.newInstance(DAGAccess.class, WMIAccess.class);
 		KnowledgeMiner.getInstance();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 	}
 
 	@Test
@@ -347,120 +348,105 @@ public class WMIAccessTest {
 	@Test
 	public void testGetPageTitle() throws IOException {
 		int artID = wmi_.getArticleByTitle("O Brother, Where Art Thou?");
-		assertEquals(wmi_.getPageTitle(artID, true),
+		assertEquals(wmi_.getArtTitle(artID, true),
 				"O Brother, Where Art Thou?");
-		assertEquals(wmi_.getPageTitle(artID, false),
+		assertEquals(wmi_.getArtTitle(artID, false),
 				"O Brother, Where Art Thou?");
 
 		artID = wmi_.getArticleByTitle("Set (mathematics)");
-		assertEquals(wmi_.getPageTitle(artID, true), "Set (mathematics)");
-		assertEquals(wmi_.getPageTitle(artID, false), "Set");
+		assertEquals(wmi_.getArtTitle(artID, true), "Set (mathematics)");
+		assertEquals(wmi_.getArtTitle(artID, false), "Set");
 
 		// Special character 'Neel temperature'
 		artID = 284139;
-		assertEquals(wmi_.getPageTitle(artID, true), "Néel temperature");
+		assertEquals(wmi_.getArtTitle(artID, true), "Néel temperature");
 	}
 
 	@Test
 	public void testGetTopics() throws IOException {
 		// Single topic
-		SortedSet<WikiAnnotation> topics = wmi_.getTopics("cat");
+		WeightedSet<Integer> topics = wmi_.getTopics("cat", null);
 		assertEquals(topics.size(), 1);
-		WikiAnnotation a = topics.first();
-		assertEquals(a, new WikiAnnotation("cat", "Cat", -1, -1,
-				0.7399097776773746, wmi_));
+		int art = wmi_.getArticleByTitle("Cat");
+		assertTrue(topics.contains(art));
+		assertEquals(topics.getWeight(art), 0.7399097776773746, 0.001);
 
 		// Differing text
-		topics = wmi_.getTopics("actress");
+		topics = wmi_.getTopics("actress", null);
 		assertEquals(topics.size(), 1);
-		a = topics.first();
-		assertEquals(a, new WikiAnnotation("actress", "Actor", -1, -1,
-				0.5950602139834359, wmi_));
+		art = wmi_.getArticleByTitle("Actor");
+		assertTrue(topics.contains(art));
+		assertEquals(topics.getWeight(art), 0.5950602139834359, 0.001);
 
 		// Multitext
-		topics = wmi_
-				.getTopics("American film and television actor and film producer.");
-		assertEquals(topics.size(), 7);
-		Iterator<WikiAnnotation> iter = topics.iterator();
-		assertTrue(iter.hasNext());
-		a = iter.next();
-		assertEquals(a, new WikiAnnotation("American", "United States", -1, -1,
-				0.7374749662186019, wmi_));
+		topics = wmi_.getTopics(
+				"American film and television actor and film producer.", null);
+		assertEquals(topics.size(), 6);
+		art = wmi_.getArticleByTitle("United States");
+		assertTrue(topics.contains(art));
+		assertEquals(topics.getWeight(art), 0.7374749662186019, 0.001);
 
-		assertTrue(iter.hasNext());
-		a = iter.next();
-		assertEquals(a, new WikiAnnotation("actor", "Actor", -1, -1,
-				0.5745089454397226, wmi_));
+		art = wmi_.getArticleByTitle("Actor");
+		assertTrue(topics.contains(art));
+		assertEquals(topics.getWeight(art), 0.5745089454397226, 0.001);
 
-		assertTrue(iter.hasNext());
-		a = iter.next();
-		assertEquals(a, new WikiAnnotation("television actor", "Actor", -1, -1,
-				0.5745089454397226, wmi_));
+		art = wmi_.getArticleByTitle("Film");
+		assertTrue(topics.contains(art));
+		assertEquals(topics.getWeight(art), 0.49725625971138443, 0.001);
 
-		assertTrue(iter.hasNext());
-		a = iter.next();
-		assertEquals(a, new WikiAnnotation("film", "Film", -1, -1,
-				0.49725625971138443, wmi_));
+		art = wmi_.getArticleByTitle("Television");
+		assertTrue(topics.contains(art));
+		assertEquals(topics.getWeight(art), 0.4826978181529428, 0.001);
 
-		assertTrue(iter.hasNext());
-		a = iter.next();
-		assertEquals(a, new WikiAnnotation("television", "Television", -1, -1,
-				0.4826978181529428, wmi_));
+		art = wmi_.getArticleByTitle("Film producer");
+		assertTrue(topics.contains(art));
+		assertEquals(topics.getWeight(art), 0.47920818387711667, 0.001);
 
-		assertTrue(iter.hasNext());
-		a = iter.next();
-		assertEquals(a, new WikiAnnotation("film producer", "Film producer",
-				-1, -1, 0.47920818387711667, wmi_));
-
-		assertTrue(iter.hasNext());
-		a = iter.next();
-		assertEquals(a, new WikiAnnotation("producer", "Record producer", -1,
-				-1, 0.25521056810505643, wmi_));
-
-		String text = "{{script|Phnx|[[Image:Phoenician daleth.svg|12px|???]][[Image:Phoenician beth.svg|12px|???]][[Image:Phoenician res.svg|12px|???]][[Image:Phoenician yodh.svg|12px|???]][[Image:Phoenician mem.svg|12px|???]] [[Image:Phoenician kaph.svg|12px|???]][[Image:Phoenician nun.svg|12px|???]][[Image:Phoenician ayin.svg|12px|???]][[Image:Phoenician nun.svg|12px|???]][[Image:Phoenician yodh.svg|12px|???]][[Image:Phoenician mem.svg|12px|???]]}}";
-		topics = wmi_.getTopics(text);
-		assertTrue(topics.isEmpty());
+		art = wmi_.getArticleByTitle("Record producer");
+		assertTrue(topics.contains(art));
+		assertEquals(topics.getWeight(art), 0.25521056810505643, 0.001);
 	}
 
 	@Test
 	public void testAnnotate() throws IOException {
 		// Single terms
-		assertEquals(wmi_.annotate("Actor", 0, false), "[[Actor]]");
-		assertEquals(wmi_.annotate("cat", 0, false), "[[cat]]");
-		assertEquals(wmi_.annotate("actress", 0, false), "[[Actor|actress]]");
-		assertEquals(wmi_.annotate("American", 0, false),
+		assertEquals(wmi_.annotate("Actor", 0, false, null), "[[Actor]]");
+		assertEquals(wmi_.annotate("cat", 0, false, null), "[[cat]]");
+		assertEquals(wmi_.annotate("actress", 0, false, null),
+				"[[Actor|actress]]");
+		assertEquals(wmi_.annotate("American", 0, false, null),
 				"[[United States|American]]");
-		assertEquals(wmi_.annotate("SAusaGe", 0, false), "[[SAusaGe]]");
-		assertEquals(wmi_.annotate("GFDhkjs", 0, false), "GFDhkjs");
-		assertEquals(wmi_.annotate("American actor", 0, false),
+		assertEquals(wmi_.annotate("SAusaGe", 0, false, null), "[[SAusaGe]]");
+		assertEquals(wmi_.annotate("GFDhkjs", 0, false, null), "GFDhkjs");
+		assertEquals(wmi_.annotate("American actor", 0, false, null),
 				"[[United States|American]] [[actor]]");
 
 		// Multilines
 		String text = "American film and television actor and film producer.";
 		assertEquals(
-				wmi_.annotate(text, 0, false),
+				wmi_.annotate(text, 0, false, null),
 				"[[United States|American]] [[film]] and [[Actor|television actor]] and [[film producer]].");
 		text = "American screenwriter, director, actor, comedian, author, playwright, and musician whose career spans over half a century.";
 		assertEquals(
-				wmi_.annotate(text, 0, false),
+				wmi_.annotate(text, 0, false, null),
 				"[[United States|American]] [[screenwriter]], [[Film director|director]], [[actor]], [[comedian]], [[author]], [[playwright]], and [[musician]] whose career spans over half a century.");
 
 		// Already annotated
 		text = "[[United States|American]] [[screenwriter]], [[Film director|director]], [[actor]], [[comedian]], [[author]], [[playwright]], and [[musician]] whose career spans over half a century.";
 		assertEquals(
-				wmi_.annotate(text, 0, false),
+				wmi_.annotate(text, 0, false, null),
 				"[[United States|American]] [[screenwriter]], [[Film director|director]], [[actor]], [[comedian]], [[author]], [[playwright]], and [[musician]] whose career spans over half a century.");
 
 		// Partially annotated
 		text = "[[United States|American]] screenwriter, director, [[actor]], [[comedian]], [[author]], playwright, and [[musician]] whose career spans over half a century.";
 		assertEquals(
-				wmi_.annotate(text, 0, false),
+				wmi_.annotate(text, 0, false, null),
 				"[[United States|American]] [[screenwriter]], [[Film director|director]], [[actor]], [[comedian]], [[author]], [[playwright]], and [[musician]] whose career spans over half a century.");
 
 		// Already annotated (problem string)
 		text = "An electronic keyboard (also called digital keyboard, portable keyboard and home keyboard) is an electronic or digital [[keyboard instrument]].";
 		assertEquals(
-				wmi_.annotate(text, 0, false),
+				wmi_.annotate(text, 0, false, null),
 				"An [[electronic keyboard]] (also called [[Electronic keyboard|digital keyboard]], portable [[Keyboard instrument|keyboard]] and home [[Keyboard instrument|keyboard]]) is an [[Electronic music|electronic]] or [[digital]] [[keyboard instrument]].");
 	}
 }

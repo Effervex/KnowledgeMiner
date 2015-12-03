@@ -4,7 +4,7 @@
 package knowledgeMiner.mining.wikipedia;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,7 +42,7 @@ public class InfoboxTypeMiner extends InfoboxMiner {
 
 	@Override
 	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket cyc)
+			int informationRequested, WikipediaSocket wmi, OntologySocket cyc)
 			throws IOException {
 		// Cluster infobox types to assign parentage
 		List<InfoboxData> infoboxData = wmi.getInfoboxData(info.getArticle());
@@ -82,7 +82,7 @@ public class InfoboxTypeMiner extends InfoboxMiner {
 	}
 
 	@Override
-	public void updateGlobal(MinedInformation info, WMISocket wmi) {
+	public void updateGlobal(MinedInformation info, WikipediaSocket wmi) {
 		super.updateGlobal(info, wmi);
 
 		// Note the infobox type against the standing

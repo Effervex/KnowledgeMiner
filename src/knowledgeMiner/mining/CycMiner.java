@@ -5,7 +5,7 @@ package knowledgeMiner.mining;
 
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -118,7 +118,7 @@ public class CycMiner {
 	 *             Should something go awry...
 	 */
 	public void mineArticle(ConceptModule conceptModule,
-			int informationRequested, WMISocket wmi, OntologySocket ontology)
+			int informationRequested, WikipediaSocket wmi, OntologySocket ontology)
 			throws Exception {
 		// Apply every mining heuristic to extracting information from the
 		// article.
@@ -134,7 +134,7 @@ public class CycMiner {
 	}
 
 	public void mineSentence(String sentence, boolean wikifyText,
-			MinedInformation info, MiningHeuristic heuristic, OntologySocket cyc, WMISocket wmi) {
+			MinedInformation info, MiningHeuristic heuristic, OntologySocket cyc, WikipediaSocket wmi) {
 		logger_.trace("mineSentence: " + info.getArticle());
 		try {
 			WikipediaMappedConcept focusConcept = new WikipediaMappedConcept(
@@ -187,7 +187,7 @@ public class CycMiner {
 	 */
 	public static void verbose() {
 		CycMiner miner = KnowledgeMiner.getInstance().getMiner();
-		WMISocket wmi = ResourceAccess.requestWMISocket();
+		WikipediaSocket wmi = ResourceAccess.requestWikipediaSocket();
 		OntologySocket ontology = ResourceAccess.requestOntologySocket();
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		String input = null;

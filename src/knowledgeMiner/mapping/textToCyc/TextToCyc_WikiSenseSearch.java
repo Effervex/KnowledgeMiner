@@ -11,7 +11,7 @@
 package knowledgeMiner.mapping.textToCyc;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mapping.MappingHeuristic;
 import knowledgeMiner.mining.wikipedia.WikipediaMappedConcept;
@@ -36,7 +36,7 @@ public class TextToCyc_WikiSenseSearch extends
 
 	@Override
 	protected WeightedSet<OntologyConcept> mapSourceInternal(String term,
-			WMISocket wmi, OntologySocket ontology) throws Exception {
+			WikipediaSocket wmi, OntologySocket ontology) throws Exception {
 		term = WikiParser.cleanAllMarkup(term);
 		term = term.replaceAll(" ?\\n ?", " ").trim();
 		LoggerFactory.getLogger(getClass()).trace(term);

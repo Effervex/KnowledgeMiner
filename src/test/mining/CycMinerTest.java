@@ -5,7 +5,7 @@ package test.mining;
 
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.mining.CycMiner;
@@ -22,7 +22,7 @@ import cyc.OntologyConcept;
  */
 public class CycMinerTest {
 	private static CycMiner miner_;
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 	private static OntologySocket cyc_;
 
 	/**
@@ -32,7 +32,7 @@ public class CycMinerTest {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		miner_ = KnowledgeMiner.getInstance().getMiner();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		cyc_ = ResourceAccess.requestOntologySocket();
 	}
 
@@ -43,7 +43,7 @@ public class CycMinerTest {
 
 	/**
 	 * Test method for
-	 * {@link knowledgeMiner.mining.CycMiner#mineArticle(MinedInformation, int, WMISocket, CycSocket)}
+	 * {@link knowledgeMiner.mining.CycMiner#mineArticle(MinedInformation, int, WikipediaSocket, CycSocket)}
 	 * .
 	 * 
 	 * @throws Exception

@@ -1,7 +1,7 @@
 package knowledgeMiner.mapping.cycToWiki;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -23,7 +23,7 @@ public class CycToWikiRedirectPostProcessor extends
 
 	@Override
 	public WeightedSet<Integer> process(WeightedSet<Integer> collection,
-			WMISocket wmi, OntologySocket cyc) {
+			WikipediaSocket wmi, OntologySocket cyc) {
 		if (collection.isEmpty())
 			return collection;
 		UtilityMethods.removeNegOnes(collection);
@@ -39,7 +39,7 @@ public class CycToWikiRedirectPostProcessor extends
 					continue;
 				int artID = pages[index];
 				double weight = collection.getWeight(artID);
-				if (pageType.equals(WMISocket.TYPE_REDIRECT)) {
+				if (pageType.equals(WikipediaSocket.TYPE_REDIRECT)) {
 					// Follow redirects
 					int redirect = followRedirect(artID, wmi);
 					if (redirect != -1)
@@ -66,7 +66,7 @@ public class CycToWikiRedirectPostProcessor extends
 	 * @throws IOException
 	 *             Should something go awry...
 	 */
-	private int followRedirect(Integer startPoint, WMISocket wmi)
+	private int followRedirect(Integer startPoint, WikipediaSocket wmi)
 			throws IOException {
 		int currId = startPoint;
 		Collection<Integer> redirectsFollowed = new HashSet<>();

@@ -2,7 +2,7 @@ package tools;
 
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -22,13 +22,13 @@ public class SalienceCreator {
 	private static final String TEXT = "text";
 	private int threshold_;
 	private int numFiles_;
-	private WMISocket wmi_;
+	private WikipediaSocket wmi_;
 	private OntologySocket ontology_;
 
 	public SalienceCreator(int threshold, int numFiles) {
 		threshold_ = threshold;
 		numFiles_ = numFiles;
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		ontology_ = ResourceAccess.requestOntologySocket();
 		OUT_FOLDER.mkdir();
 	}
@@ -56,14 +56,14 @@ public class SalienceCreator {
 			int artID = Integer.parseInt(input);
 			String type = wmi_.getPageType(artID);
 			if (outlinks.size() >= threshold_
-					&& type.equals(WMISocket.TYPE_ARTICLE)) {
+					&& type.equals(WikipediaSocket.TYPE_ARTICLE)) {
 				File file = new File(OUT_FOLDER, input + ".txt");
 				file.mkdirs();
 				BufferedWriter out = new BufferedWriter(new FileWriter(file));
 				try {
-					String title = WMISocket.singular(wmi_.getPageTitle(true,
+					String title = WikipediaSocket.singular(wmi_.getArtTitle(true,
 							artID));
-					if (eat.extract(artID, title, false, false, false)) {
+					if (eat.extract(artID, title, false, false)) {
 						numFiles++;
 						System.out.println(title);
 					}

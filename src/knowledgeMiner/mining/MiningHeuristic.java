@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.ConceptModule;
 import knowledgeMiner.KnowledgeMiner;
 import knowledgeMiner.WeightedHeuristic;
@@ -201,7 +201,7 @@ public abstract class MiningHeuristic extends WeightedHeuristic {
 	 *             Should something go awry...
 	 */
 	protected abstract void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket ontology)
+			int informationRequested, WikipediaSocket wmi, OntologySocket ontology)
 			throws Exception;
 
 	/**
@@ -274,7 +274,7 @@ public abstract class MiningHeuristic extends WeightedHeuristic {
 	 * @return The information that was able to be mined.
 	 */
 	public MinedInformation mineArticle(ConceptModule minedInformation,
-			int informationRequested, WMISocket wmi, OntologySocket ontology) {
+			int informationRequested, WikipediaSocket wmi, OntologySocket ontology) {
 		// If this doesn't produce the required information, return empty
 		// information.
 		if (!producesRequestedInformation(informationRequested))
@@ -332,7 +332,7 @@ public abstract class MiningHeuristic extends WeightedHeuristic {
 	 * @return The information mined from the article.
 	 */
 	public final MinedInformation mineArticle(int article,
-			int informationRequested, WMISocket wmi, OntologySocket ontology) {
+			int informationRequested, WikipediaSocket wmi, OntologySocket ontology) {
 		return mineArticle(new ConceptModule(article), informationRequested,
 				wmi, ontology);
 	}
@@ -347,7 +347,7 @@ public abstract class MiningHeuristic extends WeightedHeuristic {
 	 * @param wmi
 	 *            The WMI access.
 	 */
-	public void updateGlobal(MinedInformation info, WMISocket wmi) {
+	public void updateGlobal(MinedInformation info, WikipediaSocket wmi) {
 		// Do nothing by default.
 	}
 
@@ -368,7 +368,7 @@ public abstract class MiningHeuristic extends WeightedHeuristic {
 	 */
 	public void updateViaAssertion(WeightedInformation assertion,
 			String details, double weight, InformationType infoType,
-			WMISocket wmi) {
+			WikipediaSocket wmi) {
 		// Perform online weight updating.
 		if (KnowledgeMiner.onlineWeightUpdating_) {
 			infoTypeWeights_[infoType.ordinal()] = WeightedHeuristic

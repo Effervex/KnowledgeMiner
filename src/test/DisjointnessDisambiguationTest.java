@@ -3,7 +3,7 @@ package test;
 import static org.junit.Assert.*;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 
@@ -25,7 +25,7 @@ import cyc.MappableConcept;
 import cyc.OntologyConcept;
 
 public class DisjointnessDisambiguationTest {
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 	private static OntologySocket cyc_;
 
 	/**
@@ -37,7 +37,7 @@ public class DisjointnessDisambiguationTest {
 	@BeforeClass
 	public static void setUp() throws Exception {
 		cyc_ = ResourceAccess.requestOntologySocket();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		KnowledgeMiner.newInstance("Enwiki_20110722");
 	}
 

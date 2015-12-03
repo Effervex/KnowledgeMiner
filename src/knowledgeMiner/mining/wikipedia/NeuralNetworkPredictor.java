@@ -1,7 +1,7 @@
 package knowledgeMiner.mining.wikipedia;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.mapping.CycMapper;
 import knowledgeMiner.mining.CycMiner;
 import knowledgeMiner.mining.InformationType;
@@ -16,7 +16,7 @@ public class NeuralNetworkPredictor extends WikipediaArticleMiningHeuristic {
 
 	@Override
 	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket ontology)
+			int informationRequested, WikipediaSocket wmi, OntologySocket ontology)
 			throws Exception {
 		// Get all words (and freqs) of the article and send them through
 		wmi.getMarkup(info.getArticle());

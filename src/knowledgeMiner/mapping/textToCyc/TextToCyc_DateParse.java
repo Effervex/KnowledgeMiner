@@ -5,7 +5,7 @@ package knowledgeMiner.mapping.textToCyc;
 
 import graph.core.CommonConcepts;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,7 +36,7 @@ public class TextToCyc_DateParse extends
 
 	@Override
 	public WeightedSet<OntologyConcept> mapSourceInternal(String source,
-			WMISocket wmi, OntologySocket ontology) throws Exception {
+			WikipediaSocket wmi, OntologySocket ontology) throws Exception {
 		LoggerFactory.getLogger(getClass()).trace(source);
 		WeightedSet<OntologyConcept> results = new WeightedSet<>();
 		try {

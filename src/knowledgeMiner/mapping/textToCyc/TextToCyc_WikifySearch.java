@@ -4,7 +4,7 @@
 package knowledgeMiner.mapping.textToCyc;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.regex.Matcher;
 
@@ -37,9 +37,9 @@ public class TextToCyc_WikifySearch extends
 
 	@Override
 	protected WeightedSet<OntologyConcept> mapSourceInternal(String term,
-			WMISocket wmi, OntologySocket cyc) throws Exception {
+			WikipediaSocket wmi, OntologySocket cyc) throws Exception {
 		LoggerFactory.getLogger(getClass()).trace(term);
-		String annotated = wmi.annotate(term, 0, false);
+		String annotated = wmi.annotate(term, 0, false, null);
 		Matcher m = WikiParser.ANCHOR_PARSER.matcher(annotated);
 		// Return if the term could not be entirely wikified (if at all)
 		if (annotated == null || annotated.equals(term) || !m.matches())

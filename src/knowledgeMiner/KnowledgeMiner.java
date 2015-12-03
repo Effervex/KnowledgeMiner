@@ -8,7 +8,7 @@ import io.IOManager;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -120,7 +120,7 @@ public class KnowledgeMiner {
 
 	private long startTime_;
 
-	private WMISocket wiki_;
+	private WikipediaSocket wiki_;
 
 	private BufferedReader fileInput_;
 
@@ -154,7 +154,7 @@ public class KnowledgeMiner {
 
 		interface_ = new MappingChainInterface(); // new SimpleListInterface();
 		ontology_ = (DAGSocket) ResourceAccess.requestOntologySocket();
-		wiki_ = ResourceAccess.requestWMISocket();
+		wiki_ = ResourceAccess.requestWikipediaSocket();
 
 		if (!singleThread_) {
 			FirstSentenceMiner.wikifyText_ = true;
@@ -193,8 +193,8 @@ public class KnowledgeMiner {
 					seedIndex_ = artId;
 				}
 				String type = wiki_.getPageType(artId);
-				if (type != null && !type.equals(WMISocket.TYPE_ARTICLE)
-						&& !type.equals(WMISocket.TYPE_DISAMBIGUATION))
+				if (type != null && !type.equals(WikipediaSocket.TYPE_ARTICLE)
+						&& !type.equals(WikipediaSocket.TYPE_DISAMBIGUATION))
 					artId = -1;
 			} catch (Exception e) {
 				e.printStackTrace();

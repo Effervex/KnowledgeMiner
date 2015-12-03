@@ -2,7 +2,7 @@ package tools;
 
 import graph.module.NLPToSyntaxModule;
 import io.ResourceAccess;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -24,24 +24,21 @@ public class ExtractArticleText {
 	public static final File EXTRACTION_FOLDER = new File("extractedArticles");
 	private static final String[] REMOVABLE_SECTIONS = { "External links",
 			"See also", "History", "References" };
-	private WMISocket wmi_;
+	private WikipediaSocket wmi_;
 
 	public ExtractArticleText() {
 		ResourceAccess.newInstance();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 
 		EXTRACTION_FOLDER.mkdir();
 	}
 
 	public static void main(String[] args) {
 		String page = null;
-		boolean category = false;
 		boolean context = false;
 		boolean recurse = false;
 		for (int i = 0; i < args.length; i++) {
-			if (args[i].equals("-c"))
-				category = true;
-			else if (args[i].equals("-context"))
+			if (args[i].equals("-context"))
 				context = true;
 			else if (args[i].equals("-recurse"))
 				recurse = true;
@@ -50,7 +47,7 @@ public class ExtractArticleText {
 		}
 		ExtractArticleText eat = new ExtractArticleText();
 		try {
-			eat.extract(page, category, context, recurse);
+			eat.extract(page, context, recurse);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -69,38 +66,26 @@ public class ExtractArticleText {
 	 * @throws IOException
 	 *             Should something go awry...
 	 */
-	public boolean extract(String pageName, boolean category,
-			boolean andArticleContext, boolean recurseSubCategory)
-			throws IOException {
-		int coreArticleID = -1;
-		if (category)
-			coreArticleID = wmi_.getCategoryByTitle(pageName);
-		else
-			coreArticleID = wmi_.getArticleByTitle(pageName);
+	public boolean extract(String pageName, boolean andArticleContext,
+			boolean recurseSubCategory) throws IOException {
+		int coreArticleID = wmi_.getArticleByTitle(pageName);
 		if (coreArticleID == -1) {
 			System.err.println("Couldn't find article/category.");
 			System.exit(1);
 		}
 
-		return extract(coreArticleID, pageName, category, andArticleContext,
+		return extract(coreArticleID, pageName, andArticleContext,
 				recurseSubCategory);
 	}
 
 	public boolean extract(int coreArticleID, String pageName,
-			boolean category, boolean andArticleContext,
-			boolean recurseSubCategory) throws IOException {
-		if (category && andArticleContext) {
-			System.err.println("Cannot get context for category.");
-			return false;
-		}
+			boolean andArticleContext, boolean recurseSubCategory)
+			throws IOException {
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 
 		Collection<Integer> toProcess = new HashSet<>();
 		// Add extra context
-		if (category)
-			toProcess.addAll(getCategoryArticles(coreArticleID,
-					recurseSubCategory));
-		else if (andArticleContext) {
+		if (andArticleContext) {
 			// toProcess.addAll(wmi_.getOutLinks(coreArticleID));
 			for (Integer cat : wmi_.getArticleCategories(coreArticleID))
 				toProcess.addAll(getCategoryArticles(cat, recurseSubCategory));
@@ -112,27 +97,29 @@ public class ExtractArticleText {
 				pageName).replaceAll("\\s", ""));
 		if (parentFolder.exists())
 			return true;
-//		else {
-//			String artTitle = wmi_.getPageTitle(coreArticleID, true);// Extract the links and their text
-//			artTitle = artTitle.replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
-//			String artText = wmi_.getMarkup(coreArticleID);
-//			// Remove specific sections
-//			artText = removeSections(artText);
-//			extractLinks(artTitle, parentFolder, artText);
-//			return true;
-//		}
+		// else {
+		// String artTitle = wmi_.getPageTitle(coreArticleID, true);// Extract
+		// the links and their text
+		// artTitle = artTitle.replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
+		// String artText = wmi_.getMarkup(coreArticleID);
+		// // Remove specific sections
+		// artText = removeSections(artText);
+		// extractLinks(artTitle, parentFolder, artText);
+		// return true;
+		// }
 		boolean created = false;
 		for (Integer art : toProcess) {
 			// Ignore lists & disambiguations
 			String type = wmi_.getPageType(art);
-			if (type != null && type.equals(WMISocket.TYPE_DISAMBIGUATION))
+			if (type != null
+					&& type.equals(WikipediaSocket.TYPE_DISAMBIGUATION))
 				continue;
-			String artTitle = wmi_.getPageTitle(art, true);
+			String artTitle = wmi_.getArtTitle(art, true);
 			if (artTitle.toLowerCase().startsWith("list of"))
 				continue;
 
 			// Named entity removal
-			String noContextTitle = wmi_.getPageTitle(art, false);
+			String noContextTitle = wmi_.getArtTitle(art, false);
 			int spaceIndex = noContextTitle.lastIndexOf(" ");
 			if (spaceIndex > 0
 					&& spaceIndex < artTitle.length() - 1
@@ -141,9 +128,9 @@ public class ExtractArticleText {
 				continue;
 
 			// Remove infoboxes
-//			List<InfoboxData> infoboxData = wmi_.getInfoboxData(art);
-//			if (!infoboxData.isEmpty())
-//				continue;
+			// List<InfoboxData> infoboxData = wmi_.getInfoboxData(art);
+			// if (!infoboxData.isEmpty())
+			// continue;
 
 			// Extract the links and their text
 			String artText = wmi_.getMarkup(art);
@@ -158,7 +145,7 @@ public class ExtractArticleText {
 
 			// Check if it's acceptable
 			System.out.println("Is " + artTitle + " acceptable? (Y) or (N)");
-			String result = "Y";//in.readLine();
+			String result = "Y";// in.readLine();
 			if (result.equalsIgnoreCase("Y")) {
 				parentFolder.mkdirs();
 
@@ -245,7 +232,7 @@ public class ExtractArticleText {
 			subCategories = new ArrayList<>(1);
 			subCategories.add(categoryID);
 		}
-		return WMISocket.union(wmi_.getChildArticles(subCategories
+		return WikipediaSocket.union(wmi_.getChildArticles(subCategories
 				.toArray(new Integer[subCategories.size()])));
 	}
 }

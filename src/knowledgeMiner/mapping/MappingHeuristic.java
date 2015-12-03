@@ -4,7 +4,7 @@
 package knowledgeMiner.mapping;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 
@@ -46,7 +46,7 @@ public abstract class MappingHeuristic<Source, Target> extends
 	 *             Should something go awry...
 	 */
 	protected abstract WeightedSet<Target> mapSourceInternal(Source source,
-			WMISocket wmi, OntologySocket ontology) throws Exception;
+			WikipediaSocket wmi, OntologySocket ontology) throws Exception;
 
 	/**
 	 * Map a Source to one or more Targets. This method is just the accessor
@@ -61,7 +61,7 @@ public abstract class MappingHeuristic<Source, Target> extends
 	 * @return A {@link WeightedSet} of Targets with weights normalised to sum
 	 *         to one.
 	 */
-	public final WeightedSet<Target> mapSourceToTarget(Source s, WMISocket wmi,
+	public final WeightedSet<Target> mapSourceToTarget(Source s, WikipediaSocket wmi,
 			OntologySocket ontology) {
 		try {
 			WeightedSet<Target> mappedTarget = mapSourceInternal(s, wmi, ontology);

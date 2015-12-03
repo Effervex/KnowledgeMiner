@@ -4,7 +4,7 @@
 package knowledgeMiner.mapping.textToCyc;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.mapping.MappingPreProcessor;
 import util.wikipedia.WikiParser;
 
@@ -15,7 +15,7 @@ import util.wikipedia.WikiParser;
 public class RemoveBracketsPreProcessor extends MappingPreProcessor<String> {
 
 	@Override
-	public String processSingle(String input, WMISocket wmi, OntologySocket cyc) {
+	public String processSingle(String input, WikipediaSocket wmi, OntologySocket cyc) {
 		return WikiParser.cleanBrackets(input, 0, '(', ')', false, true).trim();
 	}
 

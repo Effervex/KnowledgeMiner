@@ -3,13 +3,11 @@
  ******************************************************************************/
 package util.wikipedia;
 
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,16 +18,11 @@ import java.util.Map;
 public class PopularityComparator implements Comparator<Integer> {
 	private Map<Integer, Integer> inLinks_;
 
-	public PopularityComparator(Collection<Integer> articles, WMISocket wmi) {
+	public PopularityComparator(Collection<Integer> articles, WikipediaSocket wmi) {
 		try {
-			Integer[] articleArray = articles.toArray(new Integer[articles
-					.size()]);
-			List<Integer[]> numLinks = wmi.getNumLinks(articleArray);
-			Iterator<Integer[]> iter = numLinks.iterator();
 			inLinks_ = new HashMap<>();
-			for (int i = 0; i < articleArray.length; i++) {
-				inLinks_.put(articleArray[i], iter.next()[0]);
-			}
+			for (Integer art : articles)
+				inLinks_.put(art, wmi.getInLinks(art).size());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

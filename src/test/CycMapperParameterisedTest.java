@@ -5,7 +5,7 @@ package test;
 
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,7 +26,7 @@ public class CycMapperParameterisedTest {
 	/** The mapper under test. */
 	private static CycMapper mapper_;
 
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 	private static OntologySocket cyc_;
 
 	private String cycTerm_;
@@ -80,7 +80,7 @@ public class CycMapperParameterisedTest {
 	@BeforeClass
 	public static void setUp() throws Exception {
 		cyc_ = ResourceAccess.requestOntologySocket();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		mapper_ = new CycMapper();
 	}
 

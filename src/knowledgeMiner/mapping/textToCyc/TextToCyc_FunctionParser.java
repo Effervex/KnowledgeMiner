@@ -13,7 +13,7 @@ package knowledgeMiner.mapping.textToCyc;
 import graph.core.CommonConcepts;
 import graph.inference.VariableNode;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,7 +45,7 @@ public class TextToCyc_FunctionParser extends
 
 	@Override
 	protected WeightedSet<OntologyConcept> mapSourceInternal(String source,
-			WMISocket wmi, OntologySocket ontology) throws Exception {
+			WikipediaSocket wmi, OntologySocket ontology) throws Exception {
 		WeightedSet<OntologyConcept> results = new WeightedSet<>();
 
 		String[] split = UtilityMethods.splitToArray(source, ' ');
@@ -87,7 +87,7 @@ public class TextToCyc_FunctionParser extends
 	 */
 	protected WeightedSet<OntologyConcept> createPossibleFunction(
 			int textIndex, boolean prefixText, String[] split,
-			Object[] isaFunction, WMISocket wmi, OntologySocket ontology) {
+			Object[] isaFunction, WikipediaSocket wmi, OntologySocket ontology) {
 		// Process the function text
 		String possibleFunction = null;
 		if (prefixText)

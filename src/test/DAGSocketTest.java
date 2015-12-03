@@ -41,7 +41,8 @@ public class DAGSocketTest {
 
 	@Test
 	public void testFindConceptByName() {
-		Collection<OntologyConcept> results = sut_.findConceptByName("Junior \" A\"", false, true, true);
+		Collection<OntologyConcept> results = sut_.findConceptByName(
+				"Junior \" A\"", false, true, true);
 		assertTrue(results.isEmpty());
 	}
 
@@ -53,7 +54,7 @@ public class DAGSocketTest {
 		assertFalse(sut_.isInfoless(concept, false, true));
 		assertFalse(sut_.isInfoless(concept, true, false));
 		assertFalse(sut_.isInfoless(concept, true, true));
-		
+
 		// Primitive
 		concept = new OntologyConcept("charSequenceOfMaximumLength-lowercase");
 		assertFalse(sut_.isInfoless(concept, false, false));
@@ -67,5 +68,17 @@ public class DAGSocketTest {
 		assertTrue(sut_.isInfoless(concept, false, true));
 		assertFalse(sut_.isInfoless(concept, true, false));
 		assertTrue(sut_.isInfoless(concept, true, true));
+	}
+
+	@Test
+	public void testAssertEdge() throws Exception {
+		String conceptA = "(CBLTaskFn (CBLMethodFn CBLNode-CycorpRefrigeratorMassEMailSending \"startCycorpRefrigeratorMassEmailSending_task\") \\'2)";
+		String conceptB = "UndertakingSomething-Accept";
+		assertEquals(-1, sut_.assertToOntology(null,
+				CommonConcepts.DISJOINTWITH.getID(), conceptA, conceptB));
+
+		conceptA = conceptA.replaceAll("\\\\'", "'");
+		assertNotEquals(-1, sut_.assertToOntology(null,
+				CommonConcepts.DISJOINTWITH.getID(), conceptA, conceptB));
 	}
 }

@@ -4,7 +4,7 @@
 package knowledgeMiner.mining.wikipedia;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -234,10 +234,10 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 
 	@Override
 	protected void mineArticleInternal(MinedInformation info,
-			int informationRequested, WMISocket wmi, OntologySocket cyc)
+			int informationRequested, WikipediaSocket wmi, OntologySocket cyc)
 			throws Exception {
 		int article = info.getArticle();
-		String title = wmi.getPageTitle(article, false);
+		String title = wmi.getArtTitle(article, false);
 		// Do not mine lists
 		if (WikiParser.isAListOf(title))
 			return;
@@ -293,7 +293,7 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 	 * @return The same text with all anchors replaced by dynamic links to
 	 *         concepts (with plain text annotations).
 	 */
-	private String replaceAnchorsWithOntolinks(String paragraph, WMISocket wmi,
+	private String replaceAnchorsWithOntolinks(String paragraph, WikipediaSocket wmi,
 			OntologySocket ontology) {
 		// Find anchors
 		int start = 0;
@@ -398,7 +398,7 @@ public class FirstSentenceMiner extends WikipediaArticleMiningHeuristic {
 	 *             Should something go awry...
 	 */
 	public String regExpMatch(String title, String firstSentence,
-			MinedInformation info, WMISocket wmi) throws Exception {
+			MinedInformation info, WikipediaSocket wmi) throws Exception {
 		String collectionFragment = null;
 		// Check every pattern
 		int firstMatch = Integer.MAX_VALUE;

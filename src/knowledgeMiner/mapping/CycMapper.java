@@ -6,7 +6,7 @@ package knowledgeMiner.mapping;
 import graph.core.CommonConcepts;
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -115,7 +115,7 @@ public class CycMapper {
 	 */
 	private HierarchicalWeightedSet<OntologyConcept> fragmentString(
 			List<String> words,
-			WMISocket wmi,
+			WikipediaSocket wmi,
 			OntologySocket ontology,
 			Collection<Class<? extends MappingHeuristic<String, OntologyConcept>>> disallowed) {
 		int n = words.size();
@@ -231,7 +231,7 @@ public class CycMapper {
 	public WeightedSet<Integer> mapCycToWikipedia(
 			OntologyConcept cycTerm,
 			Collection<Class<? extends MappingHeuristic<OntologyConcept, Integer>>> excludedHeuristics,
-			WMISocket wmi, OntologySocket ontology) {
+			WikipediaSocket wmi, OntologySocket ontology) {
 		return cycToWikiMapping_.mapSourceToTarget(cycTerm, wmi, ontology,
 				excludedHeuristics);
 	}
@@ -250,7 +250,7 @@ public class CycMapper {
 	 *             Should something go awry...
 	 */
 	public HierarchicalWeightedSet<OntologyConcept> mapRelationToPredicate(
-			String relation, WMISocket wmi, OntologySocket ontology) {
+			String relation, WikipediaSocket wmi, OntologySocket ontology) {
 		HierarchicalWeightedSet<OntologyConcept> textMapped = mapTextToCyc(
 				relation, false, false, true, true, wmi, ontology);
 		WeightedSet<OntologyConcept> flattened = textMapped.flattenHierarchy();
@@ -296,7 +296,7 @@ public class CycMapper {
 	 */
 	public HierarchicalWeightedSet<OntologyConcept> mapTextToCyc(String text,
 			boolean allowStrings, boolean fragmentText, boolean preProcessText,
-			boolean allowDirectSearch, WMISocket wmi, OntologySocket ontology) {
+			boolean allowDirectSearch, WikipediaSocket wmi, OntologySocket ontology) {
 		text = WikiParser.cleanupUselessMarkup(text).trim();
 		// text = NLPToSyntaxModule.convertToAscii(text).trim();
 		if (text.isEmpty())
@@ -343,7 +343,7 @@ public class CycMapper {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public WeightedSet mapViaHeuristic(Object input,
-			Class<? extends MappingHeuristic> heuristic, WMISocket wmi,
+			Class<? extends MappingHeuristic> heuristic, WikipediaSocket wmi,
 			OntologySocket ontology) {
 		MappingHeuristic<Object, Object> heuristicInst = (MappingHeuristic<Object, Object>) KnowledgeMiner
 				.getInstance().getHeuristicByString(
@@ -367,7 +367,7 @@ public class CycMapper {
 	 *             Should something go awry...
 	 */
 	public WeightedSet<OntologyConcept> mapWikipediaToCyc(int articleID,
-			WMISocket wmi, OntologySocket ontology) {
+			WikipediaSocket wmi, OntologySocket ontology) {
 		return wikiToCycMapping_.mapSourceToTarget(articleID, wmi, ontology,
 				null);
 	}
@@ -381,7 +381,7 @@ public class CycMapper {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static void main(String[] args) {
 		CycMapper mapper = KnowledgeMiner.getInstance().getMapper();
-		WMISocket wmi = ResourceAccess.requestWMISocket();
+		WikipediaSocket wmi = ResourceAccess.requestWikipediaSocket();
 		OntologySocket ontology = ResourceAccess.requestOntologySocket();
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		String input = null;
@@ -448,7 +448,7 @@ public class CycMapper {
 
 					// Convert article numbers to names
 					if (type == 1) {
-						List<String> articleNames = wmi.getPageTitle(true,
+						List<String> articleNames = wmi.getArtTitle(true,
 								(Integer[]) result.toArray(new Integer[result
 										.size()]));
 						WeightedSet<String> nameSet = new WeightedSet(

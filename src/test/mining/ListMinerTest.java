@@ -2,7 +2,7 @@ package test.mining;
 
 import io.ResourceAccess;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -21,7 +21,7 @@ import util.wikipedia.WikiTable;
 
 public class ListMinerTest {
 	private static OntologySocket ontology_;
-	private static WMISocket wmi_;
+	private static WikipediaSocket wmi_;
 	private static ListMiner sut_;
 	public static final String[] testLists_ = {
 			"List of state leaders in 1623",
@@ -101,7 +101,7 @@ public class ListMinerTest {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		ontology_ = ResourceAccess.requestOntologySocket();
-		wmi_ = ResourceAccess.requestWMISocket();
+		wmi_ = ResourceAccess.requestWikipediaSocket();
 		KnowledgeMiner km = KnowledgeMiner.newInstance("Enwiki_20110722");
 		sut_ = (ListMiner) km.getHeuristicByString(ListMiner
 				.generateHeuristicName(ListMiner.class));

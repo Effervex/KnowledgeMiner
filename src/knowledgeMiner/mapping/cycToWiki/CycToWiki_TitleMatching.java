@@ -5,7 +5,7 @@ package knowledgeMiner.mapping.cycToWiki;
 
 import graph.module.NLPToStringModule;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.IOException;
 import java.util.List;
@@ -33,7 +33,7 @@ public class CycToWiki_TitleMatching extends
 
 	@Override
 	protected WeightedSet<Integer> mapSourceInternal(OntologyConcept cycTerm,
-			WMISocket wmi, OntologySocket cyc) throws IOException {
+			WikipediaSocket wmi, OntologySocket cyc) throws IOException {
 		// Cannot map functions
 		WeightedSet<Integer> mappings = new WeightedSet<>();
 		if (cycTerm.isFunction())

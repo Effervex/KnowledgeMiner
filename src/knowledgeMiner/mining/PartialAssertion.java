@@ -2,7 +2,7 @@ package knowledgeMiner.mining;
 
 import graph.core.CommonConcepts;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -263,7 +263,7 @@ public class PartialAssertion extends MinedAssertion {
 	 */
 	@SuppressWarnings("unchecked")
 	private AssertionQueue expandInternal(Collection<MappableConcept> excluded,
-			CycMapper mapper, OntologySocket ontology, WMISocket wmi) {
+			CycMapper mapper, OntologySocket ontology, WikipediaSocket wmi) {
 		AssertionQueue aq = new AssertionQueue(heuristic_);
 		if (relation_ != null) {
 			// Find relation(s)
@@ -381,7 +381,7 @@ public class PartialAssertion extends MinedAssertion {
 	 *         assertion.
 	 */
 	public AssertionQueue expand(Collection<MappableConcept> excluded,
-			CycMapper mapper, OntologySocket ontology, WMISocket wmi) {
+			CycMapper mapper, OntologySocket ontology, WikipediaSocket wmi) {
 		AssertionQueue aq = expandInternal(excluded, mapper, ontology, wmi);
 
 		// Recurse through sub-assertions

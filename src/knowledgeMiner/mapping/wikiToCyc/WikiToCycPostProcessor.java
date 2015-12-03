@@ -6,7 +6,7 @@ package knowledgeMiner.mapping.wikiToCyc;
 import graph.core.CommonConcepts;
 import graph.core.DirectedAcyclicGraph;
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.mapping.MappingPostProcessor;
 import util.collection.WeightedSet;
 import cyc.OntologyConcept;
@@ -21,7 +21,7 @@ public class WikiToCycPostProcessor extends
 
 	@Override
 	public WeightedSet<OntologyConcept> process(
-			WeightedSet<OntologyConcept> collection, WMISocket wmi,
+			WeightedSet<OntologyConcept> collection, WikipediaSocket wmi,
 			OntologySocket ontology) {
 		// Only keep Constants (no Predicates)
 		WeightedSet<OntologyConcept> newSet = new WeightedSet<>();

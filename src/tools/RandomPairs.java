@@ -4,7 +4,7 @@ import graph.core.CommonConcepts;
 import graph.inference.CommonQuery;
 import io.ResourceAccess;
 import io.ontology.DAGSocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -27,7 +27,7 @@ import cyc.OntologyConcept;
  */
 public class RandomPairs {
 	private DAGSocket ontology_;
-	private WMISocket wmi_;
+	private WikipediaSocket wmi_;
 	private ProbabilityDistribution<String> relations_;
 
 	public RandomPairs() {

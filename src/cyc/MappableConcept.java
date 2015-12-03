@@ -1,7 +1,7 @@
 package cyc;
 
 import io.ontology.OntologySocket;
-import io.resources.WMISocket;
+import io.resources.WikipediaSocket;
 import knowledgeMiner.mapping.CycMapper;
 import util.collection.HierarchicalWeightedSet;
 import util.collection.WeightedSet;
@@ -48,7 +48,7 @@ public abstract class MappableConcept extends AssertionArgument {
 	 * @return True if the thing was successfully (or already is) mapped.
 	 */
 	public final WeightedSet<OntologyConcept> mapThing(CycMapper mapper,
-			WMISocket wmi, OntologySocket ontology) {
+			WikipediaSocket wmi, OntologySocket ontology) {
 		if (mappings_ == null) {
 			mappings_ = mapThingInternal(mapper, wmi, ontology);
 			if (mappings_ instanceof HierarchicalWeightedSet)
@@ -59,7 +59,7 @@ public abstract class MappableConcept extends AssertionArgument {
 	}
 
 	protected abstract WeightedSet<OntologyConcept> mapThingInternal(
-			CycMapper mapper, WMISocket wmi, OntologySocket ontology);
+			CycMapper mapper, WikipediaSocket wmi, OntologySocket ontology);
 
 	@Override
 	public String toString() {
